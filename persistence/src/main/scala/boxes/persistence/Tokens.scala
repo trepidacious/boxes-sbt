@@ -14,9 +14,9 @@ import java.io.StringReader
 import scala.language.existentials
 
 sealed trait Link
-case class LinkRef(id: Int) extends Link	//Link is a reference to another obj
-case class LinkId(id: Int) extends Link	//Link is an id, to accept references from other objs
-case object LinkEmpty extends Link		//There is no link
+case class LinkRef(id: Int) extends Link  //Link is a reference to another obj
+case class LinkId(id: Int) extends Link  //Link is an id, to accept references from other objs
+case object LinkEmpty extends Link    //There is no link
 
 sealed trait Token
 
@@ -250,23 +250,23 @@ class NullTokenWriter extends TokenWriter {
 ////    val parser = JsonParser(json.toString)
 ////    
 ////    @tailrec
-////	def printNext(): Unit = {
-////	  val t = parser.nextToken
-////	  println(t)
-////	  if (t != JsonParser.End) printNext()
-////	}
-////	
+////  def printNext(): Unit = {
+////    val t = parser.nextToken
+////    println(t)
+////    if (t != JsonParser.End) printNext()
+////  }
+////  
 ////    printNext()
     
   //   val reader = new JSONTokenReader(new StringReader(json.toString), aliases)
     
   //   @tailrec
-  // 	def printNext(): Unit = {
-  // 	  val t = reader.pull
-  // 	  println(t)
-  // 	  if (t != End) printNext()
-  // 	}
-	
+  //   def printNext(): Unit = {
+  //     val t = reader.pull
+  //     println(t)
+  //     if (t != End) printNext()
+  //   }
+  
   //   printNext()
 
   // }

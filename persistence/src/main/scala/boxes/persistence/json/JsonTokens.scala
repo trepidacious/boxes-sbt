@@ -46,12 +46,12 @@ class JSONTokenWriter(writer:Writer, aliases:ClassAliases, pretty: Boolean = fal
   private def printObjPrim[P](p:P)(implicit codec:CodecWithClass[P]) {
     commaIfNeeded()
     //object with _type_ as class alias, _val_ as primitive.
-	print("{\"_val_type_\":" + quoted(aliases.forClass(codec.clazz)) + ", \"_val_\":" + p + "}")
+  print("{\"_val_type_\":" + quoted(aliases.forClass(codec.clazz)) + ", \"_val_\":" + p + "}")
   }
   
   private def printPrim[P](p:P) {
     commaIfNeeded()
-	print("" + p)
+  print("" + p)
   }
 
   private def quoted(s: String) = JsonUtils.quote(s)
@@ -61,12 +61,12 @@ class JSONTokenWriter(writer:Writer, aliases:ClassAliases, pretty: Boolean = fal
   }
   private def println() {
     if (pretty) {
-  	  writer.write("\n")
-  	  Range(0, tokens.count(t => t match {
-  	    case OpenObj(_,_) => true
-  	    case OpenArr => true
-  	    case _ => false
-  	  })).foreach{i => writer.write("  ")}
+      writer.write("\n")
+      Range(0, tokens.count(t => t match {
+        case OpenObj(_,_) => true
+        case OpenArr => true
+        case _ => false
+      })).foreach{i => writer.write("  ")}
     }
   }
   
@@ -78,43 +78,43 @@ class JSONTokenWriter(writer:Writer, aliases:ClassAliases, pretty: Boolean = fal
         tokens.push(t)
         val s = "\"_type_\":" + quoted(aliases.forClass(clazz))
         val linkS = link match {
-          case LinkRef(id) => 	", \"_ref_\":" + id 
-          case LinkId(id) => 	", \"_id_\":" + id
-          case _ => 			""
+          case LinkRef(id) =>   ", \"_ref_\":" + id 
+          case LinkId(id) =>   ", \"_id_\":" + id
+          case _ =>       ""
         }
         print(s + linkS)
       }
       case CloseObj => {
         tokens.pop() match {
           case OpenObj(link, clazz) => {
-        	  println()
-        	  print("}")
+            println()
+            print("}")
           }
           case _ => throw new RuntimeException("Mismatched CloseObj token")
         }        
       }
       
       //First-class primitives - represented directly in JSON
-      case BooleanToken(p) 	=> printPrim(p) 
-      case IntToken(p)  	=> printPrim(p)
-      case DoubleToken(p)  	=> printPrim(p)
+      case BooleanToken(p)   => printPrim(p) 
+      case IntToken(p)    => printPrim(p)
+      case DoubleToken(p)    => printPrim(p)
       case StringToken(p)   => printPrim(quoted(p))
       
       //Second-class primitives - represented as objects in JSON
-      case LongToken(p)  	=> printObjPrim(p)
-      case FloatToken(p)  	=> printObjPrim(p)
+      case LongToken(p)    => printObjPrim(p)
+      case FloatToken(p)    => printObjPrim(p)
       
       case OpenField(name) => {
-    	  print(",")
-    	  println()
-    	  print(quoted(name) + ":")
+        print(",")
+        println()
+        print(quoted(name) + ":")
       }
       
       case OpenArr => {
-      	commaIfNeeded()
-      	print("[")
-      	tokens.push(t)
-      	println()
+        commaIfNeeded()
+        print("[")
+        tokens.push(t)
+        println()
       }
       case CloseArr => {
         tokens.pop() match {
@@ -162,26 +162,26 @@ class JSONTokenReader(reader: Reader, aliases: ClassAliases) extends TokenReader
   
   private def pullClassField() = {
     val classToken = parser.pull
-  	classToken match {
-	  case JsonParser.StringVal(alias) => aliases.forAlias(alias)
-	  case _ => throw new RuntimeException("Unexpected type field value, not a string: " + classToken)
-	} 
+    classToken match {
+      case JsonParser.StringVal(alias) => aliases.forAlias(alias)
+      case _ => throw new RuntimeException("Unexpected type field value, not a string: " + classToken)
+    } 
   }
 
   private def pullInt() = {
     val token = parser.pull
-	token match {
-	  case JsonParser.IntVal(i) => i
-	  case _ => throw new RuntimeException("Unexpected int field value, not an int: " + token)
-	} 
+    token match {
+      case JsonParser.IntVal(i) => i
+      case _ => throw new RuntimeException("Unexpected int field value, not an int: " + token)
+    } 
   }
 
   private def pullDouble() = {
     val token = parser.pull
-	token match {
-	  case JsonParser.DoubleVal(i) => i
-	  case _ => throw new RuntimeException("Unexpected double field value, not a double: " + token)
-	} 
+    token match {
+      case JsonParser.DoubleVal(i) => i
+      case _ => throw new RuntimeException("Unexpected double field value, not a double: " + token)
+    } 
   }
 
   private def pullLink() = {
@@ -215,31 +215,31 @@ class JSONTokenReader(reader: Reader, aliases: ClassAliases) extends TokenReader
 
   private def pullToken(): Token = {
     parser.pull match {
-        case JsonParser.OpenObj => {
-          val t = parser.pull
-          t match {
-            case JsonParser.FieldStart("_type_") => {
-              val clazz = pullClassField()
-              val link = pullLink()
-              OpenObj(clazz, link)
-            }
-            case JsonParser.FieldStart("_val_type_") => {
-              val clazz = pullClassField()
-              pullSecondClassPrim(clazz)
-            }
-            case _ => throw new RuntimeException("Unexpected first token in Obj, not a type or valType: " + t)
+      case JsonParser.OpenObj => {
+        val t = parser.pull
+        t match {
+          case JsonParser.FieldStart("_type_") => {
+            val clazz = pullClassField()
+            val link = pullLink()
+            OpenObj(clazz, link)
           }
+          case JsonParser.FieldStart("_val_type_") => {
+            val clazz = pullClassField()
+            pullSecondClassPrim(clazz)
+          }
+          case _ => throw new RuntimeException("Unexpected first token in Obj, not a type or valType: " + t)
         }
-        case JsonParser.CloseObj => CloseObj
-        case JsonParser.FieldStart(name) => OpenField(name)
-        case JsonParser.End => End
-        case JsonParser.StringVal(value) => StringToken(value)
-        case JsonParser.IntVal(value) => IntToken(value.intValue)
-        case JsonParser.DoubleVal(value) => DoubleToken(value)
-        case JsonParser.BoolVal(value) => BooleanToken(value)
-        case JsonParser.NullVal => throw new RuntimeException("Unexpected null token")
-        case JsonParser.OpenArr => OpenArr
-        case JsonParser.CloseArr => CloseArr
+      }
+      case JsonParser.CloseObj => CloseObj
+      case JsonParser.FieldStart(name) => OpenField(name)
+      case JsonParser.End => End
+      case JsonParser.StringVal(value) => StringToken(value)
+      case JsonParser.IntVal(value) => IntToken(value.intValue)
+      case JsonParser.DoubleVal(value) => DoubleToken(value)
+      case JsonParser.BoolVal(value) => BooleanToken(value)
+      case JsonParser.NullVal => throw new RuntimeException("Unexpected null token")
+      case JsonParser.OpenArr => OpenArr
+      case JsonParser.CloseArr => CloseArr
     }
   }
   

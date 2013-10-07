@@ -926,11 +926,11 @@ object BoxesDemo {
 
     val sheet = SheetBuilder()
     val panel = sheet
-    				.separator("Edit Bob")
-    				.view("Name", nameView)
-    				.view("Age", ageView)
-    				.view("Zombie", zombieView)
-    				.panel
+            .separator("Edit Bob")
+            .view("Name", nameView)
+            .view("Age", ageView)
+            .view("Zombie", zombieView)
+            .panel
 
     frame.add(panel)
     frame.pack

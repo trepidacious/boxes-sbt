@@ -44,7 +44,7 @@ class CoalescingResponder(response: => Unit, fusionInterval:Long = 5, tickInterv
         respond
       }
     }
-	}
+  }
 
 }
 

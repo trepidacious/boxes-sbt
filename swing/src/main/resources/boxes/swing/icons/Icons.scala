@@ -21,7 +21,7 @@ import IconSize._
  */
 trait IconFactory {
 
-	def icon(size:IconSize, category:String, name:String):Icon
+  def icon(size:IconSize, category:String, name:String):Icon
   def image(size:IconSize, category:String, name:String):Image
 }
 
@@ -36,7 +36,7 @@ trait IconFactory {
 //
 //  override def image(size:IconSize, category:String, name:String) = {
 //    val sizeString = sizeStrings(size)
-//		val location = sizeString + "/" + category + "/" + name + ".png";
+//    val location = sizeString + "/" + category + "/" + name + ".png";
 //    IconFactory.image(location, resourceClass)
 //  }
 //}
@@ -56,13 +56,13 @@ object IconFactory {
 
   def image(name:String, resourceClass:Class[_] = classOf[IconFactory], path: String = "/boxes/swing/icons/", extension:String = ".png"):Image = {
     val resource:URL = resourceClass.getResource(path + name + extension)
-		if (resource != null) {
-			try {
-				return ImageIO.read(resource)
-			} catch {
-				case _: java.io.IOException => return defaultImage
+    if (resource != null) {
+      try {
+        return ImageIO.read(resource)
+      } catch {
+        case _: java.io.IOException => return defaultImage
       }
-		} else {
+    } else {
       defaultImage
     }
   }

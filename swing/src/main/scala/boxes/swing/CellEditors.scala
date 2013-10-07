@@ -1,9 +1,6 @@
 package boxes.swing
 
-
-
 import java.text.ParseException;
-
 import javax.swing.text.DefaultFormatterFactory;
 import javax.swing.text.NumberFormatter
 import boxes.util.NumericClass
@@ -37,7 +34,7 @@ class NumberCellEditor[N](val ftf:JFormattedTextField, val requiredContentsDescr
           ftf.postActionEvent(); // inform the editor
         }
         //If user didn't want to revert, do nothing and editing continues
-      } else
+      } else {
         try { // The text is valid,
           ftf.commitEdit(); // so use it.
           ftf.postActionEvent(); // stop editing
@@ -45,90 +42,91 @@ class NumberCellEditor[N](val ftf:JFormattedTextField, val requiredContentsDescr
         //TODO logger
           case exc:java.text.ParseException => println("actionPerformed: can't parse: " + exc);
         }
+      }
     }
   })
 
-	override def getTableCellEditorComponent(table:JTable, value:Object, isSelected:Boolean, row:Int, column:Int) = {
-		val newField = super.getTableCellEditorComponent(table, value, isSelected, row, column).asInstanceOf[JFormattedTextField]
-		newField.setValue(value)
+  override def getTableCellEditorComponent(table:JTable, value:Object, isSelected:Boolean, row:Int, column:Int) = {
+  val newField = super.getTableCellEditorComponent(table, value, isSelected, row, column).asInstanceOf[JFormattedTextField]
+  newField.setValue(value)
+  
+  //Select all text for sane editing behaviour - contents are replaced if
+  //the user starts an edit by typing, editing proceeds as normal if they
+  //double click
+  newField.selectAll()
+  newField
+  }
 
-		//Select all text for sane editing behaviour - contents are replaced if
-		//the user starts an edit by typing, editing proceeds as normal if they
-		//double click
-		newField.selectAll()
-		newField
-	}
-
-	// Override to ensure that the value remains valid.
-	override def getCellEditorValue() = {
-		val o = getComponent().asInstanceOf[JFormattedTextField].getValue()
-		try {
+  // Override to ensure that the value remains valid.
+  override def getCellEditorValue() = {
+    val o = getComponent().asInstanceOf[JFormattedTextField].getValue()
+    try {
       numericClass.parse(o.toString).asInstanceOf[AnyRef]
-		} catch {
+    } catch {
       case e:ParseException => {
         //TODO logger
-			  println("getCellEditorValue: can't parse o: " + o)
-			  null
+        println("getCellEditorValue: can't parse o: " + o)
+        null
       }
-		  case (e:ClassCastException) => {
+      case (e:ClassCastException) => {
         //TODO logger
-			  println("getCellEditorValue: non-Number from numberFormat on " + o)
-			  null
+        println("getCellEditorValue: non-Number from numberFormat on " + o)
+        null
       }
-		}
-	}
+    }
+  }
 
-	// Override to check whether the edit is valid,
-	// setting the value if it is and complaining if
-	// it isn't. If it's OK for the editor to go
-	// away, we need to invoke the superclass's version
-	// of this method so that everything gets cleaned up.
-	override def stopCellEditing() = {
-		val newField = getComponent().asInstanceOf[JFormattedTextField]
-		if (newField.isEditValid()) {
-			try {
-				newField.commitEdit();
-			} catch {
+  // Override to check whether the edit is valid,
+  // setting the value if it is and complaining if
+  // it isn't. If it's OK for the editor to go
+  // away, we need to invoke the superclass's version
+  // of this method so that everything gets cleaned up.
+  override def stopCellEditing() = {
+    val newField = getComponent().asInstanceOf[JFormattedTextField]
+    if (newField.isEditValid()) {
+      try {
+        newField.commitEdit();
+      } catch {
         case _ : Throwable => {}
-			}
-		} else { // text is invalid
-			if (!userSaysRevert()) { // user wants to edit
-				false // don't let the editor go away
-			}
-		}
-		super.stopCellEditing()
-	}
+      }
+    } else { // text is invalid
+      if (!userSaysRevert()) { // user wants to edit
+        false // don't let the editor go away
+      }
+    }
+    super.stopCellEditing()
+  }
 
-	/**
-	 * Lets the user know that the text they entered is bad. Returns true if the
-	 * user elects to revert to the last good value. Otherwise, returns false,
-	 * indicating that the user wants to continue editing.
-	 */
-	private def userSaysRevert() = {
-		ftf.selectAll();
+  /**
+   * Lets the user know that the text they entered is bad. Returns true if the
+   * user elects to revert to the last good value. Otherwise, returns false,
+   * indicating that the user wants to continue editing.
+   */
+  private def userSaysRevert() = {
+    ftf.selectAll();
 
-		val prompt = "The value must be " + requiredContentsDescription + ".\nYou can either continue editing or revert to the last valid value."
+    val prompt = "The value must be " + requiredContentsDescription + ".\nYou can either continue editing or revert to the last valid value."
 
-		val options = Array("Edit":Object, "Revert":Object)
+    val options = Array("Edit":Object, "Revert":Object)
 
-		val answer = JOptionPane.showOptionDialog(
+    val answer = JOptionPane.showOptionDialog(
       SwingUtilities.getWindowAncestor(ftf),
-		  prompt,
-			"Invalid Text Entered",
+      prompt,
+      "Invalid Text Entered",
       JOptionPane.YES_NO_OPTION,
-			JOptionPane.ERROR_MESSAGE,
+      JOptionPane.ERROR_MESSAGE,
       null,
       options,
       options(1)
     )
 
-		if (answer == 1) { // Revert!
-			ftf.setValue(ftf.getValue());
-			true
-		} else {
-		  false
+    if (answer == 1) { // Revert!
+      ftf.setValue(ftf.getValue());
+      true
+    } else {
+      false
     }
-	}
+  }
 
 }
 
@@ -154,15 +152,15 @@ class CellEditorJTextField extends JTextField {
 }
 
 class SelectingTextCellEditor extends DefaultCellEditor(new CellEditorJTextField()) {
-	override def getTableCellEditorComponent(table:JTable, value:Object, isSelected:Boolean, row:Int, column:Int) = {
-		super.getTableCellEditorComponent(table, value, isSelected, row, column) match {
+  override def getTableCellEditorComponent(table:JTable, value:Object, isSelected:Boolean, row:Int, column:Int) = {
+    super.getTableCellEditorComponent(table, value, isSelected, row, column) match {
       case tf:JTextField => {
         tf.selectAll
         tf
       }
       case c => c
     }
-	}
+  }
 }
 
 object SelectingTextCellEditor {
@@ -175,17 +173,17 @@ class BoxesTableCellRenderer extends DefaultTableCellRenderer {
 //    if (isSelected) {
 //      super.setForeground(table.getSelectionForeground())
 //      super.setBackground(table.getSelectionBackground())
-//	  } else {
+//    } else {
 //      var background = table.getBackground()
 //      val alternateColor = UIManager.getColor("Table.alternateRowColor")
 //      if (alternateColor != null && row % 2 == 0) background = alternateColor
 //      super.setForeground(table.getForeground())
 //      super.setBackground(background);
-//	  }
+//    }
 
-	  setFont(table.getFont())
+    setFont(table.getFont())
 
-//	if (hasFocus) {
+//  if (hasFocus) {
 //            Border border = null;
 //            if (isSelected) {
 //                border = DefaultLookup.getBorder(this, ui, "Table.focusSelectedCellHighlightBorder");
@@ -195,7 +193,7 @@ class BoxesTableCellRenderer extends DefaultTableCellRenderer {
 //            }
 //            setBorder(border);
 //
-//	    if (!isSelected && table.isCellEditable(row, column)) {
+//      if (!isSelected && table.isCellEditable(row, column)) {
 //                Color col;
 //                col = DefaultLookup.getColor(this, ui, "Table.focusCellForeground");
 //                if (col != null) {
@@ -205,10 +203,10 @@ class BoxesTableCellRenderer extends DefaultTableCellRenderer {
 //                if (col != null) {
 //                    super.setBackground(col);
 //                }
-//	    }
-//	} else {
+//      }
+//  } else {
 //            setBorder(getNoFocusBorder());
-//	}
+//  }
 
     if (hasFocus && isSelected) {
       setBorder(CellEditorBorders.selectedRendererBorder)
@@ -233,12 +231,12 @@ class BooleanCellRenderer(val opaque:Boolean) extends DefaultTableCellRenderer {
   setOpaque(opaque)
   setHorizontalAlignment(SwingConstants.CENTER)
 
-	override def setValue(value:Any) {
+  override def setValue(value:Any) {
     value match {
       case b:Boolean => setIcon(if (b) BooleanCellRenderer.tick else BooleanCellRenderer.untick)
       case _ => setIcon(null)
     }
-	}
+  }
 }
 
 object NumberCellRenderer {
@@ -269,33 +267,32 @@ object BooleanCellEditor {
 }
 
 class BooleanCellEditor extends AbstractCellEditor with TableCellEditor {
+  var completeImmediately = false
+  var toggled = false
+  var originalValue = false
+  var inComponent = false
 
-	var completeImmediately = false
-	var toggled = false
-	var originalValue = false
-	var inComponent = false
+  val renderer = new BooleanCellRenderer(true)
+  var rendererComponent:Option[Component] = None
 
-	val renderer = new BooleanCellRenderer(true)
-	var rendererComponent:Option[Component] = None
-
-	val highlightColor = new Color(255, 255, 255, 50)
+  val highlightColor = new Color(255, 255, 255, 50)
 
   //Our editing component
-	val label = new JLabel() {
-		override def paintComponent(g:Graphics) {
-			rendererComponent.foreach(c => {
-				c.setBounds(getBounds())
-				c.paint(g)
-			})
+  val label = new JLabel() {
+    override def paintComponent(g:Graphics) {
+      rendererComponent.foreach(c => {
+        c.setBounds(getBounds())
+        c.paint(g)
+      })
 
       //Highlight on mouseover
-			if (inComponent) {
-				val g2 = g.asInstanceOf[Graphics2D]
-				g2.setColor(highlightColor)
-				g.fillRect(0, 0, getWidth(), getHeight())
-			}
-		}
-	}
+      if (inComponent) {
+        val g2 = g.asInstanceOf[Graphics2D]
+        g2.setColor(highlightColor)
+        g.fillRect(0, 0, getWidth(), getHeight())
+      }
+    }
+  }
 
   label.setOpaque(true);
   label.addMouseListener(new MouseAdapter() {
@@ -318,16 +315,16 @@ class BooleanCellEditor extends AbstractCellEditor with TableCellEditor {
     }
   })
 
-	//Implement the one CellEditor method that AbstractCellEditor doesn't.
-	override def getCellEditorValue = (if (toggled) !originalValue else originalValue).asInstanceOf[AnyRef]
+  //Implement the one CellEditor method that AbstractCellEditor doesn't.
+  override def getCellEditorValue = (if (toggled) !originalValue else originalValue).asInstanceOf[AnyRef]
 
-	//Implement the one method defined by TableCellEditor.
+  //Implement the one method defined by TableCellEditor.
   override def getTableCellEditorComponent(
     table:JTable,
-	  value:Any,
-	  isSelected:Boolean,
-	  row:Int,
-		column:Int) = {
+    value:Any,
+    isSelected:Boolean,
+    row:Int,
+    column:Int) = {
 
     value match {
       case b:Boolean => {
@@ -352,9 +349,9 @@ class BooleanCellEditor extends AbstractCellEditor with TableCellEditor {
       }
       case _ => null
     }
-	}
+  }
 
-	override def isCellEditable(anEvent:EventObject) = {
+  override def isCellEditable(anEvent:EventObject) = {
     anEvent match {
 
       //Only single clicks start editing using mouse, and
@@ -382,5 +379,5 @@ class BooleanCellEditor extends AbstractCellEditor with TableCellEditor {
         true
       }
     }
-	}
+  }
 }

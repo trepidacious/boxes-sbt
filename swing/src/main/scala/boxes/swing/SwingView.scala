@@ -161,10 +161,10 @@ object SwingView {
   }
 
   def transparentColor(c:Color, factor:Double) = {
-    new Color(	c.getRed,
-    						c.getGreen,
-    						c.getBlue,
-    						clip((c.getAlpha() * factor).asInstanceOf[Int], 0, 255))
+    new Color(  c.getRed,
+                c.getGreen,
+                c.getBlue,
+                clip((c.getAlpha() * factor).asInstanceOf[Int], 0, 255))
   }
 
   def graphicsForEnabledState(g:Graphics2D, e:Boolean) {
@@ -255,8 +255,8 @@ private class StringOptionView[G](v:VarBox[G,_], c:GConverter[G, String], multil
       component.setPreferredSize(new Dimension(50, 100))
     } else {
       text.asInstanceOf[JTextField].addActionListener(new ActionListener() {
-				override def actionPerformed(e:ActionEvent) = commit
-			})
+        override def actionPerformed(e:ActionEvent) = commit
+      })
     }
 
     text.addFocusListener(new FocusListener() {
@@ -451,30 +451,30 @@ private class RangeOptionView[G](v:VarBox[G,_], min:Int, max:Int, c:GConverter[G
 
     private var currentValue = 0
 
-		def fireNewValue(i:Int) = {
+    def fireNewValue(i:Int) = {
       //If necessary, extend range to cover value we have seen
       if (i < getMinimum) setMinimum(i)
       if (i > getMaximum) setMaximum(i)
       currentValue = i
 
-			fireStateChanged
-		}
+      fireStateChanged
+    }
 
-		override def getValue = currentValue
+    override def getValue = currentValue
 
-		override def getExtent = 0
+    override def getExtent = 0
 
-		override def setValue(n:Int) = currentValue = n
+    override def setValue(n:Int) = currentValue = n
 
-		override def setValueIsAdjusting(b:Boolean) = {
-			super.setValueIsAdjusting(b)
+    override def setValueIsAdjusting(b:Boolean) = {
+      super.setValueIsAdjusting(b)
       c.toOption(v()) match {
         case None => None
         case Some(_) => v() = c.toG(currentValue)
       }
-		}
+    }
 
-	}
+  }
 
 }
 
@@ -492,7 +492,7 @@ class LinkingJProgressBar(val sv:SwingView, brm:BoundedRangeModel) extends JProg
 object PiePainter {
 
   val defaultFill = SwingView.selectionColor //new Color(70, 153, 70)
-	val defaultOutline = Color.white// Color(200, 200, 200)
+  val defaultOutline = Color.white// Color(200, 200, 200)
 
   def apply(border:Int = 3, dotRadius:Int = 2, fill:Color = defaultFill, outline:Color = defaultOutline, justDot:Boolean = false) = new PiePainter(border, dotRadius, fill, outline, justDot)
 }
@@ -501,7 +501,7 @@ class PiePainter(val border:Int, val dotRadius:Int, val fill:Color, val outline:
 
   def paint(g:Graphics2D, n:Double, w:Int, h:Int, alpha:Double = 1) {
 
-		val oldAA = g.getRenderingHint(RenderingHints.KEY_ANTIALIASING)
+    val oldAA = g.getRenderingHint(RenderingHints.KEY_ANTIALIASING)
     val oldFM = g.getRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS)
 
     g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
@@ -511,11 +511,11 @@ class PiePainter(val border:Int, val dotRadius:Int, val fill:Color, val outline:
 
     val size = math.min(w, h)
 
-		val circleDiameter = size - 2 * (dotRadius + border)
+    val circleDiameter = size - 2 * (dotRadius + border)
 
-		g.setStroke(new BasicStroke(dotRadius * 2 + 3))
-		g.setPaint(SwingView.transparentColor(outline, alpha))
-		g.drawOval(border + dotRadius, border + dotRadius, circleDiameter, circleDiameter)
+    g.setStroke(new BasicStroke(dotRadius * 2 + 3))
+    g.setPaint(SwingView.transparentColor(outline, alpha))
+    g.drawOval(border + dotRadius, border + dotRadius, circleDiameter, circleDiameter)
 
     if (justDot) {
       g.setPaint(SwingView.transparentColor(fill, alpha))
@@ -535,7 +535,7 @@ class PiePainter(val border:Int, val dotRadius:Int, val fill:Color, val outline:
       g.setClip(clip)
     }
 
-		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA)
+    g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA)
     g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, oldFM)
   }
 }
@@ -648,33 +648,33 @@ private class NumberOptionView[G, N](v:VarBox[G,_], s:Sequence[N], c:GConverter[
   //when we decrease this the text component first commits itself as 0.21, then we decrement and hit 0.20.
   //This generates two changes to the viewed Var, which is slightly annoying. 
   private class AutoSpinnerModel extends SpinnerNumberModel {
-		private var firing = false
+    private var firing = false
     var currentValue = n.zero
 
-		def fireNewValue(newValue:N) = {
+    def fireNewValue(newValue:N) = {
       currentValue = newValue
 
       //TODO - why DOES fireStateChanged end up calling setValue? can we stop it
       //and avoid the need for firing variable?
-			firing = true
-			fireStateChanged
-			firing = false
-		}
+      firing = true
+      fireStateChanged
+      firing = false
+    }
 
     //These three are nasty - but SpinnerNumberModel expects an Object, and we
     //stupidly have a much nicer instance of N
-		override def getNextValue = s.next(currentValue).asInstanceOf[Object]
-		override def getPreviousValue = s.previous(currentValue).asInstanceOf[Object]
+    override def getNextValue = s.next(currentValue).asInstanceOf[Object]
+    override def getPreviousValue = s.previous(currentValue).asInstanceOf[Object]
     override def getValue = currentValue.asInstanceOf[Object]
 
-		override def setValue(spinnerValue:Object) {
+    override def setValue(spinnerValue:Object) {
       //Don't respond to our own changes, or incorrect classes
-			if (!firing && nc.javaWrapperClass.isAssignableFrom(spinnerValue.getClass)) {
+      if (!firing && nc.javaWrapperClass.isAssignableFrom(spinnerValue.getClass)) {
         currentValue = spinnerValue.asInstanceOf[N]
         v() = c.toG(currentValue)
-			}
-		}
-	}
+      }
+    }
+  }
 
 }
 

@@ -19,7 +19,7 @@ import boxes.{VarBox, View}
  */
 class ListSelectionIndexModel(v:VarBox[Option[Int],_], setFilter: =>Boolean, table:JTable) extends ListSelectionModel {
 
-	val delegate = new DefaultListSelectionModel()
+  val delegate = new DefaultListSelectionModel()
   delegate.setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
 
   //Update Var from delegate
@@ -55,9 +55,9 @@ class ListSelectionIndexModel(v:VarBox[Option[Int],_], setFilter: =>Boolean, tab
     }
   }
 
-	private def handleDelegateChange() {
-		//If we can set selection, update the Var to match the delegate
-		if (setFilter) {
+  private def handleDelegateChange() {
+    //If we can set selection, update the Var to match the delegate
+    if (setFilter) {
       //Note that we delay this change to var, so that any pending swing
       //actions occur BEFORE we change the var. This gives other swing code
       //a chance to execute BEFORE it receives any additional changes.
@@ -66,67 +66,67 @@ class ListSelectionIndexModel(v:VarBox[Option[Int],_], setFilter: =>Boolean, tab
       //by applying pending edits, BEFORE the selected object changes to
       //a new instance.
       SwingView.addUpdate(this,
-			  v() = indexToModel(delegate.getMinSelectionIndex())
+        v() = indexToModel(delegate.getMinSelectionIndex())
       )
 
-		//If we are ignoring changes to the delegate, then we need to
-		//revert the delegate back to mirroring the Var
-		} else {
-			handleVarChange(v())
-		}
-	}
+    //If we are ignoring changes to the delegate, then we need to
+    //revert the delegate back to mirroring the Var
+    } else {
+      handleVarChange(v())
+    }
+  }
 
-	private def handleVarChange(optionI:Option[Int]) {
-		var index = optionI flatMap {indexToView(_)}
+  private def handleVarChange(optionI:Option[Int]) {
+    var index = optionI flatMap {indexToView(_)}
 
     index match {
       case None => if (!delegate.isSelectionEmpty) delegate.clearSelection
       case Some(i) => if (delegate.getMinSelectionIndex() != i) delegate.setSelectionInterval(i, i)
     }
-	}
+  }
 
-	//Delegated ListSelectionModel methods
+  //Delegated ListSelectionModel methods
   override def addListSelectionListener(l:ListSelectionListener)  = delegate.addListSelectionListener(l)
-	override def getAnchorSelectionIndex() = delegate.getAnchorSelectionIndex()
-	override def getLeadSelectionIndex() = delegate.getLeadSelectionIndex()
-	override def getMaxSelectionIndex() = delegate.getMaxSelectionIndex()
-	override def getMinSelectionIndex() = delegate.getMinSelectionIndex()
-	override def getSelectionMode() = delegate.getSelectionMode()
-	override def getValueIsAdjusting() = delegate.getValueIsAdjusting()
+  override def getAnchorSelectionIndex() = delegate.getAnchorSelectionIndex()
+  override def getLeadSelectionIndex() = delegate.getLeadSelectionIndex()
+  override def getMaxSelectionIndex() = delegate.getMaxSelectionIndex()
+  override def getMinSelectionIndex() = delegate.getMinSelectionIndex()
+  override def getSelectionMode() = delegate.getSelectionMode()
+  override def getValueIsAdjusting() = delegate.getValueIsAdjusting()
   override def isSelectedIndex(index:Int) = delegate.isSelectedIndex(index)
   override def isSelectionEmpty() = delegate.isSelectionEmpty()
   override def removeListSelectionListener(l:ListSelectionListener) = delegate.removeListSelectionListener(l)
 
   //Delegated ListSelectionModel methods that change the selection, and so are filtered by setFilter
-	override def addSelectionInterval(index0:Int, index1:Int) {
+  override def addSelectionInterval(index0:Int, index1:Int) {
     if (setFilter) delegate.addSelectionInterval(index0, index1)
   }
-	override def clearSelection() {
-		if (setFilter) delegate.clearSelection()
-	}
-	override def insertIndexInterval(index:Int, length:Int, before:Boolean) {
-		if (setFilter) delegate.insertIndexInterval(index, length, before)
-	}
-	override def removeIndexInterval(index0:Int, index1:Int) {
-		if (!setFilter) delegate.removeIndexInterval(index0, index1)
-	}
-	override def removeSelectionInterval(index0:Int, index1:Int) {
-		if (setFilter) delegate.removeSelectionInterval(index0, index1)
-	}
-	override def setAnchorSelectionIndex(anchorIndex:Int) {
-		if (setFilter) delegate.setAnchorSelectionIndex(anchorIndex)
-	}
-	override def setLeadSelectionIndex(leadIndex:Int) {
-		if (setFilter) delegate.setLeadSelectionIndex(leadIndex)
-	}
-	override def setSelectionInterval(index0:Int, index1:Int) {
-		if (setFilter) delegate.setSelectionInterval(index0, index1)
-	}
-	override def setSelectionMode(selectionMode:Int) {
-		if (setFilter) delegate.setSelectionMode(selectionMode)
-	}
-	override def setValueIsAdjusting(isAdjusting:Boolean) {
-		if (setFilter) delegate.setValueIsAdjusting(isAdjusting)
-	}
+  override def clearSelection() {
+    if (setFilter) delegate.clearSelection()
+  }
+  override def insertIndexInterval(index:Int, length:Int, before:Boolean) {
+    if (setFilter) delegate.insertIndexInterval(index, length, before)
+  }
+  override def removeIndexInterval(index0:Int, index1:Int) {
+    if (!setFilter) delegate.removeIndexInterval(index0, index1)
+  }
+  override def removeSelectionInterval(index0:Int, index1:Int) {
+    if (setFilter) delegate.removeSelectionInterval(index0, index1)
+  }
+  override def setAnchorSelectionIndex(anchorIndex:Int) {
+    if (setFilter) delegate.setAnchorSelectionIndex(anchorIndex)
+  }
+  override def setLeadSelectionIndex(leadIndex:Int) {
+    if (setFilter) delegate.setLeadSelectionIndex(leadIndex)
+  }
+  override def setSelectionInterval(index0:Int, index1:Int) {
+    if (setFilter) delegate.setSelectionInterval(index0, index1)
+  }
+  override def setSelectionMode(selectionMode:Int) {
+    if (setFilter) delegate.setSelectionMode(selectionMode)
+  }
+  override def setValueIsAdjusting(isAdjusting:Boolean) {
+    if (setFilter) delegate.setValueIsAdjusting(isAdjusting)
+  }
 
 }

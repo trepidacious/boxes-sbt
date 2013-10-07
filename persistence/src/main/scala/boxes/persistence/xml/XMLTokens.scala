@@ -316,9 +316,9 @@ class XMLTokenWriter(writer:Writer, aliases:ClassAliases) extends TokenWriter {
       case OpenObj(clazz, link) => {        
         val s = aliases.forClass(clazz);
         val linkS = link match {
-        case LinkRef(id) => 	" ref='" + id + "'"
-        case LinkId(id) => 	" id='" + id + "'"
-        case _ => 				""
+        case LinkRef(id) =>   " ref='" + id + "'"
+        case LinkId(id) =>   " id='" + id + "'"
+        case _ =>         ""
         }
         print("<" + s + linkS + ">")
         tokens.push(t)
@@ -331,11 +331,11 @@ class XMLTokenWriter(writer:Writer, aliases:ClassAliases) extends TokenWriter {
         closeFieldIfNeeded()
       }
   
-      case BooleanToken(p) 	=> printPrim(p) 
-      case IntToken(p)  	  => printPrim(p)
-      case LongToken(p)  	  => printPrim(p)
-      case FloatToken(p)  	=> printPrim(p)
-      case DoubleToken(p)  	=> printPrim(p)
+      case BooleanToken(p)   => printPrim(p) 
+      case IntToken(p)      => printPrim(p)
+      case LongToken(p)      => printPrim(p)
+      case FloatToken(p)    => printPrim(p)
+      case DoubleToken(p)    => printPrim(p)
       case StringToken(p)   => printPrim(scala.xml.Utility.escape(p))
   
       case OpenField(name) => {

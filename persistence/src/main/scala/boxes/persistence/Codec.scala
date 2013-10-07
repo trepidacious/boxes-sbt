@@ -61,13 +61,13 @@ class CodecByClass extends Codec[Any] {
     val t = reader.peek
     val c = t match {
       case OpenObj(clazz, _)           => clazz
-      case BooleanToken(p: Boolean) 	 => ValCodecs.BooleanCodec.clazz 
-      case IntToken(p: Int) 			     => ValCodecs.IntCodec.clazz 
-      case LongToken(p: Long) 			   => ValCodecs.LongCodec.clazz 
-      case FloatToken(p: Float) 		   => ValCodecs.FloatCodec.clazz 
-      case DoubleToken(p: Double) 		 => ValCodecs.DoubleCodec.clazz 
-      case StringToken(p: String) 		 => ValCodecs.StringCodec.clazz 
-      case OpenArr 						         => ListCodec.clazz 
+      case BooleanToken(p: Boolean)    => ValCodecs.BooleanCodec.clazz 
+      case IntToken(p: Int)            => ValCodecs.IntCodec.clazz 
+      case LongToken(p: Long)          => ValCodecs.LongCodec.clazz 
+      case FloatToken(p: Float)        => ValCodecs.FloatCodec.clazz 
+      case DoubleToken(p: Double)      => ValCodecs.DoubleCodec.clazz 
+      case StringToken(p: String)      => ValCodecs.StringCodec.clazz 
+      case OpenArr                      => ListCodec.clazz 
 
       case _ => throw new RuntimeException("Expected OpenObj, OpenArr, or value Token got " + t)
     }
@@ -105,8 +105,8 @@ class OptionCodec(delegate:Codec[Any]) extends Codec[Option[_]] {
     
     val t = reader.pull
     t match {
-      case CloseObj => None						//None is just an empty Option obj
-      case OpenField("Some") => {				//Some has a single field, "Some". Remember to get the object close tag afterwards
+      case CloseObj => None            //None is just an empty Option obj
+      case OpenField("Some") => {        //Some has a single field, "Some". Remember to get the object close tag afterwards
         val s = Some(delegate.read(reader))
         reader.pullAndAssert(CloseObj)
         s
@@ -150,7 +150,7 @@ class ListCodec(delegate:Codec[Any]) extends CodecWithClass[List[_]] {
 
 class SetCodec(delegate:Codec[Any]) extends CodecWithClass[Set[_]] {
   override def read(reader: TokenReader) = {
-	reader.pullAndAssert(OpenObj(classOf[Set[_]]))
+  reader.pullAndAssert(OpenObj(classOf[Set[_]]))
     reader.pullAndAssert(OpenField("elements"))
     reader.pullAndAssert(OpenArr)
     val lb = mutable.ListBuffer[Any]()
@@ -175,7 +175,7 @@ class SetCodec(delegate:Codec[Any]) extends CodecWithClass[Set[_]] {
 class MapCodec(delegate:Codec[Any]) extends CodecWithClass[Map[_,_]] {
   override def read(reader : TokenReader) = {
     val entries = mutable.ListBuffer[(Any,Any)]()
-	  reader.pullAndAssert(OpenObj(classOf[Map[_, _]]))
+    reader.pullAndAssert(OpenObj(classOf[Map[_, _]]))
     reader.pullAndAssert(OpenField("entries"))
     reader.pullAndAssert(OpenArr)
     while (reader.peek != CloseArr) {

@@ -4,7 +4,7 @@ import java.util.concurrent.{Executor, Executors}
 import java.util.concurrent.atomic.AtomicBoolean
 
 object Responder {
-	val defaultExecutorService = Executors.newFixedThreadPool(4, new DaemonThreadFactory());
+  val defaultExecutorService = Executors.newFixedThreadPool(4, new DaemonThreadFactory());
 
   def apply(executor:Executor = defaultExecutorService) = new Responder(executor)
 }
