@@ -442,9 +442,9 @@ case class Area(origin:Vec2 = Vec2(), size:Vec2 = Vec2(1, 1)) {
   }
   
   def replaceAxis(axis: Option[Axis], area: Area) = axis match {
-    case None => this
     case Some(Axis.X) => Area(Vec2(area.origin.x, origin.y), Vec2(area.size.x, size.y))
     case Some(Axis.Y) => Area(Vec2(origin.x, area.origin.y), Vec2(size.x, area.size.y))
+    case _ => this
   }
 }
 

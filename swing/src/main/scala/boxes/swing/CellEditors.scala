@@ -249,13 +249,18 @@ class NumberCellRenderer[N](nc:NumericClass[N]) extends BoxesTableCellRenderer {
 
   setHorizontalAlignment(SwingConstants.RIGHT)
 
-	override def setValue(value:Any) {
-    value match {
-      //TODO check this against nc and cast.
-      case n:N => setText(nc.format(n))
-      case v => setText(v.toString)
+  override def setValue(value:Any) {
+    if (nc.numericClass.isAssignableFrom(value.getClass)) {
+      setText(nc.format(value.asInstanceOf[N]))
+    } else {
+      setText(value.toString())
     }
-	}
+//    value match {
+//      //TODO check this against nc and cast.
+//      case n:N => setText(nc.format(n))
+//      case v => setText(v.toString)
+//    }
+  }
 }
 
 
