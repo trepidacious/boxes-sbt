@@ -7,3 +7,6 @@ scalaVersion := "2.10.2"
 scalacOptions ++= Seq("-deprecation", "-feature")
 
 libraryDependencies += "com.novus" %% "salat" % "1.9.3"
+
+libraryDependencies += "com.google.protobuf" % "protobuf-java" % "2.5.0"
+
