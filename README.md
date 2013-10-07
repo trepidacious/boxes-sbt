@@ -1,7 +1,7 @@
 boxes-sbt
 =========
 
-Experimental SBT version of boxes. Should become th new main version.
+Experimental SBT version of boxes. Should become the new main version.
 
 Installation
 ------------
