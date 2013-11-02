@@ -1,3 +1,5 @@
+organization := "org.boxstack"
+
 name := "boxes-demo"
 
 version := "0.1"

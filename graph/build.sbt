@@ -1,3 +1,5 @@
+organization := "org.boxstack"
+
 name := "boxes-graph"
 
 version := "0.1"

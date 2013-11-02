@@ -1,3 +1,5 @@
+organization := "org.boxstack"
+
 name := "boxes-swing"
 
 version := "0.1"

@@ -1,3 +1,5 @@
+organization := "org.boxstack"
+
 name := "boxes-core"
 
 version := "0.1"
