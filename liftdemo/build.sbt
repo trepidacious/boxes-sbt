@@ -1,10 +1,4 @@
-organization := "org.boxstack"
-
 name := "boxes-lift-demo"
-
-version := "0.1"
-
-scalaVersion := "2.10.2"
 
 seq(webSettings :_*)
 

@@ -28,4 +28,11 @@ lazy val liftdemo = project.dependsOn(core, graph, persistence)
 //Root project just aggregates all subprojects
 lazy val root = project.in(file(".")).aggregate(core, swing, graph, swinggraph, persistence, demo, liftdemo)
 
-scalacOptions in ThisBuild ++= Seq("-unchecked", "-deprecation", "-feature")
+scalacOptions in ThisBuild  ++= Seq("-unchecked", "-deprecation", "-feature")
+
+version in ThisBuild        := "0.1"
+
+organization in ThisBuild   := "org.boxstack"
+
+scalaVersion in ThisBuild   := "2.10.2"
+
