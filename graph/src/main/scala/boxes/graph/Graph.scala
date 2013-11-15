@@ -378,13 +378,15 @@ case class Area(origin:Vec2 = Vec2(), size:Vec2 = Vec2(1, 1)) {
     if (a.origin.x < x) {
       w += x - a.origin.x
       x = a.origin.x
-    } else if (a.origin.x + a.size.x > x + w) {
+    }
+    if (a.origin.x + a.size.x > x + w) {
       w = a.origin.x + a.size.x - x
     }
     if (a.origin.y < y) {
       h += y - a.origin.y
       y = a.origin.y
-    } else if (a.origin.y + a.size.y > y + h) {
+    }
+    if (a.origin.y + a.size.y > y + h) {
       h = a.origin.y + a.size.y - y
     }
     Area(Vec2(x, y), Vec2(w, h))
