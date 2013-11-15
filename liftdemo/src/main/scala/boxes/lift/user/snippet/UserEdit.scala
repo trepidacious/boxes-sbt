@@ -1,14 +1,12 @@
-package lifttest.snippet
+package boxes.lift.user.snippet
 
 import scala.xml.Text
-
 import boxes.BoxImplicits.valueToVal
 import boxes.Path
 import boxes.lift.user.User
 import boxes.lift.comet._
 import boxes.lift.comet.AjaxViewImplicits._
 import boxes.list.ListVal
-import lifttest.comet.InsertCometView
 
 class UserEdit() extends InsertCometView[Option[User]](User.loggedIn){
 

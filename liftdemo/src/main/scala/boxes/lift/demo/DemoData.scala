@@ -46,7 +46,7 @@ object Frame {
   }
 }
 
-class Frame extends Node with Pointed with Named{
+class Frame extends Node with Pointed with Named {
   val name = Var("New Frame")
   val model = Var("New Model")
   

@@ -1,0 +1,24 @@
+<lift:surround with="default" at="content">
+
+  <lift:with-param name="page-header">
+    <h2>Comet Test</h2>
+  </lift:with-param>
+
+  <lift:with-param name="page-buttons">
+  </lift:with-param>
+
+  <div>
+ 
+    <lift:comet type="CometMessage" name="Other">
+      <div>
+        <comet:name_input />
+      </div>
+      <div>
+        <comet:age_input />
+      </div>
+    </lift:comet>
+
+  </div>
+    
+</lift:surround>
+

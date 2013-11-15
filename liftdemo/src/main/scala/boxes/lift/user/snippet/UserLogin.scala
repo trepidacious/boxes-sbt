@@ -1,15 +1,13 @@
-package lifttest.snippet
+package boxes.lift.user.snippet
 
 import scala.xml.Text
-
 import boxes.lift.user.User
 import boxes.lift.comet.AjaxView
 import net.liftweb.http.S
 import net.liftweb.http.SHtml
 import net.liftweb.http.SHtml.ElemAttr.pairToBasic
 import net.liftweb.http.js.JsCmds
-import net.liftweb.util.Helpers.strToCssBindPromoter
-import net.liftweb.util.Helpers.strToSuperArrowAssoc
+import net.liftweb.util.BindHelpers._
 
 class UserLogin {
   

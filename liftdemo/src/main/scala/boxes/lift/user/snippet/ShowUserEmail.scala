@@ -1,11 +1,8 @@
-package lifttest {
-package snippet {
-
-import _root_.scala.xml.{NodeSeq, Text}
+package boxes.lift.user.snippet
+import scala.xml.NodeSeq
 import _root_.net.liftweb.util._
 import _root_.net.liftweb.common._
-import _root_.java.util.Date
-import Helpers._
+import net.liftweb.util.Helpers._
 import net.liftweb.http.StatefulSnippet
 import boxes.lift.user.User
 
@@ -44,5 +41,3 @@ class ShowUserEmail extends StatefulSnippet {
   
 }
 
-}
-}

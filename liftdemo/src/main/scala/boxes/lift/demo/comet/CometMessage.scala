@@ -1,4 +1,4 @@
-package boxes.lift.demo
+package boxes.lift.demo.comet
 
 import net.liftweb._
 import net.liftweb.http._
@@ -15,6 +15,7 @@ import boxes.lift.comet._
 import boxes.lift.box._
 import boxes.Path
 import boxes.Cal
+import boxes.lift.demo.Frame
 
 
 class CometMessage extends CometActor {

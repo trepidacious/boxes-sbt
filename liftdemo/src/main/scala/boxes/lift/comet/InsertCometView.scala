@@ -1,11 +1,10 @@
-package lifttest.comet
+package boxes.lift.comet
 
 import scala.xml.NodeSeq
 import net.liftweb.http._
 import net.liftweb.common._
 import net.liftweb.util._
 import Helpers._
-import boxes.lift.comet.AjaxView
 
 abstract class InsertCometView[T](t: =>T)  {
   

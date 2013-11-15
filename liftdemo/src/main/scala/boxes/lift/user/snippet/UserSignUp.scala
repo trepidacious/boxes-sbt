@@ -1,19 +1,13 @@
-package lifttest.snippet
-
-import boxes.BoxImplicits.valueToVal
+package boxes.lift.user.snippet
 import boxes.list.ListVal
 import boxes.Cal
 import boxes.Path
-import lifttest.comet._
-import _root_.scala.xml.{NodeSeq, Text}
+import boxes.lift.comet._
 import _root_.net.liftweb.util._
 import _root_.net.liftweb.common._
-import _root_.java.util.Date
-import Helpers._
-import net.liftweb.sitemap.Menu
+import net.liftweb.util.Helpers._
 import com.mongodb.casbah.Imports._
 import net.liftweb.http.S
-import boxes.Val
 import boxes.lift.user.User
 import boxes.lift.comet._
 import boxes.lift.comet.AjaxViewImplicits._

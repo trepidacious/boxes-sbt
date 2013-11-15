@@ -1,4 +1,4 @@
-package lifttest.snippet
+package boxes.lift.user.snippet
 
 import boxes.lift.user.User
 import net.liftweb.http.S
