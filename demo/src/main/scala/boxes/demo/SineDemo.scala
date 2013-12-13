@@ -1,6 +1,8 @@
 package boxes.demo
 
 import boxes._
+import boxes.persistence._
+import boxes.Box
 import general.{RadioReaction, SetOp}
 import graph._
 import list._
@@ -15,7 +17,7 @@ import boxes.swing._
 
 object SineDemo {
 
-  class Sine {
+  class Sine extends Node {
     val name = Var("Sine")
     val phase = Var(0d)
     val amplitude = Var(1d)
@@ -305,13 +307,33 @@ object SineDemo {
 
   def tabs() {
 
+    class LinkingJFrame(private val o: Object, name: String) extends JFrame(name)
+
     val graphIcon = IconFactory.icon("GraphTab")
     val tableIcon = IconFactory.icon("TableTab")
     val propertiesIcon = IconFactory.icon("PropertiesTab")
 
-    val frame = new JFrame("Boxes UI Sine Demo")
-
     val stuff = buildLedgerMulti()
+    val list = stuff._2
+    
+    val encode = new CodecByClass()
+
+    class ChangeView extends View {
+      Box.registerReaction(this)
+      def react() {
+        val cs = Box.changedSources(this)
+        println("Write, intent: " + Box.writeIntent)
+        println("\tFirst write " + Box.firstWrite)
+        cs.foreach(s => println("\t" + s + ": " + s.changes))
+        encode.write(list(), new NullTokenWriter)          
+      }
+    }
+    
+    val changes = new ChangeView
+
+    val frame = new LinkingJFrame(changes, "Boxes UI Sine Demo")
+
+    
     val table = stuff._1
     val graph = buildGraphPanel(stuff._2, stuff._3)
     val barchart = buildBarChartPanel(stuff._2, stuff._3)
