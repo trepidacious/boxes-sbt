@@ -7,6 +7,7 @@ import net.liftweb.common._
 import javax.mail.Authenticator
 import javax.mail.PasswordAuthentication
 import boxes.lift.demo.snippet.InsertFrameView
+import boxes.lift.demo.snippet.FrameEdit
 
 /**
  * A class that's instantiated early and run.  It allows the application
@@ -16,6 +17,7 @@ class Boot {
   def boot {
     
     // where to search snippet
+    LiftRules.addToPackages("code")
     LiftRules.addToPackages("boxes.lift.demo")
     LiftRules.addToPackages("boxes.lift.user")
     LiftRules.addToPackages("boxes.lift")
@@ -26,16 +28,26 @@ class Boot {
 //    TableSorter.init
 
     // Build SiteMap
-    def sitemap(): SiteMap = SiteMap(
-      Menu.i("Home") / "index",
-      Menu.i("Comet Test") / "comet-test", // >> loggedIn
-      InsertFrameView.menu / "frame" //>> Hidden >> loggedIn,
+    def sitemap = SiteMap(
+//      Menu.i("Home") / "index",
+//      Menu.i("Comet Test") / "comet-test", // >> loggedIn
+//      InsertFrameView.menu / "frame", //>> Hidden >> loggedIn,
+      FrameEdit.menu / "frame_edit", //>> Hidden >> loggedIn,
+//      Menu.param[String]("Param", "Param", 
+//                                   s => Full(s), 
+//                                   s => s) / "param"
+      Menu.i("Create Frame") / "frame_create" // >> loggedIn
     )
+    LiftRules.setSiteMapFunc(() => sitemap)
+
+    // Force the request to be UTF-8
+    LiftRules.early.append(_.setCharacterEncoding("UTF-8"))
 
     // Use HTML5 for rendering
     LiftRules.htmlProperties.default.set((r: Req) =>
       new Html5Properties(r.userAgent))
   }
+  
   
   def configMailer(host: String, user: String, password: String) {
     // Enable TLS support
