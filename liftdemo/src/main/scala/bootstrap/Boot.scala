@@ -6,8 +6,11 @@ import net.liftweb.util.Mailer
 import net.liftweb.common._
 import javax.mail.Authenticator
 import javax.mail.PasswordAuthentication
-import boxes.lift.demo.snippet.InsertFrameView
 import boxes.lift.demo.snippet.FrameEdit
+import net.liftweb.sitemap._
+import net.liftweb.sitemap.Loc._
+import net.liftweb.http._
+import boxes.lift.user.User
 
 /**
  * A class that's instantiated early and run.  It allows the application
@@ -17,29 +20,44 @@ class Boot {
   def boot {
     
     // where to search snippet
-    LiftRules.addToPackages("code")
     LiftRules.addToPackages("boxes.lift.demo")
     LiftRules.addToPackages("boxes.lift.user")
     LiftRules.addToPackages("boxes.lift")
 
     configMailer("smtp.gmail.com", System.getProperty("gmailUser"), System.getProperty("gmailPassword"))
 
+    val loggedIn = If(() => boxes.lift.user.User.loggedIn.isDefined,
+                      () => RedirectResponse("/user_login"))
+
+    
     //FIXME reenable?
 //    TableSorter.init
 
     // Build SiteMap
     def sitemap = SiteMap(
-//      Menu.i("Home") / "index",
+      Menu.i("Home") / "index"  >> Hidden,
 //      Menu.i("Comet Test") / "comet-test", // >> loggedIn
-//      InsertFrameView.menu / "frame", //>> Hidden >> loggedIn,
-      FrameEdit.menu / "frame_edit", //>> Hidden >> loggedIn,
-//      Menu.param[String]("Param", "Param", 
-//                                   s => Full(s), 
-//                                   s => s) / "param"
-      Menu.i("Create Frame") / "frame_create" // >> loggedIn
+      FrameEdit.menu / "frame_edit" >> Hidden,// >> loggedIn,
+      Menu.i("Create frame") / "frame_create", // >> loggedIn
+      Menu.i("UserSignup") / "user_signup" >> Hidden,
+      Menu.i("LoginBox") / "user_login" >> Hidden,
+      Menu.i("LogoutBox") / "user_logout" >> Hidden >> loggedIn,
+      Menu.i("UserEdit") / "user_edit" >> Hidden >> loggedIn
     )
+    
     LiftRules.setSiteMapFunc(() => sitemap)
 
+    // Show the spinny image when an Ajax call starts
+    LiftRules.ajaxStart =
+      Full(() => LiftRules.jsArtifacts.show("ajax-loader").cmd)
+
+    // Make the spinny image go away when it ends
+    LiftRules.ajaxEnd =
+      Full(() => LiftRules.jsArtifacts.hide("ajax-loader").cmd)
+
+    //FIXME what is this meant to do?
+//    LiftRules.loggedInTest = Full(() => User.loggedIn_?)
+      
     // Force the request to be UTF-8
     LiftRules.early.append(_.setCharacterEncoding("UTF-8"))
 
