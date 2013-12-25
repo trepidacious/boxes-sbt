@@ -19,6 +19,9 @@ import boxes.lift.user.snippet.UserValidate
  */
 class Boot {
   def boot {
+
+    //Where to get resources
+    LiftRules.resourceNames = "boxes" :: Nil
     
     // where to search snippet
     LiftRules.addToPackages("boxes.lift.demo")

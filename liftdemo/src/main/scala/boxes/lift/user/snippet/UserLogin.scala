@@ -11,6 +11,8 @@ import net.liftweb.util.BindHelpers._
 
 class UserLogin {
   
+  val hAndP = S.hostAndPath
+  
   def render = {
     var email = ""
     var password = ""
@@ -21,7 +23,21 @@ class UserLogin {
         case _ => S.error(S.?("invalid.credentials"))
       }
     }
-    
+
+    def recover() {
+      email.trim() match {
+        case "" => S.error(S.?("user.reset.missing.email"))
+        case e => User.findByEmail(e) match {
+          case Some(user) => {
+            S.notice(S.?("user.reset.email.sent"))
+            User.sendResetEmail(hAndP, user)
+          }
+          case _ => S.error(S.?("user.reset.unknown.email") + e)
+        } 
+      }
+      
+    }
+
     //TODO do this in the Loc instead?
     if (User.loggedIn.isDefined) {
       S.notice(S.?("already.logged.in"))
@@ -37,7 +53,10 @@ class UserLogin {
         SHtml.password("", password = _)) ++
       AjaxView.formRow(
         Text(""), 
-        SHtml.submit(S.?("log.in"), submit, "class" -> "btn primary"))
+        SHtml.submit(S.?("log.in"), submit, "class" -> "btn btn-primary")) ++
+      AjaxView.formRow(
+        Text(""), 
+        SHtml.submit(S.?("user.reset.button"), recover, "class" -> "btn btn-info"))
     }</form>
   }
 
