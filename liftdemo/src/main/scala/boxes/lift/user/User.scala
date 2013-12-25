@@ -72,6 +72,8 @@ class User extends MongoNode {
     token() = Some(t)
     t
   }
+  
+  def validationParameter() = Data.mb.keep(this).toStringMongod() + "-" + token
 }
 
 object User extends MongoMetaNode {
@@ -155,9 +157,8 @@ object User extends MongoMetaNode {
   def bccEmail: common.Box[String] = common.Empty
 
   def sendValidationEmail(hostAndPath: String, user: User) {
-    val id = Data.mb.keep(user)
     val token = user.newToken()
-    val resetLink = hostAndPath + "/user_validate/" + id.toStringMongod() + "-" + token
+    val resetLink = hostAndPath + "/user_validate/" + user.validationParameter()
 
     val msgXml = signupMailBody(user, resetLink)
 

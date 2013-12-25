@@ -11,6 +11,7 @@ import net.liftweb.sitemap._
 import net.liftweb.sitemap.Loc._
 import net.liftweb.http._
 import boxes.lift.user.User
+import boxes.lift.user.snippet.UserValidate
 
 /**
  * A class that's instantiated early and run.  It allows the application
@@ -42,7 +43,8 @@ class Boot {
       Menu.i("UserSignup") / "user_signup" >> Hidden,
       Menu.i("LoginBox") / "user_login" >> Hidden,
       Menu.i("LogoutBox") / "user_logout" >> Hidden >> loggedIn,
-      Menu.i("UserEdit") / "user_edit" >> Hidden >> loggedIn
+      Menu.i("UserEdit") / "user_edit" >> Hidden >> loggedIn,
+      UserValidate.menu / "user_validate" >> Hidden
     )
     
     LiftRules.setSiteMapFunc(() => sitemap)
