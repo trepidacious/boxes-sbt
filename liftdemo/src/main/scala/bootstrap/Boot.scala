@@ -43,11 +43,12 @@ class Boot {
 //      Menu.i("Comet Test") / "comet-test", // >> loggedIn
       FrameEdit.menu / "frame_edit" >> Hidden,// >> loggedIn,
       Menu.i("Create frame") / "frame_create", // >> loggedIn
-      Menu.i("UserSignup") / "user_signup" >> Hidden,
-      Menu.i("LoginBox") / "user_login" >> Hidden,
-      Menu.i("LogoutBox") / "user_logout" >> Hidden >> loggedIn,
-      Menu.i("UserEdit") / "user_edit" >> Hidden >> loggedIn,
-      UserValidate.menu / "user_validate" >> Hidden
+      Menu.i("User signup") / "user_signup" >> Hidden,
+      Menu.i("Login box") / "user_login" >> Hidden,
+      Menu.i("Logout box") / "user_logout" >> Hidden >> loggedIn,
+      Menu.i("User edit") / "user_edit" >> Hidden >> loggedIn,
+      User.validateMenu("User validate") / "user_validate" >> Hidden,
+      User.validateMenu("User reset password") / "user_reset_password" >> Hidden
     )
     
     LiftRules.setSiteMapFunc(() => sitemap)

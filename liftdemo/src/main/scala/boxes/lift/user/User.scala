@@ -19,6 +19,7 @@ import boxes.lift.box.Data
 import net.liftweb.common.Box.box2Option
 import net.liftweb.common.Box.option2Box
 import net.liftweb.util.Mailer._
+import scala.util.matching.Regex
 
 object PassHash {
   val saltLength = 64
@@ -74,6 +75,7 @@ class User extends MongoNode {
   }
   
   def validationParameter() = Data.mb.keep(this).toStringMongod() + "-" + token().getOrElse("no_token")
+  
 }
 
 object User extends MongoMetaNode {
@@ -129,7 +131,7 @@ object User extends MongoMetaNode {
     }
   }
   
-  def validateMenu = Menu.param[User]("User Validate", "User Validate", 
+  def validateMenu(name: String) = Menu.param[User](name, name, 
     s => for (ut <- userAndToken(s); 
         user <- Data.mb.findById[User](ut._1) if Some(ut._2) == user.token()
     ) yield user, 

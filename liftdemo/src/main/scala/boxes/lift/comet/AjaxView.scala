@@ -31,6 +31,7 @@ import net.liftweb.http.js.JsCmd
 import boxes.Reaction
 import net.liftweb.http.js.JE
 import scala.language.implicitConversions
+import boxes.lift.user.User
 
 object AjaxViewImplicits {
   implicit def refStringToRefNodeSeq(s: Ref[String]) = Cal{Text(s()): NodeSeq}
@@ -213,55 +214,61 @@ object AjaxStringView {
   def apply[T](label: Ref[NodeSeq], s: Ref[T], r:((T)=>NodeSeq) = {(t:T) => Text(t.toString): NodeSeq}): AjaxView = new AjaxStringView(label, s, r)
 }
 
-class AjaxPassView(p: Var[Option[PassHash]], valid: (String) => Option[String]) extends AjaxView with Loggable {
+sealed trait PassViewMode
+
+/**
+ * Supports creating a password if we have none, or editing any existing password, repeatedly if required
+ */
+case object PassEditing extends PassViewMode
+
+/**
+ * Supports only creating a password, once the password is created a message is displayed stating this has been successful
+ */
+case object PassCreation extends PassViewMode
+
+/**
+ * Supports only resetting the password. The existing password is not required. Once the password is reset a message is
+ * displayed stating this has been successful
+ */
+case object PassReset extends PassViewMode
+
+class AjaxPassView(p: Var[Option[PassHash]], mode: PassViewMode, valid: (String) => Option[String]) extends AjaxView with Loggable {
   var oldPass: Option[String] = None
   var newPassA: Option[String] = None
   var newPassB: Option[String] = None
   
   lazy val id = "passview_" + net.liftweb.util.Helpers.nextFuncName
 
-  def change() {
+  //FIXME use resources for strings
+  def formSubmit() {
+    S.notice("Pass submitted...")
     boxes.Box.transact{
       for {
-        ph <- p()
-        old <- oldPass
+        ph <- if (mode == PassEditing) p() else Some(PassHash(""))
+        old <- if (mode == PassEditing) oldPass else Some("")
         a <- newPassA
         b <- newPassB
       } {
         if (a != b) {
           S.error("New password and repeat do not match.")
-        } else if (!ph.checkPass(old)) {
+        } else if (mode==PassEditing && !ph.checkPass(old)) {
           S.error("Incorrect current password.")
-        } else if (valid(a).isDefined) {
-          S.error(valid(a).getOrElse("Invalid new password."))
-        } else {
-          p() = Some(PassHash(a)) 
-          S.notice("Password changed.")
-        }
-      }      
-    }
-  }
-  
-  def create() {
-    boxes.Box.transact{
-      for {
-        a <- newPassA
-        b <- newPassB
-      } {
-        if (a != b) {
-          S.error("New password and repeat do not match.")
-        } else if (!p().isEmpty) {
+        } else if (mode==PassCreation && !p().isEmpty) {
           S.error("Password is already set.")
         } else if (valid(a).isDefined) {
           S.error(valid(a).getOrElse("Invalid new password."))
         } else {
-          p() = Some(PassHash(a)) 
-          S.notice("Password created.")
+          p() = Some(PassHash(a))
+          mode match {
+            case PassCreation => S.notice("Password created.")
+            case PassEditing => S.notice("Password changed.")
+            case PassReset => S.notice("Password reset, please log in.")
+          }
         }
-      }
+      }      
     }
   }
-  
+
   def passwordLine(label: String, commit: (String) => Unit) = {
     (
       ("#label" #> (label + ":")) & 
@@ -270,29 +277,28 @@ class AjaxPassView(p: Var[Option[PassHash]], valid: (String) => Option[String]) 
   }
   
   override def partialUpdates = List(() => Replace(id, render))
+ 
+  def renderForm() = 
+    AjaxView.formWithId(
+      (if (mode == PassEditing) passwordLine("Current password", s=>oldPass=Some(s)) else Nil) ++
+      passwordLine("New password",     s=>newPassA=Some(s)) ++
+      passwordLine("Repeat password",  s=>newPassB=Some(s)) ++
+      (
+        ("#label" #> ("")) & 
+        ("#control" #> ajaxSubmit("Change password", ()=>formSubmit(), "class" -> "btn btn-primary"))
+      ).apply(AjaxView.formRowXML),
+      id
+    )
+    
+  def renderMessage(m: String) = (("#label" #> (" ")) & ("#control" #> m)).apply(AjaxView.formRowXML)
   
-  def render = if (p().isDefined) {
-                 AjaxView.formWithId(
-                   passwordLine("Current password", s=>oldPass=Some(s)) ++
-                   passwordLine("New password",     s=>newPassA=Some(s)) ++
-                   passwordLine("Repeat password",  s=>newPassB=Some(s)) ++
-                   (
-                     ("#label" #> ("")) & 
-                     ("#control" #> ajaxSubmit("Change password", ()=>change(), "class" -> "btn primary"))
-                   ).apply(AjaxView.formRowXML),
-                   id
-                 )
-               } else {
-                 AjaxView.formWithId(
-                   passwordLine("Password",         s=>newPassA=Some(s)) ++
-                   passwordLine("Repeat password",  s=>newPassB=Some(s)) ++
-                   (
-                     ("#label" #> ("")) & 
-                     ("#control" #> ajaxSubmit("Create password", ()=>create(), "class" -> "btn primary"))
-                   ).apply(AjaxView.formRowXML),
-                   id
-                 )
-               }
+  def render = {
+    mode match {
+      case PassCreation => if (p().isDefined) renderMessage(S.?("user.password.set")) else renderForm()
+      case PassEditing => renderForm()
+      case PassReset => renderForm()  //TODO after the user has reset the password, we should really prevent further editing, and if possible log the user in at "/"
+    }
+  }
 }
 
 object AjaxPassView {
@@ -323,6 +329,6 @@ object AjaxPassView {
     }
   }
   
-  def apply(p: Var[Option[PassHash]], valid: (String) => Option[String] = defaultValidator) = new AjaxPassView(p, valid)
+  def apply(p: Var[Option[PassHash]], mode: PassViewMode = PassEditing, valid: (String) => Option[String] = defaultValidator) = new AjaxPassView(p, mode, valid)
 }
 

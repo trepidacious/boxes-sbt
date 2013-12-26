@@ -18,8 +18,16 @@ class UserLogin {
     var password = ""
     def submit() {
       User.findByEmail(email) match {
+        //If validated and password correct, log in
         case Some(user) if user.validated() && user.checkPass(password) => User.logInFreshSession(user)
-        case Some(user) if !user.validated() => S.error(S.?("account.validation.error"))
+        
+        //If not yet validated, inform user and send a fresh validation email
+        case Some(user) if !user.validated() && user.checkPass(password) => {
+          S.error(S.?("user.login.before.validation"))
+          User.sendValidationEmail(hAndP, user);
+        }
+        
+        //If password is incorrect, tell user
         case _ => S.error(S.?("invalid.credentials"))
       }
     }
