@@ -46,7 +46,8 @@ class User extends MongoNode {
   val email = Var("")
   val initials = Var("")
   val passHash: Var[Option[PassHash]] = Var(None)
-  val token: Var[Option[String]] = Var(None)
+  val validationToken: Var[Option[String]] = Var(None)
+  val resetPasswordToken: Var[Option[String]] = Var(None)
   val validated: Var[Boolean] = Var(false)
   
 //  val emailError = Cal{
@@ -68,13 +69,30 @@ class User extends MongoNode {
   def checkPass(pass: String) = passHash().map(_.checkPass(pass)).getOrElse(false)
   def checkPass(pass: Option[String]) = (for (ph <- passHash(); p <- pass) yield ph.checkPass(p)).getOrElse(false)
   
-  def newToken() = {
+  def newValidationToken() = {
     val t = User.makeToken
-    token() = Some(t)
+    validationToken() = Some(t)
     t
   }
+
+  def newResetPasswordToken() = {
+    val t = User.makeToken
+    resetPasswordToken() = Some(t)
+    t
+  }
+
+  def clearValidationToken() {
+    validationToken() = None
+  }
+
+  def clearResetPasswordToken() {
+    resetPasswordToken() = None
+  }
   
-  def validationParameter() = Data.mb.keep(this).toStringMongod() + "-" + token().getOrElse("no_token")
+  def tokenParam(token: Option[String]) = Data.mb.keep(this).toStringMongod() + "-" + token.getOrElse("no_token")
+  
+  def validationURLParam() = tokenParam(validationToken())
+  def resetPasswordURLParam() = tokenParam(resetPasswordToken())
   
 }
 
@@ -99,17 +117,17 @@ object User extends MongoMetaNode {
     S.session.foreach(_.destroySession())
   }
   
-  def logIn(id: String) { 
+  private def logIn(id: String) { 
     idLoggedIn(Some(id))
   }
 
-  def logInAndRedirect(id: String): Nothing = { 
+  private def logInAndRedirect(id: String): Nothing = { 
     S.notice(S.?("logged.in"))
     idLoggedIn(Some(id))
     S.redirectTo("/")
   }
 
-  def logInFreshSession(id: String) {
+  private def logInFreshSession(id: String) {
     S.session match {
       case Full(session) => session.destroySessionAndContinueInNewSession(() => logInAndRedirect(id))
       case _ => logInAndRedirect(id)
@@ -131,12 +149,15 @@ object User extends MongoMetaNode {
     }
   }
   
-  def validateMenu(name: String) = Menu.param[User](name, name, 
+  def tokenMenu(name: String, userToToken: (User)=>Option[String]) = Menu.param[User](name, name, 
     s => for (ut <- userAndToken(s); 
-        user <- Data.mb.findById[User](ut._1) if Some(ut._2) == user.token()
+        user <- Data.mb.findById[User](ut._1) if Some(ut._2) == userToToken(user)
     ) yield user, 
-    user => Data.mb.keep(user).toStringMongod() + "-" + user.token().getOrElse("NO_TOKEN"))
+    user => user.tokenParam(userToToken(user)))
   
+  def validationMenu = tokenMenu("User validation", (u: User)=>u.validationToken())
+  def resetPasswordMenu = tokenMenu("User password reset", (u: User)=>u.resetPasswordToken())
+
   def urlDecode(in : String) = URLDecoder.decode(in, "UTF-8")
   def urlEncode(in : String) = URLEncoder.encode(in, "UTF-8")
   
@@ -159,8 +180,8 @@ object User extends MongoMetaNode {
   def resetMailSubject = S.?("user.reset.email.subject")
   
   def sendResetEmail(hostAndPath: String, user: User) {
-    val token = user.newToken()
-    val resetLink = hostAndPath + "/user_reset_password/" + user.validationParameter()
+    val token = user.newResetPasswordToken()
+    val resetLink = hostAndPath + "/user_reset_password/" + user.resetPasswordURLParam()
 
     val msgXml = resetMailBody(user, resetLink)
 
@@ -186,8 +207,8 @@ object User extends MongoMetaNode {
   def signupMailSubject = S.?("sign.up.confirmation")
   
   def sendValidationEmail(hostAndPath: String, user: User) {
-    val token = user.newToken()
-    val resetLink = hostAndPath + "/user_validate/" + user.validationParameter()
+    val token = user.newValidationToken()
+    val resetLink = hostAndPath + "/user_validate/" + user.validationURLParam()
 
     val msgXml = signupMailBody(user, resetLink)
 

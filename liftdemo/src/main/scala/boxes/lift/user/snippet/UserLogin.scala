@@ -19,7 +19,11 @@ class UserLogin {
     def submit() {
       User.findByEmail(email) match {
         //If validated and password correct, log in
-        case Some(user) if user.validated() && user.checkPass(password) => User.logInFreshSession(user)
+        case Some(user) if user.validated() && user.checkPass(password) => {
+          user.clearResetPasswordToken()  //If user has logged in, there is no reason they would want to reset password.
+                                          //Best to clear the token so that any old reset link in an email will no longer work if found.
+          User.logInFreshSession(user)
+        }
         
         //If not yet validated, inform user and send a fresh validation email
         case Some(user) if !user.validated() && user.checkPass(password) => {

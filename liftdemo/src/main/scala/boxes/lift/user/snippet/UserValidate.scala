@@ -10,7 +10,7 @@ class UserValidate(t: User){
   
   def render = {
     t.validated() = true
-    t.newToken()
+    t.clearValidationToken()
     S.notice("Validated user, email " + t.email())
     User.logIn(t)
     S.redirectTo("/")

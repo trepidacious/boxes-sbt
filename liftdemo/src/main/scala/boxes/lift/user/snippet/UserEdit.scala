@@ -7,6 +7,7 @@ import boxes.lift.user.User
 import boxes.lift.comet._
 import boxes.lift.comet.AjaxViewImplicits._
 import boxes.list.ListVal
+import boxes.Val
 
 class UserEdit() extends InsertCometView[Option[User]](User.loggedIn){
 
@@ -15,7 +16,7 @@ class UserEdit() extends InsertCometView[Option[User]](User.loggedIn){
         AjaxStringView(     "Email",        Path{u.email}),
         AjaxTextView(     "First Name",   Path{u.firstName}),
         AjaxTextView(     "Last Name",    Path{u.lastName}),
-        AjaxPassView(                     Path(u.passHash))
+        AjaxPassView(                     Val(u))
     ))).getOrElse(AjaxNodeSeqView(control = Text("No user logged in"))) //TODO S.?
   }
 

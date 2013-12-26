@@ -47,8 +47,9 @@ class Boot {
       Menu.i("Login box") / "user_login" >> Hidden,
       Menu.i("Logout box") / "user_logout" >> Hidden >> loggedIn,
       Menu.i("User edit") / "user_edit" >> Hidden >> loggedIn,
-      User.validateMenu("User validate") / "user_validate" >> Hidden,
-      User.validateMenu("User reset password") / "user_reset_password" >> Hidden
+      
+      User.validationMenu / "user_validate" >> Hidden,
+      User.resetPasswordMenu / "user_reset_password" >> Hidden
     )
     
     LiftRules.setSiteMapFunc(() => sitemap)

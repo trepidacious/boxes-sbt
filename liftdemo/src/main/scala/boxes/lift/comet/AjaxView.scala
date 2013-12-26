@@ -35,7 +35,7 @@ import boxes.lift.user.User
 
 object AjaxViewImplicits {
   implicit def refStringToRefNodeSeq(s: Ref[String]) = Cal{Text(s()): NodeSeq}
-  implicit def stringToRefNodeSeq(s: String) = Cal{Text(s): NodeSeq}
+  implicit def stringToRefNodeSeq(s: String) = Val(Text(s): NodeSeq)
 }
 
 object AjaxView {
@@ -232,7 +232,7 @@ case object PassCreation extends PassViewMode
  */
 case object PassReset extends PassViewMode
 
-class AjaxPassView(p: Var[Option[PassHash]], mode: PassViewMode, valid: (String) => Option[String]) extends AjaxView with Loggable {
+class AjaxPassView(user: Ref[User], mode: PassViewMode, valid: (String) => Option[String]) extends AjaxView with Loggable {
   var oldPass: Option[String] = None
   var newPassA: Option[String] = None
   var newPassB: Option[String] = None
@@ -241,10 +241,9 @@ class AjaxPassView(p: Var[Option[PassHash]], mode: PassViewMode, valid: (String)
 
   //FIXME use resources for strings
   def formSubmit() {
-    S.notice("Pass submitted...")
     boxes.Box.transact{
       for {
-        ph <- if (mode == PassEditing) p() else Some(PassHash(""))
+        ph <- if (mode == PassEditing) user().passHash() else Some(PassHash(""))
         old <- if (mode == PassEditing) oldPass else Some("")
         a <- newPassA
         b <- newPassB
@@ -253,12 +252,12 @@ class AjaxPassView(p: Var[Option[PassHash]], mode: PassViewMode, valid: (String)
           S.error("New password and repeat do not match.")
         } else if (mode==PassEditing && !ph.checkPass(old)) {
           S.error("Incorrect current password.")
-        } else if (mode==PassCreation && !p().isEmpty) {
+        } else if (mode==PassCreation && !user().passHash().isEmpty) {
           S.error("Password is already set.")
         } else if (valid(a).isDefined) {
           S.error(valid(a).getOrElse("Invalid new password."))
         } else {
-          p() = Some(PassHash(a))
+          user().passHash() = Some(PassHash(a))
           mode match {
             case PassCreation => S.notice("Password created.")
             case PassEditing => S.notice("Password changed.")
@@ -290,11 +289,15 @@ class AjaxPassView(p: Var[Option[PassHash]], mode: PassViewMode, valid: (String)
       id
     )
     
-  def renderMessage(m: String) = (("#label" #> (" ")) & ("#control" #> m)).apply(AjaxView.formRowXML)
+  def renderMessage(m: String) = <div id={id} class="form-horizontal">{(
+                 (".controls [class+]" #> "controls-text") & 
+                 ("#label" #> "") & 
+                 ("#control" #> m)
+               ).apply(AjaxView.formRowXML)}</div>
   
   def render = {
     mode match {
-      case PassCreation => if (p().isDefined) renderMessage(S.?("user.password.set")) else renderForm()
+      case PassCreation => if (user().passHash().isDefined) renderMessage(S.?("user.password.set")) else renderForm()
       case PassEditing => renderForm()
       case PassReset => renderForm()  //TODO after the user has reset the password, we should really prevent further editing, and if possible log the user in at "/"
     }
@@ -311,6 +314,7 @@ object AjaxPassView {
   val minLengthAlphabetic = 16
   val minLengthNumeric = 16
   
+  //FIXME strings as resources
   def defaultValidator(s: String) = {
     if (s.length() < minLength) {
       Some("Password must be at least " + minLength + " characters")
@@ -329,6 +333,6 @@ object AjaxPassView {
     }
   }
   
-  def apply(p: Var[Option[PassHash]], mode: PassViewMode = PassEditing, valid: (String) => Option[String] = defaultValidator) = new AjaxPassView(p, mode, valid)
+  def apply(user: Ref[User], mode: PassViewMode = PassEditing, valid: (String) => Option[String] = defaultValidator) = new AjaxPassView(user, mode, valid)
 }
 

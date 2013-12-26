@@ -13,6 +13,7 @@ import boxes.lift.comet._
 import boxes.lift.comet.AjaxViewImplicits._
 import boxes.lift.box.Data
 import boxes.lift.user.User
+import boxes.Val
 
 class UserSignup() extends InsertCometView[User](new User()){
 
@@ -24,15 +25,18 @@ class UserSignup() extends InsertCometView[User](new User()){
       if (u.email().isEmpty()) {
         Some("Please provide an email address (this is required for validation).")
       } else if (u.firstName().isEmpty()) {
-        Some("Please provde a first name.")        
+        Some("Please provide a first name.")        
       } else if (u.lastName().isEmpty()) {
-        Some("Please provde a last name.")        
+        Some("Please provide a last name.")        
       } else if (u.passHash().isEmpty) {
         Some("Please create a password.")
       } else {
         None
       }
     }
+    
+    val errorLabel = Cal{requirements().map(_=>"Errors").getOrElse("")}    
+    val errorText = Cal{requirements().getOrElse("")}
     
     def signup() {
       //TODO use a transaction to ensure that the email is unique before trying to keep, otherwise show an error.
@@ -45,8 +49,10 @@ class UserSignup() extends InsertCometView[User](new User()){
         AjaxTextView(     "Email",        Path{u.email}),
         AjaxTextView(     "First Name",   Path{u.firstName}),
         AjaxTextView(     "Last Name",    Path{u.lastName}),
-        AjaxPassView(                     Path(u.passHash),               PassCreation),
-        AjaxStringView(   "",             requirements),
+        AjaxPassView(                     Val(u),               PassCreation),
+        
+        //FIXME integrate this with normal lift error message display somehow? Or add a specific error on each line
+        AjaxStringView(   errorLabel,     errorText),
         AjaxButtonView(   "Sign Up!",     Cal{requirements().isEmpty},    signup())
     ))
   }
