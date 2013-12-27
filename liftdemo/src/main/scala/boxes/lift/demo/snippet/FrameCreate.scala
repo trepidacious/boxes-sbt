@@ -13,6 +13,7 @@ import boxes.lift.comet.AjaxViewImplicits._
 import boxes.lift.box.Data
 import boxes.lift.demo.Frame
 import boxes.BoxImplicits.valueToVal
+import boxes.lift.comet.view._
 
 
 class FrameCreate() extends InsertCometView[Frame](new Frame()){

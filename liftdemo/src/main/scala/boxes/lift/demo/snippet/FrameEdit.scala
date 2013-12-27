@@ -14,6 +14,7 @@ import boxes.lift.demo.Frame
 import boxes.BoxImplicits.valueToVal
 import net.liftweb.sitemap.Menu
 import net.liftweb.common.Box.option2Box
+import boxes.lift.comet.view._
 
 object FrameEdit {
   def menu = {

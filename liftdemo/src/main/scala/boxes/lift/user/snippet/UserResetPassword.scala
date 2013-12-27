@@ -8,6 +8,9 @@ import boxes.lift.comet._
 import boxes.lift.comet.AjaxViewImplicits._
 import boxes.list.ListVal
 import boxes.Val
+import boxes.lift.comet.view.AjaxPassView
+import boxes.lift.comet.view.PassReset
+import boxes.lift.comet.view._
 
 class UserResetPassword(user: User) extends InsertCometView[User](user){
   def makeView(u: User) = {

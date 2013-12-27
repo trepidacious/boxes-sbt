@@ -14,6 +14,7 @@ import boxes.lift.comet.AjaxViewImplicits._
 import boxes.lift.box.Data
 import boxes.lift.user.User
 import boxes.Val
+import boxes.lift.comet.view._
 
 class UserSignup() extends InsertCometView[User](new User()){
 

@@ -36,7 +36,7 @@ class UserLogin {
       }
     }
 
-    def recover() {
+    def reset() {
       email.trim() match {
         case "" => S.error(S.?("user.reset.missing.email"))
         case e => User.findByEmail(e) match {
@@ -68,7 +68,7 @@ class UserLogin {
         SHtml.submit(S.?("log.in"), submit, "class" -> "btn btn-primary")) ++
       AjaxView.formRow(
         Text(""), 
-        SHtml.submit(S.?("user.reset.button"), recover, "class" -> "btn btn-info"))
+        SHtml.submit(S.?("user.reset.button"), reset, "class" -> "btn btn-info"))
     }</form>
   }
 

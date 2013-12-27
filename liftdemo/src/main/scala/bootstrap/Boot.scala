@@ -20,6 +20,9 @@ import boxes.lift.user.snippet.UserValidate
 class Boot {
   def boot {
 
+    //FIXME change to logging configured from file
+    Logger.setup = Full(Log4j.withDefault)
+    
     //Where to get resources
     LiftRules.resourceNames = "boxes" :: Nil
     
@@ -40,7 +43,6 @@ class Boot {
     // Build SiteMap
     def sitemap = SiteMap(
       Menu.i("Home") / "index"  >> Hidden,
-//      Menu.i("Comet Test") / "comet-test", // >> loggedIn
       FrameEdit.menu / "frame_edit" >> Hidden,// >> loggedIn,
       Menu.i("Create frame") / "frame_create", // >> loggedIn
       Menu.i("User signup") / "user_signup" >> Hidden,

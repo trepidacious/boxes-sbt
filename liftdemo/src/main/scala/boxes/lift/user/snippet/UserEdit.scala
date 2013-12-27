@@ -8,6 +8,8 @@ import boxes.lift.comet._
 import boxes.lift.comet.AjaxViewImplicits._
 import boxes.list.ListVal
 import boxes.Val
+import boxes.lift.comet.view.AjaxPassView
+import boxes.lift.comet.view._
 
 class UserEdit() extends InsertCometView[Option[User]](User.loggedIn){
 

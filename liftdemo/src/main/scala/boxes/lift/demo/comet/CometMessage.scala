@@ -16,6 +16,7 @@ import boxes.lift.box._
 import boxes.Path
 import boxes.Cal
 import boxes.lift.demo.Frame
+import boxes.lift.comet.view._
 
 
 class CometMessage extends CometActor {
