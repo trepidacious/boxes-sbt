@@ -52,7 +52,7 @@ case object PassCreation extends PassViewMode
  */
 case object PassReset extends PassViewMode
 
-class AjaxPassView(user: Ref[User], mode: PassViewMode, valid: (String) => Option[String]) extends AjaxView with Loggable {
+class AjaxPassView(user: Ref[User], mode: PassViewMode) extends AjaxView with Loggable {
   var oldPass: Option[String] = None
   var newPassA: Option[String] = None
   var newPassB: Option[String] = None
@@ -74,8 +74,8 @@ class AjaxPassView(user: Ref[User], mode: PassViewMode, valid: (String) => Optio
           S.error("Incorrect current password.")
         } else if (mode==PassCreation && !user().passHash().isEmpty) {
           S.error("Password is already set.")
-        } else if (valid(a).isDefined) {
-          S.error(valid(a).getOrElse("Invalid new password."))
+        } else if (User.validatePassword(a).isDefined) {
+          S.error(User.validatePassword(a).getOrElse("Invalid new password."))
         } else {
           user().passHash() = Some(PassHash(a))
           mode match {
@@ -108,12 +108,12 @@ class AjaxPassView(user: Ref[User], mode: PassViewMode, valid: (String) => Optio
  
   def renderForm() = 
     AjaxView.formWithId(
-      (if (mode == PassEditing) passwordLine("Current password", s=>oldPass=Some(s)) else Nil) ++
-      passwordLine("New password",     s=>newPassA=Some(s)) ++
-      passwordLine("Repeat password",  s=>newPassB=Some(s)) ++
+      (if (mode == PassEditing) passwordLine(S.?("user.password.current"), s=>oldPass=Some(s)) else Nil) ++
+      passwordLine(S.?("user.password.a"),     s=>newPassA=Some(s)) ++
+      passwordLine(S.?("user.password.b"),  s=>newPassB=Some(s)) ++
       (
         ("#label" #> ("")) & 
-        ("#control" #> ajaxSubmit("Change password", ()=>formSubmit(), "class" -> "btn btn-primary"))
+        ("#control" #> ajaxSubmit(S.?("user.password.change.button"), ()=>formSubmit(), "class" -> "btn btn-primary"))
       ).apply(AjaxView.formRowXML),
       id
     )
@@ -134,33 +134,5 @@ class AjaxPassView(user: Ref[User], mode: PassViewMode, valid: (String) => Optio
 }
 
 object AjaxPassView {
-  
-  val isAlphabetic = (s: String) => s.filter(c => c.isLetter || c.isWhitespace).length == s.length
-  val isNumeric = (s: String) => s.filter(c => c.isDigit).length == s.length
-  
-  val minLength = 8
-  val maxLength = 512
-  val minLengthAlphabetic = 16
-  val minLengthNumeric = 16
-  
-  //FIXME strings as resources
-  def defaultValidator(s: String) = {
-    if (s.length() < minLength) {
-      Some("Password must be at least " + minLength + " characters")
-    } else if (s.length() > maxLength) {
-      Some("Password must be at most " + maxLength + " characters")
-    //Note that we don't want to tell anyone looking over user's shoulder
-    //that their password is alphabetic, but we also don't want to allow
-    //short passes without numbers or punctuation
-    } else if (s.length() < minLengthAlphabetic && isAlphabetic(s)) {
-      Some("Password must be at least" + minLengthAlphabetic + " characters")
-    //Just numbers is probably a bad idea too, unless you have lots of them
-    } else if (s.length() < minLengthNumeric && isNumeric(s)) {
-      Some("Password must be at least" + minLengthNumeric + " characters")
-    } else {
-      None
-    }
-  }
-  
-  def apply(user: Ref[User], mode: PassViewMode = PassEditing, valid: (String) => Option[String] = defaultValidator) = new AjaxPassView(user, mode, valid)
+  def apply(user: Ref[User], mode: PassViewMode = PassEditing) = new AjaxPassView(user, mode)
 }
