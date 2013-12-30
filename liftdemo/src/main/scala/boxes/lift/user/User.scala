@@ -235,6 +235,7 @@ object User extends MongoMetaNode {
     List[MailBodyType] = List(XHTMLMailBodyType(resetMailBody(user, resetLink)))
 
   def validatePassword(pass: String) = DefaultPasswordValidation.validate(pass)
+  def validateEmail(email: String) = DefaultEmailValidation.validate(email)
 }
 
 object DefaultPasswordValidation {
@@ -256,6 +257,24 @@ object DefaultPasswordValidation {
       minError
     } else if (s.length() > maxLength) {
       maxError
+    } else {
+      None
+    }
+  }
+}
+
+object DefaultEmailValidation {
+  
+  val regex = new Regex("""^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$""")
+  
+  def validate(s: String) = {
+    //Regex from here: http://www.w3.org/TR/html-markup/datatypes.html#form.data.emailaddress
+    //This is not particularly strict, shouldn't reject any valid email addresses, but may pass invalid ones.
+    //Note that we check the email address properly by trying to mail it, and requiring
+    //the user to visit a link in the email. This is just to remind people gently that they should put something slightly
+    //like an email address in there.
+    if (regex.findFirstMatchIn(s) == None) {
+      Some(S.?("user.invalid.email"))
     } else {
       None
     }

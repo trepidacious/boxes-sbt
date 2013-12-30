@@ -98,28 +98,15 @@ class AjaxListOfViews(views: ListRef[AjaxView]) extends AjaxView {
 }
 
 object AjaxTextView {
-  def apply(label: Ref[NodeSeq], s: Var[String]): AjaxView = new AjaxTransformedStringView(label, s, (s: String) => s, (s: String) => Full(s), Val(""))
+  def apply(label: Ref[NodeSeq], s: Var[String], additionalError: Ref[String] = Val("")): AjaxView = new AjaxTransformedStringView(label, s, (s: String) => s, (s: String) => Full(s), additionalError)
 }
 
 object AjaxPasswordView {
-  def apply(label: Ref[NodeSeq], s: Var[String]): AjaxView = new AjaxTransformedStringView(
+  def apply(label: Ref[NodeSeq], s: Var[String], additionalError: Ref[String] = Val("")): AjaxView = new AjaxTransformedStringView(
       label, s, 
       (s: String) => s, 
-//      (s: String) => User.validatePassword(s) match {
-//        case Some(error) => Failure(error)
-//        case None => Full(s) 
-//      },
       Full(_),
-      Cal{User.validatePassword(s()).getOrElse("")},
-      ("type" -> ("password")))
-}
-
-object AjaxPasswordRepeatView {
-  def apply(label: Ref[NodeSeq], s: Var[String], original: Ref[String]): AjaxView = new AjaxTransformedStringView(
-      label, s, 
-      (s: String) => s, 
-      (s: String) => Full(s),
-      Cal{if (s() != original()) S.?("user.reset.passwords.incorrect") else ""},
+      additionalError,
       ("type" -> ("password")))
 }
 

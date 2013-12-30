@@ -31,35 +31,20 @@ class UserSignup() extends InsertCometView[User](new User()){
     val passA = Var("")
     val passB = Var("")
     
-    val requirements = Cal{
-      if (u.email().isEmpty()) {
-        Some("Please provide an email address (this is required for validation).")
-      } else if (u.firstName().isEmpty()) {
-        Some("Please provide a first name.")        
-      } else if (u.lastName().isEmpty()) {
-        Some("Please provide a last name.")        
-//      } else if (u.passHash().isEmpty) {
-//        Some("Please create a password.")
-      //FIXME make this neater, must be a better way of chaining criteria functionally
-      } else if (User.validatePassword(passA()).isDefined) {
-        User.validatePassword(passA())
-      } else if (passA() != passB()) {
-        Some(S.?("user.reset.passwords.incorrect"))
-      } else {
-        None
-      }
-    }
-    
-    val errorLabel = Cal{requirements().map(_=>"Errors").getOrElse("")}    
-    val errorText = Cal{requirements().getOrElse("")}
-    
+    val emailError = Cal{User.validateEmail(u.email()).getOrElse("")}
+    val firstNameError = Cal{if (u.firstName().isEmpty()) S.?("user.first.name.missing") else ""}
+    val lastNameError = Cal{if (u.lastName().isEmpty()) S.?("user.last.name.missing") else ""}
+    val passError = Cal{User.validatePassword(passA()).getOrElse("")}
+    val passRepeatError = Cal{if (passB() != passA()) S.?("user.reset.passwords.incorrect") else ""}
+
+    def errors = List(emailError, firstNameError, lastNameError, passError, passRepeatError)
+    def errorStrings = Cal{errors.map(_()).filter(!_.isEmpty())}
+      
     def signup() {
       Box.transact{
-        requirements() match {
-          case Some(r) => S.error(r)
-          case None => {
+        errorStrings() match {
+          case Nil =>  {
             u.passHash() = Some(PassHash(passA()))
-            //TODO use a transaction to ensure that the email is unique before trying to keep, otherwise show an error.
             try {
               Data.mb.keep(u)
               User.sendValidationEmail(hAndP, u); 
@@ -71,21 +56,19 @@ class UserSignup() extends InsertCometView[User](new User()){
               case e: MongoException.DuplicateKey => S.error(S.?("user.email.exists"))
             }
           }
+          case l => l.foreach(S.error(_))
         }
       }
     }
     
     AjaxListOfViews(ListVal(
-        AjaxTextView(     "Email",        Path{u.email}),
-        AjaxTextView(     "First Name",   Path{u.firstName}),
-        AjaxTextView(     "Last Name",    Path{u.lastName}),
-//        AjaxPassView(                     Val(u),               PassCreation),
-        AjaxPasswordView(     S.?("user.password.a"),    passA),
-        AjaxPasswordRepeatView(     S.?("user.password.b"),    passB, passA),
+        AjaxTextView(       "Email",                  Path{u.email},      emailError),
+        AjaxTextView(       "First Name",             Path{u.firstName},  firstNameError),
+        AjaxTextView(       "Last Name",              Path{u.lastName},   lastNameError),
+        AjaxPasswordView(   S.?("user.password.a"),   passA,              passError),
+        AjaxPasswordView(   S.?("user.password.b"),   passB,              passRepeatError),
         
-        //FIXME integrate this with normal lift error message display somehow? Or add a specific error on each line
-//        AjaxStringView(   errorLabel,     errorText),
-        AjaxButtonView(   "Sign Up!",     Cal{requirements().isEmpty},    signup())
+        AjaxButtonView(   "Sign Up!",     Cal{errorStrings().isEmpty},    signup())
     ))
   }
 
