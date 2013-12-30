@@ -15,6 +15,15 @@
 }
 */
 
+/* Inline text in forms should be aligned like the label */
+.inline-string-view {
+	display: block;
+	padding-top: 5px;
+  padding-left: 7px;
+  float: left;
+	margin-bottom: 5px;
+}
+
 /* FIXME This doesn't seem ideal, but otherwise the height is modified by having a font icon in the header, for no apparent reason */
 h2 {
   height: 40px;
