@@ -21,6 +21,8 @@ import boxes.Box
 import net.liftweb.http.js.JsCommands
 import net.liftweb.http.js.JsCmds
 import com.mongodb.MongoException
+import scalaz._
+import Scalaz._
 
 class UserSignup() extends InsertCometView[User](new User()){
 
@@ -28,20 +30,25 @@ class UserSignup() extends InsertCometView[User](new User()){
 
   def makeView(u: User) = {
     
+    //Temporarily store password plaintext, note these are NOT committed to any permanent storage
     val passA = Var("")
     val passB = Var("")
     
+    //Validation - errors for all input fields
     val emailError = Cal{User.validateEmail(u.email())}
-    val firstNameError = Cal{if (u.firstName().isEmpty()) Some(S.?("user.first.name.missing")) else None}
-    val lastNameError = Cal{if (u.lastName().isEmpty()) Some(S.?("user.last.name.missing")) else None}
+    val firstNameError = Cal{u.firstName().isEmpty().option(S.?("user.first.name.missing"))}
+    val lastNameError = Cal{u.lastName().isEmpty().option(S.?("user.last.name.missing"))}
     val passError = Cal{User.validatePassword(passA())}
-    val passRepeatError = Cal{if (passB() != passA()) Some(S.?("user.reset.passwords.incorrect")) else None}
+    val passRepeatError = Cal{(passB() != passA()).option(S.?("user.reset.passwords.incorrect"))}
 
+    //All errors collapsed to list of strings
     def errors = List(emailError, firstNameError, lastNameError, passError, passRepeatError)
     def errorStrings = Cal{errors.flatMap(_())}
       
     def signup() {
       Box.transact{
+        //Make sure we check just before using data, in a transaction to
+        //be absolutely sure data is valid at this instant
         errorStrings() match {
           case Nil =>  {
             u.passHash() = Some(PassHash(passA()))
@@ -62,13 +69,13 @@ class UserSignup() extends InsertCometView[User](new User()){
     }
     
     AjaxListOfViews(ListVal(
-        AjaxTextView(       "Email",                  Path{u.email},      emailError),
-        AjaxTextView(       "First Name",             Path{u.firstName},  firstNameError),
-        AjaxTextView(       "Last Name",              Path{u.lastName},   lastNameError),
-        AjaxPasswordView(   S.?("user.password.a"),   passA,              passError),
-        AjaxPasswordView(   S.?("user.password.b"),   passB,              passRepeatError),
+        AjaxTextView(     S.?("user.email"),          Path{u.email},      emailError),
+        AjaxTextView(     S.?("user.first.name"),     Path{u.firstName},  firstNameError),
+        AjaxTextView(     S.?("user.last.name"),      Path{u.lastName},   lastNameError),
+        AjaxPasswordView( S.?("user.password.a"),     passA,              passError),
+        AjaxPasswordView( S.?("user.password.b"),     passB,              passRepeatError),
         
-        AjaxButtonView(   "Sign Up!",     Cal{errorStrings().isEmpty},    signup())
+        AjaxButtonView(   S.?("user.signup.button"),  Cal{errorStrings().isEmpty},    signup())
     ))
   }
 
