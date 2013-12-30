@@ -45,26 +45,19 @@ class UserSignup() extends InsertCometView[User](new User()){
     def errors = List(emailError, firstNameError, lastNameError, passError, passRepeatError)
     def errorStrings = Cal{errors.flatMap(_())}
       
+    //Note that we know the method will run only when the button is enabled (and so errorStrings() is empty), and
+    //will run in a transaction
     def signup() {
-      Box.transact{
-        //Make sure we check just before using data, in a transaction to
-        //be absolutely sure data is valid at this instant
-        errorStrings() match {
-          case Nil =>  {
-            u.passHash() = Some(PassHash(passA()))
-            try {
-              Data.mb.keep(u)
-              User.sendValidationEmail(hAndP, u); 
-              S.notice(S.?("user.created.success"))         
-              //FIXME this doesn't work with either location
-  //            JsCmds.RedirectTo("index.html")
-  //            JsCmds.RedirectTo("/")
-            } catch {
-              case e: MongoException.DuplicateKey => S.error(S.?("user.email.exists"))
-            }
-          }
-          case l => l.foreach(S.error(_))
-        }
+      u.passHash() = Some(PassHash(passA()))
+      try {
+        Data.mb.keep(u)
+        User.sendValidationEmail(hAndP, u); 
+        S.notice(S.?("user.created.success"))         
+        //FIXME this doesn't work with either location
+//            JsCmds.RedirectTo("index.html")
+//            JsCmds.RedirectTo("/")
+      } catch {
+        case e: MongoException.DuplicateKey => S.error(S.?("user.email.exists"))
       }
     }
     

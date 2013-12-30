@@ -2,7 +2,6 @@ package boxes.lift.comet.view
 
 import scala.language.implicitConversions
 import scala.xml.NodeSeq
-
 import boxes.Ref
 import boxes.lift.comet.AjaxView
 import net.liftweb.http.SHtml.ElemAttr.pairToBasic
@@ -10,6 +9,7 @@ import net.liftweb.http.SHtml.ajaxButton
 import net.liftweb.http.js.JsCmds.Noop
 import net.liftweb.http.js.JsCmds.Replace
 import net.liftweb.util.Helpers.strToSuperArrowAssoc
+import boxes.Box
 
 sealed trait ButtonClass
 
@@ -37,10 +37,19 @@ object AjaxButtonView {
 //FIXME implement "enabled"
 class AjaxButtonView(label: Ref[NodeSeq], enabled: Ref[Boolean], action: => Unit, buttonClass: ButtonClass) extends AjaxView {
   lazy val id = "button_" + net.liftweb.util.Helpers.nextFuncName
+
+  //Make sure that we only evern execute the action while we are sure the button should be enabled.
+  def onClick() {
+    Box.transact{
+      if (enabled()) {
+        action
+      }
+    }
+  }
   
   def render = {
     <div id={id} class="form-horizontal">
-      {ajaxButton(label(), () => {action; Noop}, "class" -> ("btn " + AjaxButtonView.bootstrapClass(buttonClass)))}
+      {ajaxButton(label(), () => {onClick; Noop}, "class" -> ("btn " + AjaxButtonView.bootstrapClass(buttonClass)))}
     </div>
   }
 
