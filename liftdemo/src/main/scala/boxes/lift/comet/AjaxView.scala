@@ -98,25 +98,49 @@ class AjaxListOfViews(views: ListRef[AjaxView]) extends AjaxView {
 }
 
 object AjaxTextView {
-  def apply(label: Ref[NodeSeq], s: Var[String]): AjaxView = new AjaxTransformedStringView(label, s, (s: String) => s, (s: String) => Full(s))
+  def apply(label: Ref[NodeSeq], s: Var[String]): AjaxView = new AjaxTransformedStringView(label, s, (s: String) => s, (s: String) => Full(s), Val(""))
+}
+
+object AjaxPasswordView {
+  def apply(label: Ref[NodeSeq], s: Var[String]): AjaxView = new AjaxTransformedStringView(
+      label, s, 
+      (s: String) => s, 
+//      (s: String) => User.validatePassword(s) match {
+//        case Some(error) => Failure(error)
+//        case None => Full(s) 
+//      },
+      Full(_),
+      Cal{User.validatePassword(s()).getOrElse("")},
+      ("type" -> ("password")))
+}
+
+object AjaxPasswordRepeatView {
+  def apply(label: Ref[NodeSeq], s: Var[String], original: Ref[String]): AjaxView = new AjaxTransformedStringView(
+      label, s, 
+      (s: String) => s, 
+      (s: String) => Full(s),
+      Cal{if (s() != original()) S.?("user.reset.passwords.incorrect") else ""},
+      ("type" -> ("password")))
 }
 
 object AjaxNumberView {
   def apply[N](label: Ref[NodeSeq], v: Var[N])(implicit n:Numeric[N], nc:NumericClass[N]): AjaxView = {
-    new AjaxTransformedStringView(label, v, (n: N) => nc.format(n), nc.parseOption(_) ?~ "Please enter a valid number.")
+    new AjaxTransformedStringView(label, v, (n: N) => nc.format(n), nc.parseOption(_) ?~ "Please enter a valid number.", Val(""))
   }
 }
 
-class AjaxTransformedStringView[T](label: Ref[NodeSeq], v: Var[T], toS: (T) => String, toT: (String) => net.liftweb.common.Box[T]) extends AjaxView {
+class AjaxTransformedStringView[T](label: Ref[NodeSeq], v: Var[T], toS: (T) => String, toT: (String) => net.liftweb.common.Box[T], additionalError: Ref[String], attrs: net.liftweb.http.SHtml.ElemAttr*) extends AjaxView {
   lazy val id = net.liftweb.util.Helpers.nextFuncName
 
-  val error = Var("")
+  val inputError = Var("")
   
   //This reaction looks odd - it just makes sure that whenever v changes,
-  //error is reset to "". This means that if the user has made an erroneous
+  //input error is reset to "". This means that if the user has made an erroneous
   //input, the error notice is cleared when another change to v makes it 
   //irrelevant.
-  val clearErrorReaction = Reaction{v(); error() = ""}
+  val clearInputErrorReaction = Reaction{v(); inputError() = ""}
+  
+  val error = Cal{if (inputError().length()==0) additionalError() else inputError()}
   
   def renderLabel = <span id={"label_" + id}>{label()}</span>
   def renderError = <span class="help-inline" id={"error_" + id}>{error()}</span>
@@ -125,12 +149,14 @@ class AjaxTransformedStringView[T](label: Ref[NodeSeq], v: Var[T], toS: (T) => S
      toT(s) match {
        case Full(t) => {
          v() = t
-         error() = "" //Note we clear here in case new value of t is same as old, thus not triggering the clearErrorReaction.
+         inputError() = "" //Note we clear input error here in case new value of t is same as old, thus not triggering the clearErrorReaction.
        }
-       case Failure(msg, _, _) => error.update(msg)
-       case Empty => error.update("Invalid input.")
+       case Failure(msg, _, _) => inputError()=msg
+       case Empty => inputError()= S.?("text.input.invalid")
      } 
   }
+  
+  val attrList = attrs.toList:+(("id" -> ("control_" + id)):ElemAttr)
   
   def render = AjaxView.form(
                  (
@@ -141,7 +167,7 @@ class AjaxTransformedStringView[T](label: Ref[NodeSeq], v: Var[T], toS: (T) => S
                        toS(v()), 
                        commit(_), 
                        t => {commit(t); Noop}, 
-                       "id" -> ("control_" + id))) &
+                       attrList:_*)) &
                    ("#error" #> renderError)
                  ).apply(AjaxView.formRowXML)
                )
@@ -159,6 +185,7 @@ object AjaxButtonView {
   def apply(label: Ref[NodeSeq], enabled: Ref[Boolean], action: => Unit) = new AjaxButtonView(label, enabled, action)
 }
 
+//FIXME implement "enabled"
 class AjaxButtonView(label: Ref[NodeSeq], enabled: Ref[Boolean], action: => Unit) extends AjaxView {
   lazy val id = "button_" + net.liftweb.util.Helpers.nextFuncName
   

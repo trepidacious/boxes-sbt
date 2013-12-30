@@ -243,23 +243,19 @@ object DefaultPasswordValidation {
   
   val minLength = 8
   val maxLength = 512
-  val minLengthAlphabetic = 16
-  val minLengthNumeric = 16
+  val minLengthPure = 16
+
+  //To avoid telling anyone looking over the user's shoulder that the password is mixed or not, always tell the user all restrictions at once
+  def minError = Some(S.?("user.minlength.prefix") + " " + minLength + " " + S.?("user.minlength.midfix") + " " + minLengthPure + " " + S.?("user.minlength.suffix"))
+  def maxError = Some(S.?("user.maxlength.prefix") + " " + maxLength + " " + S.?("user.maxlength.suffix"))
   
   //FIXME strings as resources
   def validate(s: String) = {
-    if (s.length() < minLength) {
-      Some("Password must be at least " + minLength + " characters")
+    val min = if (isAlphabetic(s) || isNumeric(s)) minLengthPure else minLength 
+    if (s.length() < min) {
+      minError
     } else if (s.length() > maxLength) {
-      Some("Password must be at most " + maxLength + " characters")
-    //Note that we don't want to tell anyone looking over user's shoulder
-    //that their password is alphabetic, but we also don't want to allow
-    //short passes without numbers or punctuation
-    } else if (s.length() < minLengthAlphabetic && isAlphabetic(s)) {
-      Some("Password must be at least" + minLengthAlphabetic + " characters")
-    //Just numbers is probably a bad idea too, unless you have lots of them
-    } else if (s.length() < minLengthNumeric && isNumeric(s)) {
-      Some("Password must be at least" + minLengthNumeric + " characters")
+      maxError
     } else {
       None
     }
