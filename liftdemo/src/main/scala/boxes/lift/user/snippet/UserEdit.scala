@@ -18,7 +18,7 @@ class UserEdit() extends InsertCometView[Option[User]](User.loggedIn){
         AjaxStringView(     "Email",        Path{u.email}),
         AjaxTextView(     "First Name",   Path{u.firstName}),
         AjaxTextView(     "Last Name",    Path{u.lastName}),
-        AjaxPassView(                     Val(u))
+        AjaxPassView(                     Path{u.passHash})
     ))).getOrElse(AjaxNodeSeqView(control = Text("No user logged in"))) //TODO S.?
   }
 

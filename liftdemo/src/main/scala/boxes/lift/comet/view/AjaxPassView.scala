@@ -2,7 +2,6 @@ package boxes.lift.comet.view
 
 import scala.language.implicitConversions
 import scala.xml.NodeSeq.seqToNodeSeq
-
 import boxes.Ref
 import boxes.lift.comet.AjaxView
 import boxes.lift.user.PassHash
@@ -16,9 +15,10 @@ import net.liftweb.http.js.JsCmds.Replace
 import net.liftweb.util.Helpers.strToCssBindPromoter
 import net.liftweb.util.Helpers.strToSuperArrowAssoc
 import SHtml._
+import boxes.Var
 
 
-class AjaxPassView(user: Ref[User]) extends AjaxView with Loggable {
+class AjaxPassView(p: Var[Option[PassHash]]) extends AjaxView with Loggable {
   var oldPass: Option[String] = None
   var newPassA: Option[String] = None
   var newPassB: Option[String] = None
@@ -29,7 +29,7 @@ class AjaxPassView(user: Ref[User]) extends AjaxView with Loggable {
   def formSubmit() {
     boxes.Box.transact{
       for {
-        ph <- user().passHash()
+        ph <- p()
         old <- oldPass
         a <- newPassA
         b <- newPassB
@@ -41,7 +41,7 @@ class AjaxPassView(user: Ref[User]) extends AjaxView with Loggable {
         } else if (User.validatePassword(a).isDefined) {
           S.error(User.validatePassword(a).getOrElse("Invalid new password."))
         } else {
-          user().passHash() = Some(PassHash(a))
+          p() = Some(PassHash(a))
           S.notice(S.?("user.password.changed"))
         }
       }      
@@ -78,5 +78,5 @@ class AjaxPassView(user: Ref[User]) extends AjaxView with Loggable {
 }
 
 object AjaxPassView {
-  def apply(user: Ref[User]) = new AjaxPassView(user)
+  def apply(p: Var[Option[PassHash]]) = new AjaxPassView(p)
 }
