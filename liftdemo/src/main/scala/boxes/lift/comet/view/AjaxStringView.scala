@@ -1,38 +1,13 @@
 package boxes.lift.comet.view
 
-import net.liftweb._
-import http._
-import SHtml._
-import net.liftweb.common._
-import net.liftweb.common.Box._
-import net.liftweb.util._
-import net.liftweb.actor._
-import net.liftweb.util.Helpers._
-import net.liftweb.http.js.JsCmds.{SetHtml}
-import boxes.View
-import scala.xml.Text
-import boxes.Var
-import boxes.Path
-import boxes.Val
-import boxes.Ref
-import scala.xml.NodeSeq
-import boxes.BoxImplicits._
-import boxes.Cal
-import boxes.util.NumericClass
-import boxes.persistence.mongo.MongoBox
-import boxes.persistence.ClassAliases
-import com.mongodb.casbah.commons.Imports._
-import boxes.list.ListRef
-import boxes.lift.user.PassHash
-import boxes.Box
-import net.liftweb.http.js.JsCmds._
-import net.liftweb.common.Loggable
-import net.liftweb.http.js.JsCmd
-import boxes.Reaction
-import net.liftweb.http.js.JE
 import scala.language.implicitConversions
-import boxes.lift.user.User
+import scala.xml.NodeSeq
+import scala.xml.Text
+
+import boxes.Ref
 import boxes.lift.comet.AjaxView
+import net.liftweb.http.js.JsCmds.Replace
+import net.liftweb.util.Helpers.strToCssBindPromoter
 
 class AjaxStringView[T](label: Ref[NodeSeq], s: Ref[T], r:((T)=>NodeSeq)) extends AjaxView {
   lazy val id = net.liftweb.util.Helpers.nextFuncName
