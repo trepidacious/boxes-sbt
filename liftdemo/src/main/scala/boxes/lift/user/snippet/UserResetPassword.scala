@@ -9,6 +9,7 @@ import net.liftweb.http.SHtml.ElemAttr.pairToBasic
 import net.liftweb.http.js.JsCmds
 import net.liftweb.util.BindHelpers._
 
+//TODO convert this to an AjaxView of passA:Var[String] etc. as used in UserSignup, when we work out how to get a CometView to redirect/login etc.
 class UserResetPassword(user: User) {
   
   def render = {
