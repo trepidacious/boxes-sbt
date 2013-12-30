@@ -98,11 +98,11 @@ class AjaxListOfViews(views: ListRef[AjaxView]) extends AjaxView {
 }
 
 object AjaxTextView {
-  def apply(label: Ref[NodeSeq], s: Var[String], additionalError: Ref[String] = Val("")): AjaxView = new AjaxTransformedStringView(label, s, (s: String) => s, (s: String) => Full(s), additionalError)
+  def apply(label: Ref[NodeSeq], s: Var[String], additionalError: Ref[Option[String]] = Val(None)): AjaxView = new AjaxTransformedStringView(label, s, (s: String) => s, (s: String) => Full(s), additionalError)
 }
 
 object AjaxPasswordView {
-  def apply(label: Ref[NodeSeq], s: Var[String], additionalError: Ref[String] = Val("")): AjaxView = new AjaxTransformedStringView(
+  def apply(label: Ref[NodeSeq], s: Var[String], additionalError: Ref[Option[String]] = Val(None)): AjaxView = new AjaxTransformedStringView(
       label, s, 
       (s: String) => s, 
       Full(_),
@@ -111,35 +111,35 @@ object AjaxPasswordView {
 }
 
 object AjaxNumberView {
-  def apply[N](label: Ref[NodeSeq], v: Var[N])(implicit n:Numeric[N], nc:NumericClass[N]): AjaxView = {
-    new AjaxTransformedStringView(label, v, (n: N) => nc.format(n), nc.parseOption(_) ?~ "Please enter a valid number.", Val(""))
+  def apply[N](label: Ref[NodeSeq], v: Var[N], additionalError: Ref[Option[String]] = Val(None))(implicit n:Numeric[N], nc:NumericClass[N]): AjaxView = {
+    new AjaxTransformedStringView(label, v, (n: N) => nc.format(n), nc.parseOption(_) ?~ "Please enter a valid number.", additionalError)
   }
 }
 
-class AjaxTransformedStringView[T](label: Ref[NodeSeq], v: Var[T], toS: (T) => String, toT: (String) => net.liftweb.common.Box[T], additionalError: Ref[String], attrs: net.liftweb.http.SHtml.ElemAttr*) extends AjaxView {
+class AjaxTransformedStringView[T](label: Ref[NodeSeq], v: Var[T], toS: (T) => String, toT: (String) => net.liftweb.common.Box[T], additionalError: Ref[Option[String]], attrs: net.liftweb.http.SHtml.ElemAttr*) extends AjaxView {
   lazy val id = net.liftweb.util.Helpers.nextFuncName
 
-  val inputError = Var("")
+  val inputError: Var[Option[String]] = Var(None)
   
   //This reaction looks odd - it just makes sure that whenever v changes,
   //input error is reset to "". This means that if the user has made an erroneous
   //input, the error notice is cleared when another change to v makes it 
   //irrelevant.
-  val clearInputErrorReaction = Reaction{v(); inputError() = ""}
+  val clearInputErrorReaction = Reaction{v(); inputError() = None}
   
-  val error = Cal{if (inputError().length()==0) additionalError() else inputError()}
+  val error = Cal{inputError() orElse additionalError()}
   
   def renderLabel = <span id={"label_" + id}>{label()}</span>
-  def renderError = <span class="help-inline" id={"error_" + id}>{error()}</span>
+  def renderError = <span class="help-inline" id={"error_" + id}>{error().getOrElse("")}</span>
   
   def commit(s: String) = {
      toT(s) match {
        case Full(t) => {
          v() = t
-         inputError() = "" //Note we clear input error here in case new value of t is same as old, thus not triggering the clearErrorReaction.
+         inputError() = None //Note we clear input error here in case new value of t is same as old, thus not triggering the clearErrorReaction.
        }
-       case Failure(msg, _, _) => inputError()=msg
-       case Empty => inputError()= S.?("text.input.invalid")
+       case Failure(msg, _, _) => inputError()=Some(msg)
+       case Empty => inputError()= Some(S.?("text.input.invalid"))
      } 
   }
   
@@ -159,7 +159,8 @@ class AjaxTransformedStringView[T](label: Ref[NodeSeq], v: Var[T], toS: (T) => S
                  ).apply(AjaxView.formRowXML)
                )
                
-  private def errorClass = "control-group" + (if (error().length == 0) "" else " error")
+  private def errorClass = "control-group" + error().map(_ => " error").getOrElse("")
+  
   override def partialUpdates = List(
       () => Replace("label_" + id, renderLabel),
       () => SetValById("control_" + id, toS(v())), 

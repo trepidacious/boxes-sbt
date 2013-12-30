@@ -31,14 +31,14 @@ class UserSignup() extends InsertCometView[User](new User()){
     val passA = Var("")
     val passB = Var("")
     
-    val emailError = Cal{User.validateEmail(u.email()).getOrElse("")}
-    val firstNameError = Cal{if (u.firstName().isEmpty()) S.?("user.first.name.missing") else ""}
-    val lastNameError = Cal{if (u.lastName().isEmpty()) S.?("user.last.name.missing") else ""}
-    val passError = Cal{User.validatePassword(passA()).getOrElse("")}
-    val passRepeatError = Cal{if (passB() != passA()) S.?("user.reset.passwords.incorrect") else ""}
+    val emailError = Cal{User.validateEmail(u.email())}
+    val firstNameError = Cal{if (u.firstName().isEmpty()) Some(S.?("user.first.name.missing")) else None}
+    val lastNameError = Cal{if (u.lastName().isEmpty()) Some(S.?("user.last.name.missing")) else None}
+    val passError = Cal{User.validatePassword(passA())}
+    val passRepeatError = Cal{if (passB() != passA()) Some(S.?("user.reset.passwords.incorrect")) else None}
 
     def errors = List(emailError, firstNameError, lastNameError, passError, passRepeatError)
-    def errorStrings = Cal{errors.map(_()).filter(!_.isEmpty())}
+    def errorStrings = Cal{errors.flatMap(_())}
       
     def signup() {
       Box.transact{
