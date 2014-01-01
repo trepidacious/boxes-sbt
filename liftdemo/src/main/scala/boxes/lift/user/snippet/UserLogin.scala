@@ -9,6 +9,7 @@ import net.liftweb.http.SHtml.ElemAttr.pairToBasic
 import net.liftweb.http.js.JsCmds
 import net.liftweb.util.BindHelpers._
 
+//FIXME could be rewritten like UserSignup, with an AjaxView
 class UserLogin {
   
   val hAndP = S.hostAndPath
