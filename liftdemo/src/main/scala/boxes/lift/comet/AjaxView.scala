@@ -32,6 +32,7 @@ import boxes.Reaction
 import net.liftweb.http.js.JE
 import scala.language.implicitConversions
 import boxes.lift.user.User
+import net.liftweb.http.js.JsCmds
 
 object AjaxViewImplicits {
   implicit def refStringToRefNodeSeq(s: Ref[String]) = Cal{Text(s()): NodeSeq}
@@ -194,5 +195,17 @@ object AjaxStarsView{
   def apply(label: Ref[String], v: Var[Int], max: Var[Int]) = new AjaxStarsView(label, v, max)
 }
 
+class AjaxRedirectView(url: Ref[Option[String]]) extends AjaxView {
+//  lazy val id = "redirect_" + net.liftweb.util.Helpers.nextFuncName
+
+  def render = Text("") 
+//  <span id={id}>{url()}</span>
+  //Replace(id, render) & 
+  override def partialUpdates = List(() => url().map(JsCmds.RedirectTo(_)).getOrElse(Noop))
+}
+
+object AjaxRedirectView{
+  def apply(url: Ref[Option[String]]) = new AjaxRedirectView(url)
+}
 
 

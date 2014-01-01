@@ -29,10 +29,10 @@ object AjaxButtonView {
     case DefaultButton => ""
     case PrimaryButton => "btn-primary"
     case SuccessButton => "btn-success"
-    case InfoButton => "btn-info"
+    case InfoButton =>    "btn-info"
     case WarningButton => "btn-warning"
-    case DangerButton => "btn-danger"
-    case LinkButton => "btn-link"
+    case DangerButton =>  "btn-danger"
+    case LinkButton =>    "btn-link"
   }
 }
 

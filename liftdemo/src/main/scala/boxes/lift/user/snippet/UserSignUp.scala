@@ -33,6 +33,7 @@ class UserSignup() extends InsertCometView[User](new User()){
     //Temporarily store password plaintext, note these are NOT committed to any permanent storage
     val passA = Var("")
     val passB = Var("")
+    val complete = Var(false)
     
     //Validation - errors for all input fields
     val emailError = Cal{User.validateEmail(u.email())}
@@ -44,7 +45,9 @@ class UserSignup() extends InsertCometView[User](new User()){
     //All errors collapsed to list of strings
     def errors = List(emailError, firstNameError, lastNameError, passError, passRepeatError)
     def errorStrings = Cal{errors.flatMap(_())}
-      
+    
+    val redirect = Var(None: Option[String])
+    
     //Note that we know the method will run only when the button is enabled (and so errorStrings() is empty), and
     //will run in a transaction
     def signup() {
@@ -52,10 +55,7 @@ class UserSignup() extends InsertCometView[User](new User()){
       try {
         Data.mb.keep(u)
         User.sendValidationEmail(hAndP, u); 
-        S.notice(S.?("user.created.success"))         
-        //FIXME this doesn't work with either location
-//            JsCmds.RedirectTo("index.html")
-//            JsCmds.RedirectTo("/")
+        redirect() = Some("user_signup_complete.html")  
       } catch {
         case e: MongoException.DuplicateKey => S.error(S.?("user.email.exists"))
       }
@@ -68,8 +68,10 @@ class UserSignup() extends InsertCometView[User](new User()){
         AjaxPasswordView( S.?("user.password.a"),     passA,              passError),
         AjaxPasswordView( S.?("user.password.b"),     passB,              passRepeatError),
         
-        AjaxButtonView(   S.?("user.signup.button"),  Cal{errorStrings().isEmpty},    signup(), PrimaryButton)
+        AjaxButtonView(   S.?("user.signup.button"),  Cal{errorStrings().isEmpty},    signup(), PrimaryButton),
+        AjaxRedirectView( redirect)
     ))
+    
   }
 
 }
