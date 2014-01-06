@@ -35,11 +35,6 @@ class ExtendedSession() extends MongoNode {
   val cookieId = Var(ExtendedSession.makeCookieId)
   val userId = Var("")
   val expirationMillis = Var(millis + ExtendedSession.expirationInterval)
-  
-  def refresh() {
-    expirationMillis() = millis + ExtendedSession.expirationInterval
-    cookieId() = ExtendedSession.makeCookieId
-  }
 }
 
 object ExtendedSession extends MongoMetaNode with Logger {
