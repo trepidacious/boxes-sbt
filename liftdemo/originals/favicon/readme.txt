@@ -15,7 +15,7 @@ The favicon.ico and the contents of the apple folder should be placed in the roo
 <link rel="apple-touch-icon" sizes="152x152" href="apple-touch-icon-152x152.png" />
 <link rel="shortcut icon" href="favicon.ico" />
 
-For the favicon.svg, you need:
+For the favicon.svg, you need the following, but nothing actually seems to support it:
 
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 
