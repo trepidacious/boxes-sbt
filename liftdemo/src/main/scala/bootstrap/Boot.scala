@@ -12,6 +12,7 @@ import net.liftweb.sitemap.Loc._
 import net.liftweb.http._
 import boxes.lift.user.User
 import boxes.lift.user.snippet.UserValidate
+import boxes.lift.user.ExtendedSession
 
 /**
  * A class that's instantiated early and run.  It allows the application
@@ -67,6 +68,9 @@ class Boot {
 
     //FIXME what is this meant to do?
 //    LiftRules.loggedInTest = Full(() => User.loggedIn_?)
+      
+    //Allow users to log in using cookies
+    LiftRules.earlyInStateful.append(ExtendedSession.automaticLoginUsingCookieEarlyInStateful)
       
     // Force the request to be UTF-8
     LiftRules.early.append(_.setCharacterEncoding("UTF-8"))

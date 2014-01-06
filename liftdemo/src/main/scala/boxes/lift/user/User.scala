@@ -89,7 +89,9 @@ class User extends MongoNode {
     resetPasswordToken() = None
   }
   
-  def tokenParam(token: Option[String]) = Data.mb.keep(this).toStringMongod() + "-" + token.getOrElse("no_token")
+  def id() = Data.mb.keep(this).toStringMongod()
+  
+  def tokenParam(token: Option[String]) = id() + "-" + token.getOrElse("no_token")
   
   def validationURLParam() = tokenParam(validationToken())
   def resetPasswordURLParam() = tokenParam(resetPasswordToken())
@@ -107,23 +109,29 @@ object User extends MongoMetaNode {
   }
   
   def findByEmail(email: String) = Data.mb.findOne[User]("email", email)
+
+  def findById(id: String) = Data.mb.findById[User](id)
   
   def makeToken = StringHelpers.randomString(User.tokenLength)
   
   def loggedIn: Option[User] = idLoggedIn.is.flatMap(Data.mb.findById[User](_))
   
   def logOut() {
+    //Destroy any extended session
+    ExtendedSession.onUserLogout()
+    
     idLoggedIn.remove()
     S.session.foreach(_.destroySession())
   }
   
   private def logIn(id: String) { 
     idLoggedIn(Some(id))
+    ExtendedSession.onUserLogin(id)
   }
 
   private def logInAndRedirect(id: String): Nothing = { 
     S.notice(S.?("logged.in"))
-    idLoggedIn(Some(id))
+    logIn(id)
     S.redirectTo("/")
   }
 
@@ -133,13 +141,13 @@ object User extends MongoMetaNode {
       case _ => logInAndRedirect(id)
     }
   }
-
+  
   def logInFreshSession(user: User) {
-    logInFreshSession(Data.mb.keep(user).toStringMongod())
+    logInFreshSession(user.id())
   }
-
+  
   def logIn(user: User) {
-    logIn(Data.mb.keep(user).toStringMongod())
+    logIn(user.id())
   }
   
   private def userAndToken(s: String) = {
