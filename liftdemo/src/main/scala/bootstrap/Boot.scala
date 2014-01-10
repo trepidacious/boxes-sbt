@@ -25,7 +25,7 @@ class Boot {
     Logger.setup = Full(Log4j.withDefault)
     
     //Where to get resources
-    LiftRules.resourceNames = "boxes" :: Nil
+    LiftRules.resourceNames = "boxes" :: "timesheet" :: Nil
     
     // where to search snippet
     LiftRules.addToPackages("boxes.lift.demo")
@@ -51,6 +51,7 @@ class Boot {
       Menu.i("Login box") / "user_login" >> Hidden,
       Menu.i("Logout box") / "user_logout" >> Hidden >> loggedIn,
       Menu.i("User edit") / "user_edit" >> Hidden >> loggedIn,
+      Menu.i("Timesheet") / "timesheet_view" >> loggedIn,
       
       User.validationMenu / "user_validate" >> Hidden,
       User.resetPasswordMenu / "user_reset_password" >> Hidden

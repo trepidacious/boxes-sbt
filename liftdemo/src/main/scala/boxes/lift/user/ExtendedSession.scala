@@ -1,29 +1,16 @@
 package boxes.lift.user
 
-import com.mongodb.casbah.Imports._
-import java.security.MessageDigest
-import boxes._
-import net.liftweb.http._
-import net.liftweb.util._
-import net.liftweb.util.Mailer._
-import net.liftweb._
-import scala.xml.Elem
-import java.net.URLDecoder
-import java.net.URLEncoder
-import net.liftweb.sitemap.Menu
-import boxes.persistence.mongo.MongoMetaNode
-import boxes.persistence.mongo.MongoNodeIndex
-import boxes.persistence.mongo.MongoNode
-import net.liftweb.common.Full
+import boxes.Var
 import boxes.lift.box.Data
-import net.liftweb.common.Box.box2Option
-import net.liftweb.common.Box.option2Box
-import net.liftweb.util.Mailer._
-import scala.util.matching.Regex
-import net.liftweb.util.Helpers._
+import boxes.persistence.mongo._
+import net.liftweb.common._
+import net.liftweb.http.Req
+import net.liftweb.http.S
 import net.liftweb.http.provider.HTTPCookie
-import net.liftweb.common.Box
-import net.liftweb.common.Logger
+import net.liftweb.util.ConvertableToDate.toMillis
+import net.liftweb.util.Helpers.intToTimeSpanBuilder
+import net.liftweb.util.Helpers.millis
+import net.liftweb.util.StringHelpers
 
 class ExtendedSession() extends MongoNode {
   val meta = ExtendedSession
