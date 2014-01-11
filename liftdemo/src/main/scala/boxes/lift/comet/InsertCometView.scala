@@ -13,13 +13,6 @@ abstract class InsertCometView[T](t: =>T)  {
 
   def makeView(t: T): AjaxView
   
-//  final def render(xhtml: NodeSeq): NodeSeq = {
-//    for (sess <- S.session) sess.sendCometActorMessage(
-//      "CometView", Full(name), makeView(t)
-//    )
-//    <lift:comet type={"CometView"} name={name}>{xhtml}</lift:comet>
-//  }
-  
   final def render = {
     for (sess <- S.session) sess.sendCometActorMessage(
       "CometView", Full(name), makeView(t)
