@@ -60,16 +60,16 @@ class UserLogin {
     "* *" #> <form class="ajaxview form-horizontal" method="post" action={S.uri}>{
       AjaxView.formRow(
         Text(S.?("email.address") + ":"), 
-        JsCmds.FocusOnLoad(SHtml.text("", email = _))) ++
+        JsCmds.FocusOnLoad(SHtml.text("", email = _, "class"->"form-control"))) ++
       AjaxView.formRow(
         Text(S.?("password") + ":"), 
-        SHtml.password("", password = _)) ++
+        SHtml.password("", password = _, "class"->"form-control")) ++
       AjaxView.formRow(
         Text(""), 
         SHtml.submit(S.?("log.in"), submit, "class" -> "btn btn-primary")) ++
       AjaxView.formRow(
         Text(""), 
-        SHtml.submit(S.?("user.reset.button"), reset, "class" -> "btn btn-info"))
+        SHtml.submit(S.?("user.lost.password.button"), reset, "class" -> "btn btn-info"))
     }</form>
   }
 

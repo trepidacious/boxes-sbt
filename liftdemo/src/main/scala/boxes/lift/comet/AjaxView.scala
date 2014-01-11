@@ -40,21 +40,28 @@ object AjaxViewImplicits {
 }
 
 object AjaxView {
-  val formRowXML = <div class="control-group">
-                  <label class="control-label"><span id="label"/></label>
-                  <div class="controls">
+  val formRowXML = <div class="form-group">
+                  <label class="col-sm-2 control-label"><span id="label"/></label>
+                  <div class="col-sm-6">
                     <span id="control"/>
-                    <span id="error" class="help-inline"/>
+                    <span id="error" class="help-block"/>
                   </div>
                 </div>
-    
+
+  val formRowXMLWithoutError = <div class="form-group">
+                  <label class="col-sm-2 control-label"><span id="label"/></label>
+                  <div class="col-sm-6">
+                    <span id="control"/>
+                  </div>
+                </div>
+
   def formRow(l: NodeSeq, c: NodeSeq) = (
       ("#label" #> l) & 
       ("#control" #> c)
-    ).apply(AjaxView.formRowXML)
+    ).apply(AjaxView.formRowXMLWithoutError)
     
-  def form(body: NodeSeq) = (<lift:form class="ajaxview form-horizontal">{body}</lift:form>)    
-  def formWithId(body: NodeSeq, id: String) = (<div id={id}><lift:form class="ajaxview form-horizontal">{body}</lift:form></div>)    
+  def form(body: NodeSeq) = (<lift:form class="ajaxview form-horizontal" role="form">{body}</lift:form>)    
+  def formWithId(body: NodeSeq, id: String) = (<div id={id}><lift:form class="ajaxview form-horizontal" role="form">{body}</lift:form></div>)    
 }
 
 trait AjaxView {
@@ -144,11 +151,11 @@ class AjaxTransformedStringView[T](label: Ref[NodeSeq], v: Var[T], toS: (T) => S
      } 
   }
   
-  val attrList = attrs.toList:+(("id" -> ("control_" + id)):ElemAttr)
+  val attrList = attrs.toList:+("id" -> ("control_" + id):ElemAttr):+("class" -> "form-control":ElemAttr)
   
   def render = AjaxView.form(
                  (
-                   (".control-group [id]" #> ("control_group_" + id)) &
+                   (".form-group [id]" #> ("control_group_" + id)) &
                    ("label [for+]" #> ("control_" + id)) & 
                    ("#label" #> renderLabel) & 
                    ("#control" #> SHtml.textAjaxTest(
@@ -160,7 +167,7 @@ class AjaxTransformedStringView[T](label: Ref[NodeSeq], v: Var[T], toS: (T) => S
                  ).apply(AjaxView.formRowXML)
                )
                
-  private def errorClass = "control-group" + error().map(_ => " error").getOrElse("")
+  private def errorClass = "form-group" + error().map(_ => " has-error").getOrElse("")
   
   override def partialUpdates = List(
       () => Replace("label_" + id, renderLabel),
@@ -183,7 +190,7 @@ class AjaxStarsView(label: Ref[String], v: Var[Int], max: Var[Int]) extends Ajax
     }).toList
     
     <div id={id} class="form-horizontal">{(
-      ("#label" #> (label() + ":")) & 
+      ("#label" #> (label())) & 
       ("#control" #> List(zero, others).flatten)
     ).apply(AjaxView.formRowXML)}</div>
   }

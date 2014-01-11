@@ -26,7 +26,7 @@ case object LinkButton extends ButtonClass
 object AjaxButtonView {
   def apply(label: Ref[NodeSeq], enabled: Ref[Boolean], action: => Unit, buttonClass: ButtonClass = DefaultButton) = new AjaxButtonView(label, enabled, action, buttonClass)
   def bootstrapClass(c: ButtonClass) = c match {
-    case DefaultButton => ""
+    case DefaultButton => "btn-default"
     case PrimaryButton => "btn-primary"
     case SuccessButton => "btn-success"
     case InfoButton =>    "btn-info"
@@ -59,7 +59,11 @@ class AjaxButtonView(label: Ref[NodeSeq], enabled: Ref[Boolean], action: => Unit
     //fail to do anything when clicked, as it does now.
     //(if (enabled()) enabledAttr else disabledAttr):_*)}
     <div id={id} class="form-horizontal">
-      {ajaxButton(label(), () => {onClick; Noop}, enabledAttr:_*)} 
+      <div class="form-group">
+        <div class="col-sm-offset-2 col-sm-6">
+          {ajaxButton(label(), () => {onClick; Noop}, enabledAttr:_*)}
+        </div>
+      </div>
     </div>
   }
 

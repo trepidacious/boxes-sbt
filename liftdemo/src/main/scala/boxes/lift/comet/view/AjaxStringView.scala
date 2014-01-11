@@ -13,12 +13,11 @@ class AjaxStringView[T](label: Ref[NodeSeq], s: Ref[T], r:((T)=>NodeSeq)) extend
   lazy val id = net.liftweb.util.Helpers.nextFuncName
   def renderLabel = <span id={"label_" + id}>{label()}</span>
   //TODO Get text to line up with label
-  def renderText = <span class="inline-string-view" id={"text_" + id}>{r(s())}</span>
+  def renderText = <span id={"text_" + id}><p class="form-control-static">{r(s())}</p></span>
   def render = <div id={id} class="form-horizontal">{(
-                 (".controls [class+]" #> "controls-text") & 
                  ("#label" #> renderLabel) & 
                  ("#control" #> renderText)
-               ).apply(AjaxView.formRowXML)}</div>
+               ).apply(AjaxView.formRowXMLWithoutError)}</div>
   override def partialUpdates = List(() => Replace("label_" + id, renderLabel) & Replace("text_" + id, renderText))
 }
 

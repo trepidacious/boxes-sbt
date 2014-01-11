@@ -21,10 +21,10 @@ class ShowUserEmail extends StatefulSnippet {
       case Some(user) => "*" #>
         <li class="dropdown">
           <a class="dropdown-toggle" href="#" data-toggle="dropdown">
-            {user.email()}
+            {user.email()} <b class="caret"></b>
           </a>
           <ul class="dropdown-menu">
-            <li><a tabindex="-1" href="/user_edit">Edit Details</a></li>
+            <li><a tabindex="-1" href="/user_edit">Edit details</a></li>
 
             <!--<li><a tabindex="-1" href="/user_change_password">Change Password</a></li>-->
 
@@ -34,7 +34,7 @@ class ShowUserEmail extends StatefulSnippet {
           </ul>               
         </li>
             
-      case _ => "*" #> <li><a href="/user_signup">Sign Up</a></li><li><a href="/user_login">Login</a></li>
+      case _ => "*" #> <li><a href="/user_signup">Sign up</a></li><li><a href="/user_login">Login</a></li>
       
     }).apply(xhtml)
   }

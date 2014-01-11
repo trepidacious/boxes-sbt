@@ -51,8 +51,8 @@ class AjaxPassView(p: Var[Option[PassHash]]) extends AjaxView with Loggable {
   def passwordLine(label: String, commit: (String) => Unit) = {
     (
       ("#label" #> (label + ":")) & 
-      ("#control" #> SHtml.password("", commit(_)))
-    ).apply(AjaxView.formRowXML)
+      ("#control" #> SHtml.password("", commit(_), "class"->"form-control"))
+    ).apply(AjaxView.formRowXMLWithoutError)
   }
   
   override def partialUpdates = List(() => Replace(id, render))
@@ -70,7 +70,6 @@ class AjaxPassView(p: Var[Option[PassHash]]) extends AjaxView with Loggable {
     )
     
   def renderMessage(m: String) = <div id={id} class="form-horizontal">{(
-                 (".controls [class+]" #> "controls-text") & 
                  ("#label" #> "") & 
                  ("#control" #> m)
                ).apply(AjaxView.formRowXML)}</div>

@@ -40,10 +40,10 @@ class UserResetPassword(user: User) {
     "* *" #> <form class="ajaxview form-horizontal" method="post" action={S.uri}>{
       AjaxView.formRow(
         Text(S.?("user.password.a") + ":"), 
-        JsCmds.FocusOnLoad(SHtml.password("", (s) => passA = Some(s)))) ++
+        JsCmds.FocusOnLoad(SHtml.password("", (s) => passA = Some(s), "class"->"form-control"))) ++
       AjaxView.formRow(
         Text(S.?("user.password.b") + ":"), 
-        SHtml.password("", (s) => passB = Some(s))) ++
+        SHtml.password("", (s) => passB = Some(s), "class"->"form-control")) ++
       AjaxView.formRow(
         Text(""), 
         SHtml.submit(S.?("user.reset.button"), submit, "class" -> "btn btn-primary"))

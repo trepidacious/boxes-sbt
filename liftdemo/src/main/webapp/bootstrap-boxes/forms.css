@@ -1,0 +1,8 @@
+/* 
+ * Static content in forms is left aligned with text in input fields,
+ * and is at least as high as the standard input fields (and stars view)
+ */
+.form-control-static {
+  padding-left: 13px;
+  min-height: 34px;
+}

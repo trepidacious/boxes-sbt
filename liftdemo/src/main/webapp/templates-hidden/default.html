@@ -9,78 +9,86 @@
 	<meta name="keywords" content=""></meta>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0"></meta>
 	
-	<link href="/bootstrap/css/bootstrap.css" rel="stylesheet"></link>
-  <link href="/bootstrap/css/bootstrap-responsive.css" rel="stylesheet"></link>
-  <link href="/static/boxes.css" rel="stylesheet"></link>
-<!-- 
-  <link type="text/css" media="screen, projection" rel="stylesheet" href="/static/nano.css"></link>
- -->
+  <!-- Bootstrap 3.0.3-->
+  <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="/bootstrap/css/bootstrap-theme.min.css" rel="stylesheet">
 
-  <script id="json" src="/classpath/json.js" type="text/javascript"></script>
-	<script src="http://code.jquery.com/jquery-1.7.min.js"></script>
-	<script src="/jquery-ui/js/jquery-ui-1.8.16.custom.min.js"></script>
-	<link href="/jquery-ui/css/bootstrap-similar/jquery-ui-1.8.16.custom.css" rel="stylesheet" type="text/css"></link>
+  <!-- Font Awesome 4.0.3 -->
+  <link rel="stylesheet" href="/font-awesome/css/font-awesome.min.css">
 
-  <script src="/bootstrap/js/bootstrap.js"></script>
+  <!-- Boxes additions to Bootstrap -->
+  <link href="/bootstrap-boxes/navbar-fixed-top.css" rel="stylesheet">
+  <link href="/bootstrap-boxes/panel.css" rel="stylesheet">
+  <link href="/bootstrap-boxes/stars.css" rel="stylesheet">
+  <link href="/bootstrap-boxes/forms.css" rel="stylesheet">
+
+  <!-- Boxes additions to Bootstrap -->
+  <!-- 	
+    <link href="/static/boxes.css" rel="stylesheet"></link>
+  -->
+   
+  <!-- CSS for additional jQuery UI -->
+  <!-- <link href="/jquery-ui/css/bootstrap-similar/jquery-ui-1.8.16.custom.css" rel="stylesheet" type="text/css"></link> -->
+  
+  <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+  <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+  <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+    <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+  <![endif]-->
 </head>
 
 <body>
-  <!--  navbar-inverse -->
-  <div class="navbar navbar-inverse navbar-fixed-top">
-    <div class="navbar-inner">
-      <div class="container">
-	      <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-          <i class="icon-reorder"></i>
-        </button>
-      
-		    <a class="brand" href="/index.html"> <i class="icon-inbox icon-large"></i> Boxes</a>
-		
-	      <div class="nav-collapse collapse">
-	        <span class="lift:Menu.builder?ul:class=nav;li_item:class=active;linkToSelf=true"></span>
-	      </div>
 
-        <div class="nav-collapse collapse">
-          <ul class="nav pull-right">
-            <li class="lift:ShowUserEmail.widget">User Email</li>
-          </ul>
-        </div>
-	    </div>
-    </div>
-  </div>
+  <!-- header to form the fixed top navbar -->
+	<div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+	  <div class="container">
+		  <div class="navbar-header">
+		    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+		      <span class="sr-only">Toggle navigation</span>
+		      <span class="icon-bar"></span>
+		      <span class="icon-bar"></span>
+		      <span class="icon-bar"></span>
+		    </button>
+		    <a class="navbar-brand" href="/index.html"><i class="fa fa-inbox fa-lg"></i> Boxes</a>
+		  </div>
+	  
+		  <div class="collapse navbar-collapse">
+		    <span class="lift:Menu.builder?ul:class=navbar-nav%20nav;li_item:class=active;linkToSelf=true"></span>
+		    <ul class="nav navbar-nav navbar-right">
+		      <li class="lift:ShowUserEmail.widget">User Email</li>
+		    </ul>
+		  </div> 
+	  
+	  </div>
+	</div>
 
   <div class="container">
-
-    <div class="content">
-      <div class="page-header" id="page-header">
-        <div class="row">
-          <div class="span6">
-            <lift:bind name="page-header" />
-          </div>
-          <div class="span10">
-            <lift:bind name="page-buttons" />
-          </div>
-        </div>
-      </div>
-
-      <div class="lift:Msgs?showAll=true">
-        <div>
-          <lift:error_msg>
-            <strong>Errors</strong>
-          </lift:error_msg>
-          <lift:error_class>alert alert-error</lift:error_class>
-          <lift:warning_msg><strong>Warnings</strong></lift:warning_msg>
-          <lift:warning_class>alert</lift:warning_class>
-          <lift:notice_msg><strong>Notes</strong></lift:notice_msg>
-          <lift:notice_class>alert alert-info</lift:notice_class>
-        </div>
-      </div>
-      
-      <div id="content">
-        <lift:bind name="content" />
-        The HTML content will go here
-      </div>
-
-    </div>
+  
+    <div class = "content">
+ 	  <div class="page-header" id="page-header">
+	    <lift:bind name="page-header" />
+	    <lift:bind name="page-buttons" />
+	  </div>
+	
+	  <div class="lift:Msgs?showAll=true">
+	    <div>
+	      <lift:error_msg><strong>Errors</strong></lift:error_msg>
+	      <lift:error_class>alert alert-danger</lift:error_class>
+	      
+	      <lift:warning_msg><strong>Warnings</strong></lift:warning_msg>
+	      <lift:warning_class>alert alert-warning</lift:warning_class>
+	      
+	      <lift:notice_msg><strong>Notes</strong></lift:notice_msg>
+	      <lift:notice_class>alert alert-info</lift:notice_class>
+	    </div>
+	  </div>
+	  
+	  <div id="content">
+	    <lift:bind name="content" />
+	    The HTML content will go here
+	  </div>
+	  </div>
 
   </div>
   
@@ -92,6 +100,17 @@
       <p>&copy; 2012 trepidacious</p>
     </div>
   </footer>
+
+  <!-- Lift javascript -->
+  <script id="json" src="/classpath/json.js" type="text/javascript"></script>
+
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+  <script src="https://code.jquery.com/jquery.js"></script>
+  <!-- Include all compiled plugins (below), or include individual files as needed -->
+  <script src="/bootstrap/js/bootstrap.min.js"></script>
+
+  <!-- Additional jQuery ui -->
+  <!-- <script src="/jquery-ui/js/jquery-ui-1.8.16.custom.min.js"></script> -->
   
 </body>
 </html>
