@@ -3,6 +3,15 @@
  * and is at least as high as the standard input fields (and stars view)
  */
 .form-control-static {
-  padding-left: 13px;
+  /*padding-left: 13px;*/
   min-height: 34px;
+}
+
+/**
+ * Like label, but using standard text, for just adding a rounded coloured background to text
+ */
+.label-text {
+	padding: .2em .6em .3em;
+	color: #ffffff;
+	border-radius: .25em;
 }
