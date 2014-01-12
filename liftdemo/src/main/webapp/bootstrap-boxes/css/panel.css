@@ -48,3 +48,10 @@ html, body {
   display: inline;
   margin-right: 10px;
 }
+
+/* Faster collapse transition */
+.collapsing {
+  -webkit-transition: height 0.1s ease;
+  transition: height 0.1s ease;
+}
+
