@@ -14,4 +14,6 @@
 	padding: .2em .6em .3em;
 	color: #ffffff;
 	border-radius: .25em;
+  white-space:nowrap;
+  /* line-height:200%; */
 }

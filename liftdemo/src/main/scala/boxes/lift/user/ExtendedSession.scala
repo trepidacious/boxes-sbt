@@ -83,34 +83,77 @@ object ExtendedSession extends MongoMetaNode with Logger {
    */
   def automaticLoginUsingCookieEarlyInStateful: Box[Req] => Unit = {
     ignoredReq => {
-      (User.loggedIn, S.findCookie(cookieName)) match {
-        //If no user is logged in, and browser has a cookie, try to log in automatically
-        case (None, Full(cookie)) =>
-          for (cookieId <- cookie.value) {
-            findByCookieId(cookieId) match {
-              //Expired session deletes cookie and extSession
-              case Some(extSession) if extSession.expirationMillis() < millis => onUserLogout()
-              case Some(extSession) => {
-                val userId = extSession.userId()
-                User.findById(userId) match {
-                  //All good - log them in. Note this also triggers onUserLogin, and so will create a fresh cookie/extSession
-                  case Some(user) => {
-                    S.notice("ExtendedSession about to User.login(" + user + ")")
-                    info("ExtendedSession about to User.login(" + user + ")")
-                    User.logIn(user)
-                  }
-                  //Missing user deletes cookie and extSession
-                  case None => onUserLogout()
-                }
-              }
-              //Cookie that does not lead to an extSession gets deleted
-              case _ => onUserLogout()
+//      for (cookie <- S.findCookie("bob")) {
+//        //Delete cookie from browser
+//        S.deleteCookie(cookie)
+//      }
+//      val cookie = HTTPCookie("bob", System.currentTimeMillis().toString()).setPath("/");
+//      S.addCookie(cookie)
+      
+      //If we are logged out, try to log in with cookie
+      for (cookie <- S.findCookie(cookieName) if User.loggedIn.isEmpty) {
+        //Delete cookie from browser, whether we log in with it or not, its job is done
+        S.deleteCookie(cookieName)
+        
+        for (cookieId <- cookie.value; extSession <- findByCookieId(cookieId)) {
+          if (extSession.expirationMillis() < millis) {
+            Data.mb.forget(extSession)
+          } else {
+            val userId = extSession.userId()
+            for (user <- User.findById(userId)) {
+              //Make a new ExtSession for this user, store it in DB
+              val extSession = new ExtendedSession()
+              extSession.userId() = userId
+              Data.mb.keep(extSession)
+              
+              //Give the browser a cookie with the ExtSession's cookieId to allow retrieving it later for automatic login
+              val newCookie = HTTPCookie(cookieName, extSession.cookieId())
+                .setMaxAge(((extSession.expirationMillis() - millis) / 1000L).toInt)
+                .setPath("/")
+                
+              S.addCookie(newCookie)
+
+              S.notice("Logged in automatically")
+//              User.logInFromExtendedSession(user)
             }
           }
-        
-        //We're already logged in, and/or browser has no cookie
-        case _ =>
+        }
+
       }
+      
+      
+      
+//      
+//      (User.loggedIn, S.findCookie(cookieName)) match {
+//        //If no user is logged in, and browser has a cookie, try to log in automatically
+//        case (None, Full(cookie)) =>
+//          for (cookieId <- cookie.value) {
+//            findByCookieId(cookieId) match {
+//              //Expired session deletes cookie and extSession
+//              case Some(extSession) if extSession.expirationMillis() < millis => onUserLogout()
+//              case Some(extSession) => {
+//                val userId = extSession.userId()
+//                User.findById(userId) match {
+//                  //All good - log them in. Note this also triggers onUserLogin, and so will create a fresh cookie/extSession
+//                  case Some(user) => {
+////                    onUserLogin(userId);
+////                    S.notice("ExtendedSession about to User.login(" + user + ")")
+////                    info("ExtendedSession about to User.login(" + user + ")")
+//                    onUserLogin(userId)
+//                    User.logInFromExtendedSession(user)
+//                  }
+//                  //Missing user deletes cookie and extSession
+//                  case None => onUserLogout()
+//                }
+//              }
+//              //Cookie that does not lead to an extSession gets deleted
+//              case _ => onUserLogout()
+//            }
+//          }
+//        
+//        //We're already logged in, and/or browser has no cookie
+//        case _ =>
+//      }
     }
   }
     

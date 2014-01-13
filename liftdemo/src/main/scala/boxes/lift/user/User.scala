@@ -149,7 +149,11 @@ object User extends MongoMetaNode {
   def logIn(user: User) {
     logIn(user.id())
   }
-  
+
+  def logInFromExtendedSession(user: User) {
+    idLoggedIn(Some(user.id()))
+  }
+
   private def userAndToken(s: String) = {
     s.split("-").toList match {
       case a::b::nil => Some(a, b)

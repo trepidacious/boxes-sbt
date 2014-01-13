@@ -17,6 +17,8 @@ import scala.xml.Text
 
 case class TimeEntry(in: Boolean, time: Long)
 
+case class DaySummary(totalIn: Long, intervalLengths: List[(Boolean, Double)])
+
 object Timesheet extends MongoMetaNode {
   override def indices = List(MongoNodeIndex("userId", true))
   
@@ -32,7 +34,9 @@ object Timesheet extends MongoMetaNode {
     t
   }
 
-  val dateTimeFormat = DateTimeFormat.forPattern("EEEE, d MMMM HH:mm");
+  val dateTimeFormat = DateTimeFormat.forPattern("EEEE, d MMMM HH:mm:ss");
+//  val dateTimeFormatBrief = DateTimeFormat.forPattern("d MMM HH:mm:ss");
+  val dateTimeFormatBrief = DateTimeFormat.forPattern("HH:mm");
 
   private val millis = Var(System.currentTimeMillis())
   
@@ -46,6 +50,8 @@ object Timesheet extends MongoMetaNode {
   }, 20, 20, TimeUnit.SECONDS)
 
   def printInstant(millis: Long) = dateTimeFormat.print(millis)
+  def printInstantBrief(millis: Long) = dateTimeFormatBrief.print(millis)
+    
 }
 
 class Timesheet extends MongoNode{
@@ -105,5 +111,42 @@ class Timesheet extends MongoNode{
   def in() = signInOrOut(true)
   def out() = signInOrOut(false)
   def clear() = entries() = List()
+  
+  def addEntry(e: TimeEntry) {
+    if (e.time <= System.currentTimeMillis()) {
+      entries() = entries() :+ e
+    }
+  }
+  
+  def daySummary(start: DateTime, now: Option[Long]) = {
+    val end = start.plusDays(1)
+    
+    val s = start.toInstant().getMillis()
+    val sPlusDay = end.toInstant().getMillis()
+    
+    val e = now match {
+      case Some(millis) if millis < sPlusDay => millis
+      case _ => sPlusDay
+    }
+    
+    val te = Box.transact {
+      //Start with an entry giving state at exact start of interval, then entries that are strictly inside the interval, then out at the exact end of the interval
+      TimeEntry(inAt(s), s) +: sortedEntries().filter(entry => (entry.time > s) && (entry.time < e)) :+ TimeEntry(false, e)
+    }
+    
+    val pairs = te.zip(te.tail)
+    
+    //Now scan through the entries, adding up the time worked. We just look at each "in" entry, and count time worked until the next entry
+    val totalIn = pairs.map(_ match {
+      case (a, b) if a.in => b.time - a.time
+      case _ => 0
+    }).sum
+    
+    //Produce a list of intervals to render time worked as a proportion of day
+    val length = (e - s): Double
+    val intervals = pairs.map{case (a, b) => (a.in, (b.time - a.time)/length)}
+    
+    DaySummary(totalIn, intervals)
+  }
 
 }

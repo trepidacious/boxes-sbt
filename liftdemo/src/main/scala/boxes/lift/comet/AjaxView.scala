@@ -70,15 +70,19 @@ trait AjaxView {
 }
 
 object AjaxNodeSeqView {
-  def apply(label: Ref[NodeSeq] = Val(Text("")), control: Ref[NodeSeq] = Val(Text("")), error: Ref[NodeSeq] = Val(Text(""))): AjaxNodeSeqView = 
-    new AjaxNodeSeqView(label, control, error)
+  def apply(label: Ref[NodeSeq] = Val(Text("")), control: Ref[NodeSeq] = Val(Text("")), error: Ref[NodeSeq] = Val(Text("")), addP: Boolean = true): AjaxNodeSeqView = 
+    new AjaxNodeSeqView(label, control, error, addP)
 }
 
-class AjaxNodeSeqView(label: Ref[NodeSeq], control: Ref[NodeSeq], error: Ref[NodeSeq]) extends AjaxView {
+class AjaxNodeSeqView(label: Ref[NodeSeq], control: Ref[NodeSeq], error: Ref[NodeSeq], addP: Boolean) extends AjaxView {
   lazy val id = net.liftweb.util.Helpers.nextFuncName
   
   def renderLabel = <span id={"label_" + id}>{label()}</span>
-  def renderControl = <span id={"control_" + id}><p class="form-control-static">{control()}</p></span>
+  def renderControl = if (addP) {
+      <span id={"control_" + id}><p class="form-control-static">{control()}</p></span>
+    } else{
+      <span id={"control_" + id}>{control()}</span>    
+    }
   def renderError = <span id={"error_" + id}>{error()}</span>
 
   def render = AjaxView.form(
