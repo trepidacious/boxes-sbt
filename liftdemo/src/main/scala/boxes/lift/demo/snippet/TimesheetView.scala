@@ -26,9 +26,8 @@ import boxes.lift.demo.TimeEntry
 import org.joda.time.Duration
 import boxes.lift.demo.TimeEntry
 
-class TimesheetView() extends InsertCometView[Option[Timesheet]](Timesheet.forCurrentUser()){
-
-  def toNodeSeq(e: TimeEntry) = if (e.in) {
+object TimesheetView {
+    def toNodeSeq(e: TimeEntry) = if (e.in) {
     <span class="label-text label-success"><i class="fa fa-sign-in"></i> In {Timesheet.printInstant(e.time)}</span>
   } else {
     <span class="label-text label-default"><i class="fa fa-sign-out"></i> Out {Timesheet.printInstant(e.time)}</span>
@@ -65,6 +64,9 @@ class TimesheetView() extends InsertCometView[Option[Timesheet]](Timesheet.forCu
       <span class="label-text label-default"><i class="fa fa-sign-out"></i> Out for {s}</span>
     }
   }
+}
+
+class TimesheetView() extends InsertCometView[Option[Timesheet]](Timesheet.forCurrentUser()){
   
   def makeView(ot: Option[Timesheet]) = {
     
@@ -72,21 +74,18 @@ class TimesheetView() extends InsertCometView[Option[Timesheet]](Timesheet.forCu
     ot.map(t => AjaxListOfViews(ListVal(
         AjaxTextView(S.?("timesheet.status"),    Path(t.status)),
         AjaxNodeSeqView(S.?("timesheet.current.state"), Cal{
-          t.sortedEntries().lastOption.map(e => timeElapsedToNodeSeq(Timesheet.now(), e)).getOrElse(Text("Never signed in or out"))          
+          t.sortedEntries().lastOption.map(e => TimesheetView.timeElapsedToNodeSeq(Timesheet.now(), e)).getOrElse(Text("Never signed in or out"))          
         }),
         AjaxStringView(S.?("timesheet.now"),    Timesheet.nowString),
 
         AjaxNodeSeqView(S.?("timesheet.recent.list"), Cal{
-          //<ul class="list-group">
-          //<li class="list-group-item">
-//          {t.entries().takeRight(5).reverse.map(e => <p class = "form-control-static">{toNodeSeq(e)}</p>)}
-          {t.sortedEntries().takeRight(7).map(e => {toNodeSeqBrief(e)})}
-          //</ul>
+          //Would be nice to have more than 4, but this wraps badly on small screen
+          {t.sortedEntries().takeRight(4).map(e => {TimesheetView.toNodeSeqBrief(e)})}
         }, addP=true),
         
         AjaxStringView(S.?("timesheet.time.in.today"),    Cal{
           val ds = t.daySummary(new DateTime().toDateMidnight().toDateTime(), Some(Timesheet.now()))
-          printDuration(new Duration(ds.totalIn))
+          TimesheetView.printDuration(new Duration(ds.totalIn))
         }),
         
 //        AjaxButtonView(S.?("timesheet.in.button"), Val(true), if (!t.in()) S.error(S.?("timesheet.already.signed.in")) else S.notice(S.?("timesheet.signed.in"))),
@@ -95,8 +94,8 @@ class TimesheetView() extends InsertCometView[Option[Timesheet]](Timesheet.forCu
         AjaxButtonView(S.?("timesheet.out.button"), Val(true), t.out()),
         
         AjaxButtonView("Clear", Val(true), t.clear()),
-
-        //TODO make this fill out a day to demonstrate rendering as progress bar
+        
+        //Fill out today as a typical day, for demo
         AjaxButtonView("Typical day today", Val(true), {
           val dt = new DateTime()
           val y = dt.year().get()

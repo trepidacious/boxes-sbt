@@ -37,6 +37,7 @@ object Timesheet extends MongoMetaNode {
   val dateTimeFormat = DateTimeFormat.forPattern("EEEE, d MMMM HH:mm:ss");
 //  val dateTimeFormatBrief = DateTimeFormat.forPattern("d MMM HH:mm:ss");
   val dateTimeFormatBrief = DateTimeFormat.forPattern("HH:mm");
+  val dateTimeFormatDate = DateTimeFormat.forPattern("EEEE, d MMMM");
 
   private val millis = Var(System.currentTimeMillis())
   
@@ -51,6 +52,7 @@ object Timesheet extends MongoMetaNode {
 
   def printInstant(millis: Long) = dateTimeFormat.print(millis)
   def printInstantBrief(millis: Long) = dateTimeFormatBrief.print(millis)
+  def printDate(dateTime: DateTime) = dateTimeFormatDate.print(dateTime)
     
 }
 
@@ -142,8 +144,8 @@ class Timesheet extends MongoNode{
       case _ => 0
     }).sum
     
-    //Produce a list of intervals to render time worked as a proportion of day
-    val length = (e - s): Double
+    //Produce a list of intervals to render time worked as a proportion of day. Note we always use the full day, even if we are capping entries with the "now" time
+    val length = (sPlusDay - s): Double
     val intervals = pairs.map{case (a, b) => (a.in, (b.time - a.time)/length)}
     
     DaySummary(totalIn, intervals)

@@ -100,6 +100,20 @@ class AjaxNodeSeqView(label: Ref[NodeSeq], control: Ref[NodeSeq], error: Ref[Nod
   )
 }
 
+object AjaxDirectView {
+  def apply(content: Ref[NodeSeq] = Val(Text(""))): AjaxDirectView = new AjaxDirectView(content)
+}
+
+class AjaxDirectView(content: Ref[NodeSeq]) extends AjaxView {
+  lazy val id = net.liftweb.util.Helpers.nextFuncName
+  
+  def renderContent = <span id={"content_" + id}>{content()}</span>    
+
+  def render = AjaxView.form(renderContent)
+               
+  override def partialUpdates = List(() => Replace("content_" + id, renderContent))
+}
+
 object AjaxListOfViews {
   def apply(views: ListRef[AjaxView]) = new AjaxListOfViews(views)
 }
