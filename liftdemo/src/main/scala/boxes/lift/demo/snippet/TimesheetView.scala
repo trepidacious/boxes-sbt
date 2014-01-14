@@ -34,9 +34,9 @@ object TimesheetView {
   }
 
   def toNodeSeqBrief(e: TimeEntry) = if (e.in) {
-    <span><span class="label-text label-success white-space-nowrap">In {Timesheet.printInstantBrief(e.time)}</span><span> </span></span>
+    <span><span class="label label-success white-space-nowrap"><i class="fa fa-sign-in"></i> {Timesheet.printInstantBrief(e.time)}</span><span> </span></span>
   } else {
-    <span><span class="label-text label-default white-space-nowrap">Out {Timesheet.printInstantBrief(e.time)}</span><span> </span></span>
+    <span><span class="label label-default white-space-nowrap"><i class="fa fa-sign-out"></i> {Timesheet.printInstantBrief(e.time)}</span><span> </span></span>
   }
 
   def printDuration(duration: Duration) = {
@@ -47,11 +47,11 @@ object TimesheetView {
       case (0, 1) => "about a minute"
       case (0, m) => m + " minutes"
       case (1, 0) => "1 hour"
-      case (1, 1) => "1 hour and 1 minute"
-      case (1, m) => "1 hour and " + m + " minutes"
-      case (h, 0) => h + " hours"
-      case (h, 1) => h + " hours and 1 minute"
-      case (h, m) => h + " hours and " + m + " minutes"
+      case (1, 1) => "1 hr 1 min"
+      case (1, m) => "1 hr " + m + " mins"
+      case (h, 0) => h + " hrs"
+      case (h, 1) => h + " hrs 1 min"
+      case (h, m) => h + " hrs " + m + " mins"
     }
   }
   
@@ -70,7 +70,6 @@ class TimesheetView() extends InsertCometView[Option[Timesheet]](Timesheet.forCu
   
   def makeView(ot: Option[Timesheet]) = {
     
-    
     ot.map(t => AjaxListOfViews(ListVal(
         AjaxTextView(S.?("timesheet.status"),    Path(t.status)),
         AjaxNodeSeqView(S.?("timesheet.current.state"), Cal{
@@ -79,12 +78,13 @@ class TimesheetView() extends InsertCometView[Option[Timesheet]](Timesheet.forCu
         AjaxStringView(S.?("timesheet.now"),    Timesheet.nowString),
 
         AjaxNodeSeqView(S.?("timesheet.recent.list"), Cal{
-          //Would be nice to have more than 4, but this wraps badly on small screen
-          {t.sortedEntries().takeRight(4).map(e => {TimesheetView.toNodeSeqBrief(e)})}
+          //Would be nice to have more than 5, but this wraps badly on small screen
+          val midnight = Timesheet.todayMidnight()
+          t.sortedEntries().takeRight(5).filter(_.time > midnight).map(e => {TimesheetView.toNodeSeqBrief(e)})
         }, addP=true),
         
         AjaxStringView(S.?("timesheet.time.in.today"),    Cal{
-          val ds = t.daySummary(new DateTime().toDateMidnight().toDateTime(), Some(Timesheet.now()))
+          val ds = t.daySummary(new DateTime(Timesheet.todayMidnight()), Some(Timesheet.now()))
           TimesheetView.printDuration(new Duration(ds.totalIn))
         }),
         
@@ -105,6 +105,17 @@ class TimesheetView() extends InsertCometView[Option[Timesheet]](Timesheet.forCu
           t.addEntry(TimeEntry(false, new DateTime(y, m, d, 12, 30).toInstant().getMillis()))
           t.addEntry(TimeEntry(true, new DateTime(y, m, d, 13, 15).toInstant().getMillis()))
           t.addEntry(TimeEntry(false, new DateTime(y, m, d, 17, 25).toInstant().getMillis()))
+        }),
+
+        AjaxButtonView("Typical day yesterday", Val(true), {
+          val dt = new DateTime().plusDays(-1)
+          val y = dt.year().get()
+          val m = dt.monthOfYear().get()
+          val d = dt.dayOfMonth().get()
+          t.addEntry(TimeEntry(true, new DateTime(y, m, d, 9, 5).toInstant().getMillis()))
+          t.addEntry(TimeEntry(false, new DateTime(y, m, d, 12, 25).toInstant().getMillis()))
+          t.addEntry(TimeEntry(true, new DateTime(y, m, d, 13, 10).toInstant().getMillis()))
+          t.addEntry(TimeEntry(false, new DateTime(y, m, d, 17, 45).toInstant().getMillis()))
         })
 
     ))).getOrElse(AjaxNodeSeqView(control = Text(S.?("user.no.user.logged.in")))) //TODO S.?

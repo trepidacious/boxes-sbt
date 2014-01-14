@@ -45,8 +45,8 @@ object TimesheetRecentDaysView {
             {ds.intervalLengths.map{case (in, l) =>         
           if (in) {
             <div class={"progress-bar progress-bar-success"} style={"width: " + l*100 + "%"}>
-                  <span class="sr-only">In for {l*100}% of the day</span>
-                </div>                                
+              <span class="sr-only">In for {l*100}% of the day</span>
+            </div>                                
           } else {
             <div class={"progress-bar progress-bar-success"} style={"width: 0%; margin-left: " + l*100 + "%"}>
                   <span class="sr-only">Out for {l*100}% of the day</span>

@@ -43,6 +43,8 @@ object Timesheet extends MongoMetaNode {
   
   val now = Cal{millis()}
 
+  val todayMidnight = Cal{new DateTime(millis()).toDateMidnight().getMillis()}
+
   val nowString = Cal{printInstant(millis())}
 
   private val executor = Executors.newScheduledThreadPool(1)
