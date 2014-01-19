@@ -14,7 +14,7 @@ import boxes.lift.comet.view._
 class UserEdit() extends InsertCometView[Option[User]](User.loggedIn){
 
   def makeView(ou: Option[User]) = {
-    ou.map(u => AjaxListOfViews(ListVal(
+    ou.map(u => AjaxListOfViews(List(
         AjaxStringView(     "Email",        Path{u.email}),
         AjaxTextView(     "First Name",   Path{u.firstName}),
         AjaxTextView(     "Last Name",    Path{u.lastName}),

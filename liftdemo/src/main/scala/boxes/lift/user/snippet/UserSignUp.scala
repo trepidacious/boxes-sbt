@@ -61,14 +61,14 @@ class UserSignup() extends InsertCometView[User](new User()){
       }
     }
     
-    AjaxListOfViews(ListVal(
+    AjaxListOfViews(List(
         AjaxTextView(     S.?("user.email"),          Path{u.email},      emailError),
         AjaxTextView(     S.?("user.first.name"),     Path{u.firstName},  firstNameError),
         AjaxTextView(     S.?("user.last.name"),      Path{u.lastName},   lastNameError),
         AjaxPasswordView( S.?("user.password.a"),     passA,              passError),
         AjaxPasswordView( S.?("user.password.b"),     passB,              passRepeatError),
         
-        AjaxButtonView(   S.?("user.signup.button"),  Cal{errorStrings().isEmpty},    signup(), PrimaryButton),
+        AjaxOffsetView(AjaxButtonView(   S.?("user.signup.button"),  Cal{errorStrings().isEmpty},    signup(), PrimaryButton)),
         AjaxRedirectView( redirect)
     ))
     

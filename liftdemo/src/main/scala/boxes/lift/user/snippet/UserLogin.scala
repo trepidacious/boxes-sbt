@@ -66,10 +66,15 @@ class UserLogin {
         SHtml.password("", password = _, "class"->"form-control")) ++
       AjaxView.formRow(
         Text(""), 
-        SHtml.submit(S.?("log.in"), submit, "class" -> "btn btn-primary")) ++
-      AjaxView.formRow(
-        Text(""), 
-        SHtml.submit(S.?("user.lost.password.button"), reset, "class" -> "btn btn-info"))
+        <div class="btn-toolbar">
+          <div class="btn-group">
+            {SHtml.submit(S.?("log.in"), submit, "class" -> "btn btn-primary")}
+          </div>
+          <div class="btn-group">
+            {SHtml.submit(S.?("user.lost.password.button"), reset, "class" -> "btn btn-info")}
+          </div>
+        </div>
+      )
     }</form>
   }
 

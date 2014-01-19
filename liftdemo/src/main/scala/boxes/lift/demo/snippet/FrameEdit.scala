@@ -28,7 +28,7 @@ class FrameEdit(f: Frame) extends InsertCometView[Frame](f){
 
   def makeView(f: Frame) = {
     
-    AjaxListOfViews(ListVal(
+    AjaxListOfViews(List(
     AjaxTextView(     "Name",             Path{f.name}),
     AjaxTextView(     "Model",            Path{f.model}),
     AjaxStarsView(    "Hand to hand",     Path{f.handToHand},   Frame.maxSystemsPerType),

@@ -33,6 +33,7 @@ import net.liftweb.http.js.JE
 import scala.language.implicitConversions
 import boxes.lift.user.User
 import net.liftweb.http.js.JsCmds
+import boxes.lift.comet.view.AjaxButtonView
 
 object AjaxViewImplicits {
   implicit def refStringToRefNodeSeq(s: Ref[String]) = Cal{Text(s()): NodeSeq}
@@ -59,7 +60,7 @@ object AjaxView {
       ("#label" #> l) & 
       ("#control" #> c)
     ).apply(AjaxView.formRowXMLWithoutError)
-    
+
   def form(body: NodeSeq) = (<lift:form class="ajaxview form-horizontal" role="form">{body}</lift:form>)    
   def formWithId(body: NodeSeq, id: String) = (<div id={id}><lift:form class="ajaxview form-horizontal" role="form">{body}</lift:form></div>)    
 }
@@ -115,12 +116,96 @@ class AjaxDirectView(content: Ref[NodeSeq]) extends AjaxView {
 }
 
 object AjaxListOfViews {
-  def apply(views: ListRef[AjaxView]) = new AjaxListOfViews(views)
+  def apply(views: List[AjaxView]) = new AjaxListOfViews(views)
 }
 
-class AjaxListOfViews(views: ListRef[AjaxView]) extends AjaxView {
-  def render = views().flatMap(_.render)
-  override val partialUpdates = views().flatMap(_.partialUpdates)
+class AjaxListOfViews(views: List[AjaxView]) extends AjaxView {
+  def render = views.flatMap(_.render)
+  override val partialUpdates = views.flatMap(_.partialUpdates)
+}
+
+object AjaxButtonGroup {
+  def apply(views: List[AjaxButtonView]) = new AjaxButtonGroup(views)
+}
+
+class AjaxButtonGroup(views: List[AjaxButtonView]) extends AjaxView {
+  def render =   
+  <div class="btn-group">
+    {views.flatMap(_.render)}
+  </div>
+
+  override val partialUpdates = views.flatMap(_.partialUpdates)
+}
+
+object AjaxButtonToolbar {
+  def apply(views: List[AjaxButtonGroup]) = new AjaxButtonToolbar(views)
+}
+
+class AjaxButtonToolbar(views: List[AjaxButtonGroup]) extends AjaxView {
+  def render =   
+    <div class="btn-toolbar" role="toolbar">
+      {views.flatMap(_.render)}
+    </div>
+
+  override val partialUpdates = views.flatMap(_.partialUpdates)
+}
+
+
+object AjaxOffsetButtonGroup {
+  def apply(views: List[AjaxButtonView]) = new AjaxOffsetButtonGroup(views)
+}
+
+class AjaxOffsetButtonGroup(views: List[AjaxButtonView]) extends AjaxView {
+  def render =   
+    <div class="form-horizontal">
+      <div class="form-group">
+        <div class="col-sm-offset-2 col-sm-6">
+          <div class="btn-group">
+            {views.flatMap(_.render)}
+          </div>
+        </div>
+      </div>
+    </div>
+
+  override val partialUpdates = views.flatMap(_.partialUpdates)
+}
+
+object AjaxLabelledView {
+  def apply(labelView: AjaxView, mainView: AjaxView) = new AjaxLabelledView(labelView, mainView)
+  def nodeSeq(label: Ref[NodeSeq], mainView: AjaxView) = new AjaxLabelledView(AjaxDirectView(label), mainView)
+}
+
+class AjaxLabelledView(labelView: AjaxView, mainView: AjaxView) extends AjaxView {
+  def render = <div class="form-horizontal">
+                 {AjaxView.formRow(labelView.render, mainView.render)}
+               </div>
+  override val partialUpdates = List(labelView, mainView).flatMap(_.partialUpdates)
+}
+
+object AjaxStaticView {
+  def apply(contents: NodeSeq) = new AjaxStaticView(contents)
+}
+
+class AjaxStaticView(contents: NodeSeq) extends AjaxView {
+  def render = contents
+  override val partialUpdates = Nil
+}
+
+object AjaxOffsetView {
+  def apply(view: AjaxView) = new AjaxOffsetView(view)
+}
+
+class AjaxOffsetView(view: AjaxView) extends AjaxView {
+  def render =
+    <div class="form-horizontal">
+      <div class="form-group">
+        <div class="col-sm-offset-2 col-sm-6">
+          {view.render}
+        </div>
+      </div>
+    </div>
+
+  override val partialUpdates = view.partialUpdates
 }
 
 object AjaxTextView {

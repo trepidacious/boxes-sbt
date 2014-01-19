@@ -25,7 +25,7 @@ class FrameCreate() extends InsertCometView[Frame](new Frame()){
       S.notice("Frame created")
     }
     
-    AjaxListOfViews(ListVal(
+    AjaxListOfViews(List(
     AjaxTextView(     "Name",             Path{f.name}),
     AjaxTextView(     "Model",            Path{f.model}),
     AjaxStarsView(    "Hand to hand",     Path{f.handToHand},   Frame.maxSystemsPerType),

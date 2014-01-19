@@ -13,6 +13,8 @@ import boxes.Box
 import net.liftweb.http.SHtml.ElemAttr
 import net.liftweb.http.js.JsCmds.SetElemById
 import net.liftweb.http.js.JE
+import boxes.lift.comet.AjaxLabelledView
+import boxes.lift.comet.AjaxOffsetView
 sealed trait ButtonClass
 
 case object DefaultButton extends ButtonClass
@@ -25,6 +27,11 @@ case object LinkButton extends ButtonClass
 
 object AjaxButtonView {
   def apply(label: Ref[NodeSeq], enabled: Ref[Boolean], action: => Unit, buttonClass: ButtonClass = DefaultButton) = new AjaxButtonView(label, enabled, action, buttonClass)
+  
+  def offset(label: Ref[NodeSeq], enabled: Ref[Boolean], action: => Unit, buttonClass: ButtonClass = DefaultButton) = AjaxOffsetView(AjaxButtonView(label, enabled, action, buttonClass))
+
+//  def withAttrs(label: Ref[NodeSeq], enabled: Ref[Boolean], action: => Unit, buttonClass: ButtonClass, attrs: ElemAttr*) = new AjaxButtonView(label, enabled, action, buttonClass, attrs:_*)
+
   def bootstrapClass(c: ButtonClass) = c match {
     case DefaultButton => "btn-default"
     case PrimaryButton => "btn-primary"
@@ -36,7 +43,7 @@ object AjaxButtonView {
   }
 }
 
-class AjaxButtonView(label: Ref[NodeSeq], enabled: Ref[Boolean], action: => Unit, buttonClass: ButtonClass) extends AjaxView {
+class AjaxButtonView(label: Ref[NodeSeq], enabled: Ref[Boolean], action: => Unit, buttonClass: ButtonClass, attrs: ElemAttr*) extends AjaxView {
   lazy val id = "button_" + net.liftweb.util.Helpers.nextFuncName
 
   //Make sure that we only ever execute the action while we are sure the button should be enabled.
@@ -48,8 +55,8 @@ class AjaxButtonView(label: Ref[NodeSeq], enabled: Ref[Boolean], action: => Unit
     }
   }
   
-  val enabledAttr: List[ElemAttr] = List("class" -> ("btn " + AjaxButtonView.bootstrapClass(buttonClass)))
-  val disabledAttr: List[ElemAttr] = (("disabled" -> "disabled"): ElemAttr) +: enabledAttr
+  val enabledAttr = List[ElemAttr]("id" -> id, "class" -> ("btn " + AjaxButtonView.bootstrapClass(buttonClass))) ++ attrs.toList
+  val disabledAttr = List[ElemAttr]("disabled" -> "disabled") ++ enabledAttr
   
   def render = {
     //If we actually disable the button, it can cause problems since there may be a delay enabling the button
@@ -57,14 +64,9 @@ class AjaxButtonView(label: Ref[NodeSeq], enabled: Ref[Boolean], action: => Unit
     //last input box loses focus and sends the new data, then the browser receives the partial update some time later.
     //In the meantime the user could well have tried to click the button and failed. Better to just make the button
     //fail to do anything when clicked, as it does now.
-    //(if (enabled()) enabledAttr else disabledAttr):_*)}
-    <div id={id} class="form-horizontal">
-      <div class="form-group">
-        <div class="col-sm-offset-2 col-sm-6">
-          {ajaxButton(label(), () => {onClick; Noop}, enabledAttr:_*)}
-        </div>
-      </div>
-    </div>
+    //val attr = if (enabled()) enabledAttr else disabledAttr
+    val attr = enabledAttr;
+    ajaxButton(label(), () => {onClick; Noop}, attr:_*)      
   }
 
   override def partialUpdates = List(
