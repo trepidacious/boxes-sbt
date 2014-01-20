@@ -59,7 +59,7 @@ class UserLogin {
     
     "* *" #> <form class="ajaxview form-horizontal" method="post" action={S.uri}>{
       AjaxView.formRow(
-        Text(S.?("email.address") + ":"), 
+        Text(S.?("user.email") + ":"), 
         JsCmds.FocusOnLoad(SHtml.text("", email = _, "class"->"form-control"))) ++
       AjaxView.formRow(
         Text(S.?("password") + ":"), 

@@ -26,6 +26,8 @@ import boxes.lift.demo.TimeEntry
 import org.joda.time.Duration
 import boxes.lift.demo.TimeEntry
 import boxes.Var
+import org.joda.time.LocalTime
+import boxes.Box
 
 object TimesheetView {
   def toNodeSeq(e: TimeEntry) = if (e.in) {
@@ -94,6 +96,23 @@ object TimesheetView {
       </div>
     })
   }
+  
+  val dateEntryFormat = DateTimeFormat.forPattern("yyyy/MM/dd");
+  val timeEntryFormat = DateTimeFormat.forPattern("HH:mm");
+  def parseDateEntry(s: String): Option[DateTime] = {
+    try {
+      Some(dateEntryFormat.parseDateTime(s))
+    } catch {
+      case _:IllegalArgumentException => None
+    }
+  }
+  def parseTimeEntry(s: String): Option[LocalTime] = {
+    try {
+      Some(LocalTime.parse(s, timeEntryFormat))
+    } catch {
+      case _:IllegalArgumentException => None
+    }
+  }
 }
 
 class TimesheetView() extends InsertCometView[Option[Timesheet]](Timesheet.forCurrentUser()){
@@ -132,32 +151,52 @@ class TimesheetRecentDaysView() extends InsertCometView[Option[Timesheet]](Times
 class TimesheetButtonsView() extends InsertCometView[Option[Timesheet]](Timesheet.forCurrentUser()){
   
   def makeView(ot: Option[Timesheet]) = {
-    val date = Var(new DateTime().toDateMidnight().toDateTime())
-    val time = Var("Time")
+    val dateEntry = Var("")
+    val timeEntry = Var("")
     val modalName = "lateInOutModal"
     
+    val date = Cal{TimesheetView.parseDateEntry(dateEntry())}
+    val time = Cal{TimesheetView.parseTimeEntry(timeEntry())}
+    
+    val dateError = Cal{if (date().isEmpty) Some(S.?("timesheet.dateentry.error")) else None}
+    val timeError = Cal{if (time().isEmpty) Some(S.?("timesheet.timeentry.error")) else None}
+
+    val dateTime = Cal{
+      for (t <- time(); d <- date()) yield d.plusMillis(t.getMillisOfDay())
+    }
+
     def resetLate() {
-      date() = new DateTime().toDateMidnight().toDateTime()
-      time() = System.currentTimeMillis().toString
+      dateEntry() = TimesheetView.dateEntryFormat.print(new DateTime().toDateMidnight().toDateTime())
+      timeEntry() = TimesheetView.timeEntryFormat.print(new LocalTime())
     }
     
-    def in() {
-      S.notice("Clicked late in with " + date() + ", " + time())
-    }
-    
-    def out() {
-      S.notice("Clicked late out with " + date() + ", " + time())      
+    def late(in: Boolean) {
+      Box.transact{
+        dateTime() match {
+          case Some(dt) => {
+            ot.foreach(t => {
+              t.addLateEntry(TimeEntry(in, dt.toInstant().getMillis()))
+              S.notice("Added late " + (if (in) "in" else "out") +" at " + Timesheet.printDate(dt))
+            })
+          }
+          case None => {
+            S.error(S.?("timesheet.late.failed"))
+            dateError().foreach(S.error(_))
+            timeError().foreach(S.error(_))
+          }
+        }
+      }
     }
     
     def modal(t: Timesheet) = 
       AjaxModalView(
         AjaxListOfViews(
-          AjaxDateView("Date", date),
-          AjaxTextView("Time", time)
+          AjaxTextView("Date", dateEntry, dateError),
+          AjaxTextView("Time", timeEntry, timeError)
         ),
         AjaxListOfViews(
-          AjaxButtonView.dismissModal(<span> <i class="fa fa-sign-in"></i> {S.?("timesheet.late.in.button")} </span>, Val(true), in, SuccessButton),
-          AjaxButtonView.dismissModal(<span> <i class="fa fa-sign-out"></i> {S.?("timesheet.late.out.button")} </span>, Val(true), out, DefaultButton)
+          AjaxButtonView.dismissModal(<span> <i class="fa fa-sign-in"></i> {S.?("timesheet.late.in.button")} </span>, Val(true), late(true), SuccessButton),
+          AjaxButtonView.dismissModal(<span> <i class="fa fa-sign-out"></i> {S.?("timesheet.late.out.button")} </span>, Val(true), late(false), DefaultButton)
         ),
         "Late in/out",
         modalName

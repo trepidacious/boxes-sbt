@@ -37,6 +37,7 @@ import boxes.lift.comet.view.AjaxButtonView
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 import org.joda.time.format.DateTimeFormatter
+import org.joda.time.LocalTime
 
 object AjaxViewImplicits {
   implicit def refStringToRefNodeSeq(s: Ref[String]) = Cal{Text(s()): NodeSeq}
@@ -68,6 +69,7 @@ object AjaxView {
   def formWithId(body: NodeSeq, id: String) = (<div id={id}><lift:form class="ajaxview form-horizontal" role="form">{body}</lift:form></div>)    
   
   val dateFormat = DateTimeFormat.forPattern("yyyy/MM/dd");
+  val timeFormat = DateTimeFormat.forPattern("HH:mm");
 
 }
 
@@ -252,10 +254,23 @@ object AjaxDateView {
     }
   }
   private def make(label: Ref[NodeSeq], v: Var[DateTime], additionalError: Ref[Option[String]], format: DateTimeFormatter, controlNodeSeq: Option[NodeSeq], attr: ElemAttr*): AjaxView =
-    new AjaxTransformedStringView(label, v, (d: DateTime) => format.print(d), parse(format, _) ?~ "Please enter a valid number.", additionalError, controlNodeSeq, attr:_*)
+    new AjaxTransformedStringView(label, v, (d: DateTime) => format.print(d), parse(format, _), additionalError, controlNodeSeq, attr:_*)
   
   def apply(label: Ref[NodeSeq], v: Var[DateTime], additionalError: Ref[Option[String]] = Val(None), format: DateTimeFormatter = AjaxView.dateFormat): AjaxView = make(label, v, additionalError, format, None)
   def picker(label: Ref[NodeSeq], v: Var[DateTime], additionalError: Ref[Option[String]] = Val(None), format: DateTimeFormatter = AjaxView.dateFormat): AjaxView = make(label, v, additionalError, format, Some(nodeSeq))
+}
+
+object AjaxTimeView {
+  private def parse(format: DateTimeFormatter, s: String): net.liftweb.common.Box[LocalTime] = {
+    try {
+      Full(LocalTime.parse(s, format))
+    } catch {
+      case _:IllegalArgumentException => Failure(S.?("boxes.invalid.time"))
+    }
+  }
+  def apply(label: Ref[NodeSeq], v: Var[LocalTime], additionalError: Ref[Option[String]] = Val(None), format: DateTimeFormatter = AjaxView.timeFormat): AjaxView =
+    new AjaxTransformedStringView(label, v, (d: LocalTime) => format.print(d), parse(format, _), additionalError, None)
+
 }
 
 class AjaxTransformedStringView[T](label: Ref[NodeSeq], v: Var[T], toS: (T) => String, toT: (String) => net.liftweb.common.Box[T], additionalError: Ref[Option[String]], controlNodeSeq: Option[NodeSeq], attrs: net.liftweb.http.SHtml.ElemAttr*) extends AjaxView {

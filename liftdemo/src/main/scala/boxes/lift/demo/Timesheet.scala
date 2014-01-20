@@ -121,7 +121,14 @@ class Timesheet extends MongoNode{
       entries() = entries() :+ e
     }
   }
-  
+
+  def addLateEntry(e: TimeEntry) {
+    //FIXME provide a response, and pass through filters to determine
+    //whether we will accept the entry and add directly to main entries list,
+    //add to a separate list for later approval, or reject straight away
+    entries() = entries() :+ e
+  }
+
   def daySummary(start: DateTime, now: Option[Long]) = {
     val end = start.plusDays(1)
     
