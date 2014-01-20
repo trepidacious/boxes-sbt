@@ -30,7 +30,9 @@ object AjaxButtonView {
   
   def offset(label: Ref[NodeSeq], enabled: Ref[Boolean], action: => Unit, buttonClass: ButtonClass = DefaultButton) = AjaxOffsetView(AjaxButtonView(label, enabled, action, buttonClass))
 
-//  def withAttrs(label: Ref[NodeSeq], enabled: Ref[Boolean], action: => Unit, buttonClass: ButtonClass, attrs: ElemAttr*) = new AjaxButtonView(label, enabled, action, buttonClass, attrs:_*)
+  def withAttrs(label: Ref[NodeSeq], enabled: Ref[Boolean], action: => Unit, buttonClass: ButtonClass, attrs: ElemAttr*) = new AjaxButtonView(label, enabled, action, buttonClass, attrs:_*)
+
+  def dismissModal(label: Ref[NodeSeq], enabled: Ref[Boolean], action: => Unit, buttonClass: ButtonClass) = new AjaxButtonView(label, enabled, action, buttonClass, "data-dismiss"->"modal")
 
   def bootstrapClass(c: ButtonClass) = c match {
     case DefaultButton => "btn-default"

@@ -25,9 +25,10 @@ import org.joda.time.format.DateTimeFormat
 import boxes.lift.demo.TimeEntry
 import org.joda.time.Duration
 import boxes.lift.demo.TimeEntry
+import boxes.Var
 
 object TimesheetView {
-    def toNodeSeq(e: TimeEntry) = if (e.in) {
+  def toNodeSeq(e: TimeEntry) = if (e.in) {
     <span class="timestamp-large timestamp-in"><i class="fa fa-sign-in"></i> In {Timesheet.printInstant(e.time)}</span>
   } else {
     <span class="timestamp-large timestamp-out"><i class="fa fa-sign-out"></i> Out {Timesheet.printInstant(e.time)}</span>
@@ -126,13 +127,37 @@ class TimesheetRecentDaysView() extends InsertCometView[Option[Timesheet]](Times
   
   def makeView(ot: Option[Timesheet]) = {
     
-    ot.map(t => AjaxListOfViews(List(
-        TimesheetView.makeDayView(t, 0),
-        TimesheetView.makeDayView(t, -1),
-        TimesheetView.makeDayView(t, -2),
-        TimesheetView.makeDayView(t, -3),
-        TimesheetView.makeDayView(t, -4)
-    ))).getOrElse(AjaxNodeSeqView(control = Text(S.?("user.no.user.logged.in"))))
+    ot.map(t => AjaxListOfViews((-4 to 0).reverse.map(TimesheetView.makeDayView(t, _)).toList
+        )).getOrElse(AjaxNodeSeqView(control = Text(S.?("user.no.user.logged.in"))))
+  }
+}
+
+class TimesheetLateModalView() extends InsertCometView[Option[Timesheet]](Timesheet.forCurrentUser()){
+  
+  def makeView(ot: Option[Timesheet]) = {
+    val date = Var(new DateTime().toDateMidnight().toDateTime())
+    val time = Var("Time")
+    
+    def in() {
+      S.notice("Clicked late in with " + date() + ", " + time())
+    }
+    
+    def out() {
+      S.notice("Clicked late out with " + date() + ", " + time())      
+    }
+    
+    ot.map(t => {
+      AjaxModalView(
+        AjaxListOfViews(
+          AjaxDateView.picker("Date", date),
+          AjaxTextView("Time", time)
+        ),
+        AjaxListOfViews(
+          AjaxButtonView.dismissModal(<span> <i class="fa fa-sign-in"></i> {S.?("timesheet.late.in.button")} </span>, Val(true), in, SuccessButton),
+          AjaxButtonView.dismissModal(<span> <i class="fa fa-sign-out"></i> {S.?("timesheet.late.out.button")} </span>, Val(true), out, DefaultButton)
+        )
+      )
+    }).getOrElse(AjaxNodeSeqView(control = Text(S.?("user.no.user.logged.in"))))
   }
 }
 
@@ -141,15 +166,15 @@ class TimesheetButtonsView() extends InsertCometView[Option[Timesheet]](Timeshee
   def makeView(ot: Option[Timesheet]) = {
     
     ot.map(t => AjaxLabelledView.nodeSeq(S.?("timesheet.action.buttons"), AjaxButtonToolbar(List(
-//      AjaxButtonView(S.?("timesheet.in.button"), Val(true), if (!t.in()) S.error(S.?("timesheet.already.signed.in")) else S.notice(S.?("timesheet.signed.in"))),
-//      AjaxButtonView(S.?("timesheet.out.button"), Val(true), if (!t.out()) S.error(S.?("timesheet.already.signed.out")) else S.notice(S.?("timesheet.signed.out"))),
+        //FIXME make the buttons disabled when already signed in/out respectively. Would be useful
+        //to be able to make buttons just appear disabled, but still accept clicks, since we already
+        //reject clicks at the server side when the view is disabled.
         AjaxButtonGroup(List(
           AjaxButtonView(<span> <i class="fa fa-sign-in"></i> {S.?("timesheet.in.button")} </span>, Val(true), t.in(), SuccessButton),
           AjaxButtonView(<span> <i class="fa fa-sign-out"></i> {S.?("timesheet.out.button")} </span>, Val(true), t.out(), DefaultButton)
         )),
         AjaxButtonGroup(List(
-          AjaxButtonView(<span> <i class="fa fa-exclamation"></i> {S.?("timesheet.late.in.button")} </span>, Val(true), {}, WarningButton),
-          AjaxButtonView(<span> <i class="fa fa-exclamation"></i> {S.?("timesheet.late.out.button")} </span>, Val(true), {}, WarningButton)
+          AjaxButtonView.withAttrs(<span> <i class="fa fa-exclamation"></i> {S.?("timesheet.late.button")} </span>, Val(true), {}, WarningButton, "data-toggle"->"modal", "data-target"->"#lateModal")
         ))
     )))).getOrElse(AjaxNodeSeqView(control = Text(S.?("user.no.user.logged.in"))))
   }

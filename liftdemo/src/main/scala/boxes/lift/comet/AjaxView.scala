@@ -34,6 +34,9 @@ import scala.language.implicitConversions
 import boxes.lift.user.User
 import net.liftweb.http.js.JsCmds
 import boxes.lift.comet.view.AjaxButtonView
+import org.joda.time.DateTime
+import org.joda.time.format.DateTimeFormat
+import org.joda.time.format.DateTimeFormatter
 
 object AjaxViewImplicits {
   implicit def refStringToRefNodeSeq(s: Ref[String]) = Cal{Text(s()): NodeSeq}
@@ -63,6 +66,9 @@ object AjaxView {
 
   def form(body: NodeSeq) = (<lift:form class="ajaxview form-horizontal" role="form">{body}</lift:form>)    
   def formWithId(body: NodeSeq, id: String) = (<div id={id}><lift:form class="ajaxview form-horizontal" role="form">{body}</lift:form></div>)    
+  
+  val dateFormat = DateTimeFormat.forPattern("yyyy/MM/dd");
+
 }
 
 trait AjaxView {
@@ -117,6 +123,7 @@ class AjaxDirectView(content: Ref[NodeSeq]) extends AjaxView {
 
 object AjaxListOfViews {
   def apply(views: List[AjaxView]) = new AjaxListOfViews(views)
+  def apply(views: AjaxView*) = new AjaxListOfViews(views.toList)
 }
 
 class AjaxListOfViews(views: List[AjaxView]) extends AjaxView {
@@ -170,6 +177,35 @@ class AjaxOffsetButtonGroup(views: List[AjaxButtonView]) extends AjaxView {
   override val partialUpdates = views.flatMap(_.partialUpdates)
 }
 
+object AjaxModalView {
+  def apply(body: AjaxView, footer: AjaxView) = AjaxListOfViews(AjaxModalBodyView(body), AjaxModalFooterView(footer))
+}
+
+object AjaxModalBodyView {
+  def apply(view: AjaxView) = new AjaxModalBodyView(view)
+}
+
+class AjaxModalBodyView(view: AjaxView) extends AjaxView {
+  def render =   
+    <div class="modal-body">
+      {view.render}
+    </div>
+  override val partialUpdates = view.partialUpdates
+}
+
+object AjaxModalFooterView {
+  def apply(view: AjaxView) = new AjaxModalFooterView(view)
+}
+
+class AjaxModalFooterView(view: AjaxView) extends AjaxView {
+  def render =   
+    <div class="modal-footer">
+      {view.render}
+    </div>
+  override val partialUpdates = view.partialUpdates
+}
+
+
 object AjaxLabelledView {
   def apply(labelView: AjaxView, mainView: AjaxView) = new AjaxLabelledView(labelView, mainView)
   def nodeSeq(label: Ref[NodeSeq], mainView: AjaxView) = new AjaxLabelledView(AjaxDirectView(label), mainView)
@@ -209,7 +245,7 @@ class AjaxOffsetView(view: AjaxView) extends AjaxView {
 }
 
 object AjaxTextView {
-  def apply(label: Ref[NodeSeq], s: Var[String], additionalError: Ref[Option[String]] = Val(None)): AjaxView = new AjaxTransformedStringView(label, s, (s: String) => s, (s: String) => Full(s), additionalError)
+  def apply(label: Ref[NodeSeq], s: Var[String], additionalError: Ref[Option[String]] = Val(None)): AjaxView = new AjaxTransformedStringView(label, s, (s: String) => s, (s: String) => Full(s), additionalError, None)
 }
 
 object AjaxPasswordView {
@@ -218,16 +254,38 @@ object AjaxPasswordView {
       (s: String) => s, 
       Full(_),
       additionalError,
+      None,
       ("type" -> ("password")))
 }
 
 object AjaxNumberView {
   def apply[N](label: Ref[NodeSeq], v: Var[N], additionalError: Ref[Option[String]] = Val(None))(implicit n:Numeric[N], nc:NumericClass[N]): AjaxView = {
-    new AjaxTransformedStringView(label, v, (n: N) => nc.format(n), nc.parseOption(_) ?~ "Please enter a valid number.", additionalError)
+    new AjaxTransformedStringView(label, v, (n: N) => nc.format(n), nc.parseOption(_) ?~ "Please enter a valid number.", additionalError, None)
   }
 }
 
-class AjaxTransformedStringView[T](label: Ref[NodeSeq], v: Var[T], toS: (T) => String, toT: (String) => net.liftweb.common.Box[T], additionalError: Ref[Option[String]], attrs: net.liftweb.http.SHtml.ElemAttr*) extends AjaxView {
+object AjaxDateView {
+  private val nodeSeq = 
+    <div class="input-group date" data-provide="datepicker" data-date-format="yyyy/mm/dd" data-date-today-btn="linked" data-date-today-highlight="true">
+      <span class="input-group-addon"><i class="fa fa-calendar"></i> <b class="caret"></b></span>
+      <span id="control"></span>
+    </div>
+      
+  private def parse(format: DateTimeFormatter, s: String): net.liftweb.common.Box[DateTime] = {
+    try {
+      Full(format.parseDateTime(s))
+    } catch {
+      case _:IllegalArgumentException => Failure(S.?("boxes.invalid.date"))
+    }
+  }
+  private def make(label: Ref[NodeSeq], v: Var[DateTime], additionalError: Ref[Option[String]], format: DateTimeFormatter, controlNodeSeq: Option[NodeSeq], attr: ElemAttr*): AjaxView =
+    new AjaxTransformedStringView(label, v, (d: DateTime) => format.print(d), parse(format, _) ?~ "Please enter a valid number.", additionalError, controlNodeSeq, attr:_*)
+  
+  def apply(label: Ref[NodeSeq], v: Var[DateTime], additionalError: Ref[Option[String]] = Val(None), format: DateTimeFormatter = AjaxView.dateFormat): AjaxView = make(label, v, additionalError, format, None)
+  def picker(label: Ref[NodeSeq], v: Var[DateTime], additionalError: Ref[Option[String]] = Val(None), format: DateTimeFormatter = AjaxView.dateFormat): AjaxView = make(label, v, additionalError, format, Some(nodeSeq))
+}
+
+class AjaxTransformedStringView[T](label: Ref[NodeSeq], v: Var[T], toS: (T) => String, toT: (String) => net.liftweb.common.Box[T], additionalError: Ref[Option[String]], controlNodeSeq: Option[NodeSeq], attrs: net.liftweb.http.SHtml.ElemAttr*) extends AjaxView {
   lazy val id = net.liftweb.util.Helpers.nextFuncName
 
   val inputError: Var[Option[String]] = Var(None)
@@ -256,19 +314,27 @@ class AjaxTransformedStringView[T](label: Ref[NodeSeq], v: Var[T], toS: (T) => S
   
   val attrList = attrs.toList:+("id" -> ("control_" + id):ElemAttr):+("class" -> "form-control":ElemAttr)
   
-  def render = AjaxView.form(
-                 (
-                   (".form-group [id]" #> ("control_group_" + id)) &
-                   ("label [for+]" #> ("control_" + id)) & 
-                   ("#label" #> renderLabel) & 
-                   ("#control" #> SHtml.textAjaxTest(
-                       toS(v()), 
-                       commit(_), 
-                       t => {commit(t); Noop}, 
-                       attrList:_*)) &
-                   ("#error" #> renderError)
-                 ).apply(AjaxView.formRowXML)
-               )
+  def render = {
+    val text = SHtml.textAjaxTest(
+           toS(v()), 
+           commit(_), 
+           t => {commit(t); Noop}, 
+           attrList:_*)
+           
+    val control = controlNodeSeq match {
+      case Some(ns) => ("#control" #> text).apply(ns)
+      case None => text 
+    }
+    AjaxView.form(
+     (
+       (".form-group [id]" #> ("control_group_" + id)) &
+       ("label [for+]" #> ("control_" + id)) & 
+       ("#label" #> renderLabel) & 
+       ("#control" #> control) &
+       ("#error" #> renderError)
+     ).apply(AjaxView.formRowXML)
+   )
+  }
                
   private def errorClass = "form-group" + error().map(_ => " has-error").getOrElse("")
   
