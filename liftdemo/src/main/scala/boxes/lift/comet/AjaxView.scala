@@ -133,6 +133,7 @@ class AjaxListOfViews(views: List[AjaxView]) extends AjaxView {
 
 object AjaxButtonGroup {
   def apply(views: List[AjaxButtonView]) = new AjaxButtonGroup(views)
+  def apply(views: AjaxButtonView*) = new AjaxButtonGroup(views.toList)
 }
 
 class AjaxButtonGroup(views: List[AjaxButtonView]) extends AjaxView {
@@ -146,6 +147,7 @@ class AjaxButtonGroup(views: List[AjaxButtonView]) extends AjaxView {
 
 object AjaxButtonToolbar {
   def apply(views: List[AjaxButtonGroup]) = new AjaxButtonToolbar(views)
+  def apply(views: AjaxButtonGroup*) = new AjaxButtonToolbar(views.toList)
 }
 
 class AjaxButtonToolbar(views: List[AjaxButtonGroup]) extends AjaxView {
@@ -176,35 +178,6 @@ class AjaxOffsetButtonGroup(views: List[AjaxButtonView]) extends AjaxView {
 
   override val partialUpdates = views.flatMap(_.partialUpdates)
 }
-
-object AjaxModalView {
-  def apply(body: AjaxView, footer: AjaxView) = AjaxListOfViews(AjaxModalBodyView(body), AjaxModalFooterView(footer))
-}
-
-object AjaxModalBodyView {
-  def apply(view: AjaxView) = new AjaxModalBodyView(view)
-}
-
-class AjaxModalBodyView(view: AjaxView) extends AjaxView {
-  def render =   
-    <div class="modal-body">
-      {view.render}
-    </div>
-  override val partialUpdates = view.partialUpdates
-}
-
-object AjaxModalFooterView {
-  def apply(view: AjaxView) = new AjaxModalFooterView(view)
-}
-
-class AjaxModalFooterView(view: AjaxView) extends AjaxView {
-  def render =   
-    <div class="modal-footer">
-      {view.render}
-    </div>
-  override val partialUpdates = view.partialUpdates
-}
-
 
 object AjaxLabelledView {
   def apply(labelView: AjaxView, mainView: AjaxView) = new AjaxLabelledView(labelView, mainView)
@@ -270,7 +243,7 @@ object AjaxDateView {
       <span class="input-group-addon"><i class="fa fa-calendar"></i> <b class="caret"></b></span>
       <span id="control"></span>
     </div>
-      
+
   private def parse(format: DateTimeFormatter, s: String): net.liftweb.common.Box[DateTime] = {
     try {
       Full(format.parseDateTime(s))

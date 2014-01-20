@@ -33,6 +33,7 @@ object AjaxButtonView {
   def withAttrs(label: Ref[NodeSeq], enabled: Ref[Boolean], action: => Unit, buttonClass: ButtonClass, attrs: ElemAttr*) = new AjaxButtonView(label, enabled, action, buttonClass, attrs:_*)
 
   def dismissModal(label: Ref[NodeSeq], enabled: Ref[Boolean], action: => Unit, buttonClass: ButtonClass) = new AjaxButtonView(label, enabled, action, buttonClass, "data-dismiss"->"modal")
+  def showModal(label: Ref[NodeSeq], enabled: Ref[Boolean], action: => Unit, buttonClass: ButtonClass, id: String) = new AjaxButtonView(label, enabled, action, buttonClass, "data-toggle"->"modal", "data-target"->("#" + id))
 
   def bootstrapClass(c: ButtonClass) = c match {
     case DefaultButton => "btn-default"
