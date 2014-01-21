@@ -71,8 +71,8 @@ class Boot {
 //    LiftRules.loggedInTest = Full(() => User.loggedIn_?)
       
     //Allow users to log in using cookies
-    LiftRules.earlyInStateful.append(ExtendedSession.automaticLoginUsingCookieEarlyInStateful)
-      
+    ExtendedSession.boot()
+    
     // Force the request to be UTF-8
     LiftRules.early.append(_.setCharacterEncoding("UTF-8"))
 
