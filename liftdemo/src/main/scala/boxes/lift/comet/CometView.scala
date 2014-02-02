@@ -33,6 +33,11 @@ class CometView extends CometActor with Loggable {
       renderOut = ajaxView.render
       this ! ReRender(false)
       
+      //FIXME note that the partialUpdates may not be set up as views until
+      //AFTER we have some changes to the viewed data, and so they must be
+      //full updates to the rendered data, rather than incremental. It would
+      //be nice to be able to send incremental updates in some cases...
+      
       //Then when we are sure we have done first render,
       //start doing partial updates as a View
       this ! CreateBoxView(ajaxView)

@@ -1,0 +1,1 @@
+Version 1.2.10, minified, from http://angularjs.org/

@@ -44,6 +44,7 @@ class Boot {
     // Build SiteMap
     def sitemap = SiteMap(
       Menu.i("Home") / "index"  >> Hidden,
+      Menu.i("Angular") / "angular",
       Menu.i("User signup complete") / "user_signup_complete"  >> Hidden,
       FrameEdit.menu / "frame_edit" >> Hidden,// >> loggedIn,
       Menu.i("Create frame") / "frame_create", // >> loggedIn

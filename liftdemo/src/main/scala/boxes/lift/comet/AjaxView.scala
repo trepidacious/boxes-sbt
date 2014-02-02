@@ -38,6 +38,7 @@ import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 import org.joda.time.format.DateTimeFormatter
 import org.joda.time.LocalTime
+import net.liftweb.http.js._
 
 object AjaxViewImplicits {
   implicit def refStringToRefNodeSeq(s: Ref[String]) = Cal{Text(s()): NodeSeq}
@@ -77,6 +78,50 @@ trait AjaxView {
   def render: NodeSeq
   def partialUpdates: List[()=>JsCmd] = List.empty 
 }
+
+object AjaxDataSourceView {
+  def apply(elementId: String, v: String, data: Ref[String]) = new AjaxDataSourceView(elementId, v, data)
+}
+
+class AjaxDataSourceView(elementId: String, v: String, data: Ref[String]) extends AjaxView {
+  lazy val id = net.liftweb.util.Helpers.nextFuncName
+
+  def render = AjaxView.form(<span id={"data_source_" + id}></span>)
+  
+  override def partialUpdates = List(
+//      () => JE.JsRaw("angular.element('#" + elementId + "').scope().$apply(function () {angular.element('#" + elementId + "').scope()." + v + " = " + data() + ";});")
+      () => JE.JsRaw("angular.element('#" + elementId + "').scope().$apply(function ($scope) {$scope." + v + " = " + data() + ";});")
+//      ,() => JE.JsRaw("alert(\"" + data() + "\")")
+  )}
+
+object AjaxListDataSourceView {
+  def apply[T](elementId: String, v: String, list: Ref[List[T]], renderElement: (T)=>Map[String, String], deleteElement: (T)=>Unit) = new AjaxListDataSourceView(elementId, v, list, renderElement, deleteElement)
+}
+
+class AjaxListDataSourceView[T](elementId: String, v: String, list: Ref[List[T]], renderElement: (T)=>Map[String, String], deleteElement: (T)=>Unit) extends AjaxView with Loggable {
+  lazy val id = net.liftweb.util.Helpers.nextFuncName
+
+  def render = AjaxView.form(<span id={"list_data_source_" + id}></span>)
+  
+  def data() = {
+    val l = list()
+    val lines = l.map(t =>{
+      val deleteAC = SHtml.ajaxCall(JE.JsRaw("1"), (s:String)=>{
+        deleteElement(t)
+        //logger.info("Called delete on " + t + " with string '" + s + "'")        
+        })
+      val r = renderElement(t)
+      "{" + r.map{case (field, value) => "'" + field + "': " + value}.mkString(", ") + ", 'deleteGUID': '" + deleteAC.guid + "'}"
+    })
+    "[" + lines.mkString(", ") + "]"
+  }
+  
+  override def partialUpdates = List(
+//      () => JE.JsRaw("angular.element('#" + elementId + "').scope().$apply(function () {angular.element('#" + elementId + "').scope()." + v + " = " + data() + ";});")
+      () => JE.JsRaw("angular.element('#" + elementId + "').scope().$apply(function ($scope) {$scope." + v + " = " + data() + ";});")
+//      ,() => JE.JsRaw("alert(\"" + data() + "\")")
+  )}
+
 
 object AjaxNodeSeqView {
   def apply(label: Ref[NodeSeq] = Val(Text("")), control: Ref[NodeSeq] = Val(Text("")), error: Ref[NodeSeq] = Val(Text("")), addP: Boolean = true): AjaxNodeSeqView = 

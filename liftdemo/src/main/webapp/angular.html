@@ -1,0 +1,58 @@
+<lift:surround with="default" at="content"> 
+  <lift:with-param name="page-header">
+    <h2><i class="fa fa-wrench"></i> Angular Test</h2>
+  </lift:with-param> 
+  
+  <div ng-app="demoApp">
+    <div id="DemoCtrl" ng-controller="DemoCtrl">
+	  
+		  <form class="form-inline" role="form">
+			  <div class="form-group">
+          <label for="fromDate">From </label>
+          <input type="text" datepicker-popup="yyyy-MM-dd" id="fromDate" show-weeks="false" ng-model="fromDate" class="form-control" placeholder="any date"/>
+			  </div>
+        <div class="form-group">
+          <label for="toDate"> to </label>
+          <input type="text" datepicker-popup="yyyy-MM-dd" id="toDate" show-weeks="false" ng-model="toDate" class="form-control" placeholder="any date"/>
+        </div>
+        <div class="btn-group">
+          <button type="button" class="btn btn-default" ng-model="inOutSetting" btn-radio="'either'">All</button>
+          <button type="button" class="btn btn-default" ng-model="inOutSetting" btn-radio="'true'">In</button>
+          <button type="button" class="btn btn-default" ng-model="inOutSetting" btn-radio="'false'">Out</button>
+        </div>      
+			</form>
+	    <p>			
+			  <table class="table table-condensed">
+			    <thead>
+			      <tr>
+			        <th>In/Out</th>
+	            <th>Time</th>
+              <th></th>
+<!--               <th>Delete Exp</th>
+ --> 			      </tr>
+			    </thead>
+			    
+<!-- 			    track by entry.index
+ -->			    <tbody>
+	          <tr class="animate-repeat" ng-animate="'animate'" ng-repeat="entry in entries | inOutFilter:inOutSetting | fromDateFilter:fromDate | toDateFilter:toDate " ng-class="{success: entry.in}">
+	            <td>{{entry.in}}</td>
+	            <td>{{entry.time | date:'yyyy-MM-dd HH:mm:ss'}}</td>
+              <td><div class="pull-right"><button class="btn btn-danger btn-xs" ng-click="remove(entry.deleteGUID)"><i class="fa fa-times"></i></button></div>{{entry.deleteGUID}}</td>
+<!--               <td>{{entry.deleteExp}}</td>
+ --> 	          </tr>
+			    </tbody>
+	      </table>
+	      
+	      <div class="lift:AngularTimesheetTable"></div>
+	    </p>
+      
+	  </div>
+  </div>
+  
+  <lift:with-param name="angular-scripts">
+    <!-- Angular controller -->
+    <script src="/angular-boxes/js/angular-boxes.js"></script>
+	  <script src="/angular-demo/js/controllers.js"></script>
+  </lift:with-param> 
+  
+</lift:surround>

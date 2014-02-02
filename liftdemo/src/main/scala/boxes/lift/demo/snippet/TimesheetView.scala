@@ -28,6 +28,10 @@ import boxes.lift.demo.TimeEntry
 import boxes.Var
 import org.joda.time.LocalTime
 import boxes.Box
+import net.liftweb.http.SHtml
+import net.liftweb.http.js.JE
+import net.liftweb.http.js.JsCmd
+import boxes.lift.demo.TimeEntry
 
 object TimesheetView {
   def toNodeSeq(e: TimeEntry) = if (e.in) {
@@ -97,7 +101,7 @@ object TimesheetView {
     })
   }
   
-  val dateEntryFormat = DateTimeFormat.forPattern("yyyy/MM/dd");
+  val dateEntryFormat = DateTimeFormat.forPattern("yyyy-MM-dd");
   val timeEntryFormat = DateTimeFormat.forPattern("HH:mm");
   def parseDateEntry(s: String): Option[DateTime] = {
     try {
@@ -223,6 +227,43 @@ class TimesheetButtonsView() extends InsertCometView[Option[Timesheet]](Timeshee
         modal(t)
       )
     ).getOrElse(AjaxNodeSeqView(control = Text(S.?("user.no.user.logged.in"))))
+  }
+}
+
+class AngularTimesheetTable() extends InsertCometView[Option[Timesheet]](Timesheet.forCurrentUser()) with Loggable{
+  
+  def log(s: String): JsCmd = {
+    logger.info(s)
+  }
+  
+//  def toJSON(t: Timesheet) = {
+//    val entriesJSON = t.entries().zipWithIndex.map{
+//      case (e, i) => {
+//        val ac = SHtml.ajaxCall(JE.JsRaw(i.toString), log)
+//        "{" + 
+//          "'in': " + e.in + ", " + 
+//          "'time': " + e.time + 
+//        "}"
+//      }
+//    }
+//    "[" + entriesJSON.mkString(",") + "]"
+//  }
+//  def makeView(ot: Option[Timesheet]) = { 
+//    ot.map(t => AjaxDataSourceView("DemoCtrl", "entries", Cal{toJSON(t)})).getOrElse(AjaxNodeSeqView(control = Text(S.?("user.no.user.logged.in"))))
+//  }
+  
+  def renderEntry(e: TimeEntry) = {
+    Map("in" -> e.in.toString, "time" -> e.time.toString)
+  }
+
+  def makeView(ot: Option[Timesheet]) = {  
+    ot.map(t => AjaxListDataSourceView(
+        "DemoCtrl", 
+        "entries", 
+        Cal{t.entries()},
+        renderEntry,
+        //TODO better delete, should have an id or similar
+        (delete: TimeEntry) => t.entries()=t.entries().filter(_!=delete))).getOrElse(AjaxNodeSeqView(control = Text(S.?("user.no.user.logged.in"))))
   }
 
 }

@@ -23,6 +23,7 @@
   <link href="/bootstrap-boxes/css/panel.css" rel="stylesheet">
   <link href="/bootstrap-boxes/css/stars.css" rel="stylesheet">
   <link href="/bootstrap-boxes/css/forms.css" rel="stylesheet">
+  <link href="/bootstrap-boxes/css/angular-bootstrap.css" rel="stylesheet">
 
   <!-- Font Awesome 4.0.3 -->
   <link rel="stylesheet" href="/font-awesome/css/font-awesome.min.css">
@@ -64,8 +65,8 @@
   
     <div class = "content">
  	  <div class="page-header" id="page-header">
-	    <lift:bind name="page-header" />
-	    <lift:bind name="page-buttons" />
+	    <lift:bind name="page-header"></lift:bind>
+	    <lift:bind name="page-buttons"></lift:bind>
 	  </div>
 	
 	  <div class="lift:Msgs?showAll=true">
@@ -82,8 +83,7 @@
 	  </div>
 	  
 	  <div id="content">
-	    <lift:bind name="content" />
-	    The HTML content will go here
+	    <lift:bind name="content"></lift:bind>
 	  </div>
 	  </div>
 
@@ -106,11 +106,22 @@
   <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
   <script src="https://code.jquery.com/jquery.js"></script>
   
+  <!-- Angular 1.2.10 -->
+   <script src="/angular/js/angular.min.js"></script>
+  <script src="/angular/js/angular-animate.min.js"></script>
+
+  <!-- Angular UI Bootstrap 0.10.0 -->
+  <script src="/angular-bootstrap/js/ui-bootstrap-tpls-0.10.0.min.js"></script>
+
+  <lift:bind name="angular-scripts"></lift:bind>
+  
   <!-- Bootstrap javascript - include all compiled plugins (below), or include individual files as needed -->
   <script src="/bootstrap/js/bootstrap.min.js"></script>
   
   <!-- Datepicker, see readme in bootstrap-datepicker directory -->   
   <script type='text/javascript' src="/bootstrap-datepicker/js/bootstrap-datepicker.js"></script>
+  
+  <lift:bind name="page-scripts"></lift:bind>
   
 </body>
 </html>
