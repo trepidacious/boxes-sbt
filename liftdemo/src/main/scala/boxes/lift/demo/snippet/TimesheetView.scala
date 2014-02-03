@@ -236,22 +236,6 @@ class AngularTimesheetTable() extends InsertCometView[Option[Timesheet]](Timeshe
     logger.info(s)
   }
   
-//  def toJSON(t: Timesheet) = {
-//    val entriesJSON = t.entries().zipWithIndex.map{
-//      case (e, i) => {
-//        val ac = SHtml.ajaxCall(JE.JsRaw(i.toString), log)
-//        "{" + 
-//          "'in': " + e.in + ", " + 
-//          "'time': " + e.time + 
-//        "}"
-//      }
-//    }
-//    "[" + entriesJSON.mkString(",") + "]"
-//  }
-//  def makeView(ot: Option[Timesheet]) = { 
-//    ot.map(t => AjaxDataSourceView("DemoCtrl", "entries", Cal{toJSON(t)})).getOrElse(AjaxNodeSeqView(control = Text(S.?("user.no.user.logged.in"))))
-//  }
-  
   def renderEntry(e: TimeEntry) = {
     Map("in" -> e.in.toString, "time" -> e.time.toString)
   }
@@ -262,7 +246,7 @@ class AngularTimesheetTable() extends InsertCometView[Option[Timesheet]](Timeshe
         "entries", 
         Cal{t.entries()},
         renderEntry,
-        //TODO better delete, should have an id or similar
+        //TODO better delete, should have an id or similar so it can't delete multiple entries that happen to have same in+time
         (delete: TimeEntry) => t.entries()=t.entries().filter(_!=delete))).getOrElse(AjaxNodeSeqView(control = Text(S.?("user.no.user.logged.in"))))
   }
 
