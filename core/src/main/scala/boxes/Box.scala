@@ -82,8 +82,8 @@ object Box {
   //a reaction to the next, may acquire additional entries, etc.
   private val changedSourcesForReaction = new mutable.HashMap[Reaction, mutable.Set[Box[_,_]]] with MultiMap[Reaction, Box[_,_]]
 
-  //The next change index to assign
-  private var _changeIndex = 0L
+  //The next change index to assign - start from 1 so that 0 is initial state of Boxes on creation.
+  private var _changeIndex = 1L
 
   private var canRead = true
   private var canWrite = true
@@ -223,6 +223,7 @@ object Box {
     var newQ = immutable.Queue.empty[(Long, C)]
     changes.foreach(newChange => {
       newQ = newQ:+(_changeIndex, newChange)
+      b._lastChangeIndex = _changeIndex
       _changeIndex += 1
     })
 
@@ -287,6 +288,17 @@ object Box {
     }
   }
 
+  def boxLastChangeIndex[T, C <: Change[T]](b:Box[T, C]) : Long = {
+    //Reading a box's write index counts as reading it, and
+    //so for example makes a reaction have the box as a source
+    try {
+      beforeRead(b)
+      b._lastChangeIndex
+    } finally {
+      afterRead(b)
+    }
+  }
+  
   def boxChanges[T, C <: Change[T]](b:Box[T, C]):Option[immutable.Queue[(Long,C)]] = {
     //Reading a box's changes counts as reading it, and
     //so for example makes a reaction have the box as a source
@@ -546,6 +558,10 @@ trait Box[+T, C <: Change[T]] {
   def retainReaction(r:Reaction) = retainedReactions.add(r)
   def releaseReaction(r:Reaction) = retainedReactions.remove(r)
   
+  private[boxes] var _lastChangeIndex = 0L
+
+  def lastChangeIndex = Box.boxLastChangeIndex(this)
+
   def react (r:Reaction) = {
     Box.registerReaction(r)
     retainReaction(r)
