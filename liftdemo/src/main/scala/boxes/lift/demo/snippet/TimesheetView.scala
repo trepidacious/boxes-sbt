@@ -32,6 +32,7 @@ import net.liftweb.http.SHtml
 import net.liftweb.http.js.JE
 import net.liftweb.http.js.JsCmd
 import boxes.lift.demo.TimeEntry
+import net.liftweb.json._
 
 object TimesheetView {
   def toNodeSeq(e: TimeEntry) = if (e.in) {
@@ -257,9 +258,21 @@ class AngularTestString() extends InsertCometView[Option[Timesheet]](Timesheet.f
   
   val testStringGUID = Val({
     val deleteAC = SHtml.ajaxCall(JE.JsRaw("1"), (s:String)=>{
-      logger.info("Got new testString value '" + s + "'")
-      testString() = s
-      
+      val json = parse(s)
+      val value = for { 
+        JField("value", JString(value)) <- json 
+        JField("index", JInt(index)) <- json
+        } {
+          logger.info("Got new testString value '" + s + "', value '" + value + ", index " + index)
+          Box.transact{
+          if (index == testString.lastChangeIndex) {
+            testString() = value
+            logger.info("Accepted")
+          } else {
+            logger.info("Older than current " + testString.lastChangeIndex + " so rejected")            
+          }
+          }
+        }
     })
     deleteAC.guid
   })
@@ -270,7 +283,7 @@ class AngularTestString() extends InsertCometView[Option[Timesheet]](Timesheet.f
         AjaxDataSourceView(
           "DemoCtrl", 
           "testString", 
-          Cal{"'" + testString() + "'"}),
+          Cal{"{'value': '" + testString() + "', 'index': " + testString.lastChangeIndex + "}"}),
         AjaxDataSourceView(
           "DemoCtrl", 
           "testStringGUID", 
