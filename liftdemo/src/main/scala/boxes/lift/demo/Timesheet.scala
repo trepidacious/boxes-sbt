@@ -47,10 +47,11 @@ object Timesheet extends MongoMetaNode {
 
   val nowString = Cal{printInstant(millis())}
 
+  //FIXME make longer - e.g. 1 minute, also would be nice to synchronise to exact minutes (e.g. run every second but only update to whole minute when it changes)
   private val executor = Executors.newScheduledThreadPool(1)
   executor.scheduleAtFixedRate(new Runnable(){
     override def run() = millis() = System.currentTimeMillis()
-  }, 20, 20, TimeUnit.SECONDS)
+  }, 5, 5, TimeUnit.SECONDS)
 
   def printInstant(millis: Long) = dateTimeFormat.print(millis)
   def printInstantBrief(millis: Long) = dateTimeFormatBrief.print(millis)

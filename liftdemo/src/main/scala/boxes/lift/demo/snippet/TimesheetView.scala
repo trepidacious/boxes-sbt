@@ -249,7 +249,36 @@ class AngularTimesheetTable() extends InsertCometView[Option[Timesheet]](Timeshe
         //TODO better delete, should have an id or similar so it can't delete multiple entries that happen to have same in+time
         (delete: TimeEntry) => t.entries()=t.entries().filter(_!=delete))).getOrElse(AjaxNodeSeqView(control = Text(S.?("user.no.user.logged.in"))))
   }
+}
 
+class AngularTestString() extends InsertCometView[Option[Timesheet]](Timesheet.forCurrentUser()) with Loggable{
+  
+  val testString = Var("Bob")
+  
+  val testStringGUID = Val({
+    val deleteAC = SHtml.ajaxCall(JE.JsRaw("1"), (s:String)=>{
+      logger.info("Got new testString value '" + s + "'")
+      testString() = s
+      
+    })
+    deleteAC.guid
+  })
+  
+  def makeView(ot: Option[Timesheet]) = {  
+    ot.map(t => 
+      AjaxListOfViews(
+        AjaxDataSourceView(
+          "DemoCtrl", 
+          "testString", 
+          Cal{"'" + testString() + "'"}),
+        AjaxDataSourceView(
+          "DemoCtrl", 
+          "testStringGUID", 
+          Cal{"'" + testStringGUID() + "'"})
+      )
+    
+    ).getOrElse(AjaxNodeSeqView(control = Text(S.?("user.no.user.logged.in"))))
+  }
 }
 
 class TimesheetDebugButtonsView() extends InsertCometView[Option[Timesheet]](Timesheet.forCurrentUser()){
