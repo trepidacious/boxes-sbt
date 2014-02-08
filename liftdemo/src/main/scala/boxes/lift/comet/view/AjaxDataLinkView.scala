@@ -55,6 +55,10 @@ class AjaxDataLinkView(elementId: String, v: String, data: Var[String]) extends 
   
   lazy val id = net.liftweb.util.Helpers.nextFuncName
   implicit val formats = DefaultFormats 
+  
+  //This is accessed only inside a Box transaction, so no additional synchronisation required
+  private var clientV = None: Option[String]
+  private var clientChangesUpTo = None: Option[Long]  //TODO this could probably just be a boolean, set to true on client changes, false on others in partialUpdates
 
   val guid = {
     val call = SHtml.ajaxCall(JE.JsRaw("1"), (s:String)=>{
@@ -63,8 +67,11 @@ class AjaxDataLinkView(elementId: String, v: String, data: Var[String]) extends 
       for (in <- Try(json.extract[LinkDataIn])) {
         Box.transact{
           logger.info(in)
-          if (in.index == data.lastChangeIndex) {
+          if (in.index == data.lastChangeIndex || (clientChangesUpTo.getOrElse(data.lastChangeIndex-1) >= data.lastChangeIndex)) {
+            clientV = Some(in.value)
             data() = in.value
+            clientChangesUpTo = Some(data.lastChangeIndex)
+            clientV = None
             logger.info("Accepted")
           } else {
             logger.info("Older than current " + data.lastChangeIndex + " so rejected")            
@@ -78,8 +85,20 @@ class AjaxDataLinkView(elementId: String, v: String, data: Var[String]) extends 
   def render = AjaxView.form(<span id={"data_source_" + id}></span>)
   
   override def partialUpdates = List(() => {
-    val json = "{'value': '" + data() + "', 'index': " + data.lastChangeIndex + ", 'guid': '" + guid + "'}"
-    JE.JsRaw("angular.element('#" + elementId + "').scope().$apply(function ($scope) {$scope." + v + " = " + json + ";});")
+    val d = data()
+    //If this change is occurring as a result of the client committing a new value (in clientV), and
+    //the value of data() is this new value, then we don't need to send an update to the client - it already
+    //has it. This allows for quick repeated commits from a client without interruption from updates sent to
+    //the client to confirm the commits. Note that if we get a change to the data that does NOT come from the
+    //client, it will be interrupted and updated with that overriding value
+    clientV match {
+      case Some(d) => Noop
+      case _ => {
+        clientChangesUpTo = None
+        val json = "{'value': '" + data() + "', 'index': " + data.lastChangeIndex + ", 'guid': '" + guid + "'}"
+        JE.JsRaw("angular.element('#" + elementId + "').scope().$apply(function ($scope) {$scope." + v + " = " + json + ";});")
+      } 
+    }
   })
 }
 
