@@ -254,37 +254,13 @@ class AngularTimesheetTable() extends InsertCometView[Option[Timesheet]](Timeshe
 
 class AngularTestString() extends InsertCometView[Option[Timesheet]](Timesheet.forCurrentUser()) with Loggable{
   def mv(t: Timesheet) = {
-  val testString = t.status
-    val testStringGUID = Val({
-      val deleteAC = SHtml.ajaxCall(JE.JsRaw("1"), (s:String)=>{
-        val json = parse(s)
-        val value = for { 
-          JField("value", JString(value)) <- json 
-          JField("index", JInt(index)) <- json
-          } {
-            logger.info("Got new testString value '" + s + "', value '" + value + ", index " + index)
-            Box.transact{
-            if (index == testString.lastChangeIndex) {
-              testString() = value
-              logger.info("Accepted")
-            } else {
-              logger.info("Older than current " + testString.lastChangeIndex + " so rejected")            
-            }
-            }
-          }
-      })
-      deleteAC.guid
-    })
   
     AjaxListOfViews(
-      AjaxDataSourceView(
+      AjaxDataLinkView(
         "DemoCtrl", 
         "testString", 
-        Cal{"{'value': '" + testString() + "', 'index': " + testString.lastChangeIndex + "}"}),
-      AjaxDataSourceView(
-        "DemoCtrl", 
-        "testStringGUID", 
-        Cal{"'" + testStringGUID() + "'"})
+        t.status
+      )
     )
   }
   

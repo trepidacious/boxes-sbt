@@ -92,7 +92,9 @@ class AjaxDataSourceView(elementId: String, v: String, data: Ref[String]) extend
 //      () => JE.JsRaw("angular.element('#" + elementId + "').scope().$apply(function () {angular.element('#" + elementId + "').scope()." + v + " = " + data() + ";});")
       () => JE.JsRaw("angular.element('#" + elementId + "').scope().$apply(function ($scope) {$scope." + v + " = " + data() + ";});")
 //      ,() => JE.JsRaw("alert(\"" + data() + "\")")
-  )}
+  )
+}
+
 
 object AjaxListDataSourceView {
   def apply[T](elementId: String, v: String, list: Ref[List[T]], renderElement: (T)=>Map[String, String], deleteElement: (T)=>Unit) = new AjaxListDataSourceView(elementId, v, list, renderElement, deleteElement)

@@ -8,18 +8,16 @@ demoApp.controller('DemoCtrl', function ($scope) {
   $scope.entries = [];
   $scope.inOutSetting = 'either';
 
-  $scope.testString = {value: "", index: -1};
+  $scope.testString = {value: "", index: -1, guid: null};
   
-  $scope.testStringGUID = null;
   $scope.$watch('testString', function(current, previous){
-	console.log("testString changed from " + previous + " to " + current + ", guid is " + $scope.testStringGUID)
-    if ((current.value != previous.value) && (current.index == previous.index) && $scope.testStringGUID) {
-      liftAjax.lift_ajaxHandler($scope.testStringGUID + '={"value": "' + current.value + '", "index": ' + current.index + '}', null, null, null)
+	console.log("testString changed from " + previous.value + " to " + current.value + ", guid is " + current.guid)
+    if ((current.value != previous.value) && (current.index == previous.index) && current.guid) {
+      liftAjax.lift_ajaxHandler(current.guid + '={"value": "' + current.value + '", "index": ' + current.index + '}', null, null, null)
     }
   }, true)
   
   $scope.remove = function(deleteGUID){
-//    alert("Delete with GUID " + deleteGUID);
     liftAjax.lift_ajaxHandler(deleteGUID + '=true', null, null, null)
   };
 
