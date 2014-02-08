@@ -253,44 +253,43 @@ class AngularTimesheetTable() extends InsertCometView[Option[Timesheet]](Timeshe
 }
 
 class AngularTestString() extends InsertCometView[Option[Timesheet]](Timesheet.forCurrentUser()) with Loggable{
-  
-  val testString = Var("Bob")
-  
-  val testStringGUID = Val({
-    val deleteAC = SHtml.ajaxCall(JE.JsRaw("1"), (s:String)=>{
-      val json = parse(s)
-      val value = for { 
-        JField("value", JString(value)) <- json 
-        JField("index", JInt(index)) <- json
-        } {
-          logger.info("Got new testString value '" + s + "', value '" + value + ", index " + index)
-          Box.transact{
-          if (index == testString.lastChangeIndex) {
-            testString() = value
-            logger.info("Accepted")
-          } else {
-            logger.info("Older than current " + testString.lastChangeIndex + " so rejected")            
+  def mv(t: Timesheet) = {
+  val testString = t.status
+    val testStringGUID = Val({
+      val deleteAC = SHtml.ajaxCall(JE.JsRaw("1"), (s:String)=>{
+        val json = parse(s)
+        val value = for { 
+          JField("value", JString(value)) <- json 
+          JField("index", JInt(index)) <- json
+          } {
+            logger.info("Got new testString value '" + s + "', value '" + value + ", index " + index)
+            Box.transact{
+            if (index == testString.lastChangeIndex) {
+              testString() = value
+              logger.info("Accepted")
+            } else {
+              logger.info("Older than current " + testString.lastChangeIndex + " so rejected")            
+            }
+            }
           }
-          }
-        }
+      })
+      deleteAC.guid
     })
-    deleteAC.guid
-  })
+  
+    AjaxListOfViews(
+      AjaxDataSourceView(
+        "DemoCtrl", 
+        "testString", 
+        Cal{"{'value': '" + testString() + "', 'index': " + testString.lastChangeIndex + "}"}),
+      AjaxDataSourceView(
+        "DemoCtrl", 
+        "testStringGUID", 
+        Cal{"'" + testStringGUID() + "'"})
+    )
+  }
   
   def makeView(ot: Option[Timesheet]) = {  
-    ot.map(t => 
-      AjaxListOfViews(
-        AjaxDataSourceView(
-          "DemoCtrl", 
-          "testString", 
-          Cal{"{'value': '" + testString() + "', 'index': " + testString.lastChangeIndex + "}"}),
-        AjaxDataSourceView(
-          "DemoCtrl", 
-          "testStringGUID", 
-          Cal{"'" + testStringGUID() + "'"})
-      )
-    
-    ).getOrElse(AjaxNodeSeqView(control = Text(S.?("user.no.user.logged.in"))))
+    ot.map(mv(_)).getOrElse(AjaxNodeSeqView(control = Text(S.?("user.no.user.logged.in"))))
   }
 }
 

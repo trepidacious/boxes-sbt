@@ -13,7 +13,7 @@ demoApp.controller('DemoCtrl', function ($scope) {
   $scope.testStringGUID = null;
   $scope.$watch('testString', function(current, previous){
 	console.log("testString changed from " + previous + " to " + current + ", guid is " + $scope.testStringGUID)
-    if (current.value != previous.value && $scope.testStringGUID) {
+    if ((current.value != previous.value) && (current.index == previous.index) && $scope.testStringGUID) {
       liftAjax.lift_ajaxHandler($scope.testStringGUID + '={"value": "' + current.value + '", "index": ' + current.index + '}', null, null, null)
     }
   }, true)
