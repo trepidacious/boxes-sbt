@@ -2,7 +2,6 @@ package boxes.lift.comet
 
 import scala.language.implicitConversions
 import scala.util.Try
-
 import boxes._
 import net.liftweb.common.Loggable
 import net.liftweb.http.SHtml
@@ -11,6 +10,7 @@ import net.liftweb.http.js.JsCmd._
 import net.liftweb.http.js.JsCmds._
 import net.liftweb.json.DefaultFormats
 import net.liftweb.json.parse
+import scala.xml.NodeSeq
 
 case class LinkDataIn(value: String, index: Long)
 case class LinkDataOut(value: String, index: Long, guid: String)
@@ -21,7 +21,6 @@ object AjaxDataLinkView {
 
 class AjaxDataLinkView(elementId: String, v: String, data: Var[String]) extends AjaxView with Loggable {
   
-  lazy val id = net.liftweb.util.Helpers.nextFuncName
   implicit val formats = DefaultFormats 
   
   //This is accessed only inside a Box transaction, so no additional synchronisation required
@@ -50,7 +49,10 @@ class AjaxDataLinkView(elementId: String, v: String, data: Var[String]) extends 
     call.guid
   }
   
-  def render = AjaxView.form(<span id={"data_source_" + id}></span>)
+  //This creates the controller code in Angular on the browser, that will send commits back to us
+  override def renderHeader = <div boxes-data-link={v}></div>
+  
+  def render = NodeSeq.Empty
   
   override def partialUpdates = List(() => {
     val d = data()

@@ -1,5 +1,26 @@
 var angularBoxes = angular.module('angularBoxes', []);
 
+angularBoxes.directive("boxesDataLink", function() {
+//	var editorTemplate = '<div style="display: none;">{{data.value + "@" + data.index + " => " + data.guid}}</div>';
+//	var editorTemplate = '<div>{{data.value + "@" + data.index + " => " + data.guid}}</div>';
+	var editorTemplate = '';
+    return {
+        restrict: "A",
+        replace: true,
+        template: editorTemplate,
+        scope: {
+            data: "=boxesDataLink",
+        },
+        controller: function($scope) {
+        	  $scope.$watch('data', function(current, previous){
+        		    if (current && previous && (current.value != previous.value) && (current.index == previous.index) && current.guid) {
+        		      liftAjax.lift_ajaxHandler(current.guid + '={"value": "' + current.value + '", "index": ' + current.index + '}', null, null, null)
+        		    }
+        	  }, true);
+        }
+    };
+});
+
 angularBoxes.filter('inOutFilter', [function(){
     return function(input, param){
         var ret = [];

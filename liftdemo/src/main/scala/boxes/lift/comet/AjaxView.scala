@@ -75,6 +75,7 @@ object AjaxView {
 }
 
 trait AjaxView {
+  def renderHeader: NodeSeq = NodeSeq.Empty
   def render: NodeSeq
   def partialUpdates: List[()=>JsCmd] = List.empty 
 }
@@ -176,6 +177,7 @@ object AjaxListOfViews {
 }
 
 class AjaxListOfViews(views: List[AjaxView]) extends AjaxView {
+  override def renderHeader = views.flatMap(_.renderHeader)
   def render = views.flatMap(_.render)
   override val partialUpdates = views.flatMap(_.partialUpdates)
 }
@@ -234,6 +236,7 @@ object AjaxLabelledView {
 }
 
 class AjaxLabelledView(labelView: AjaxView, mainView: AjaxView) extends AjaxView {
+  override def renderHeader = List(labelView, mainView).flatMap(_.renderHeader)
   def render = <div class="form-horizontal">
                  {AjaxView.formRow(labelView.render, mainView.render)}
                </div>
@@ -254,6 +257,7 @@ object AjaxOffsetView {
 }
 
 class AjaxOffsetView(view: AjaxView) extends AjaxView {
+  override def renderHeader = view.renderHeader
   def render =
     <div class="form-horizontal">
       <div class="form-group">
