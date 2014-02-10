@@ -13,17 +13,33 @@ import net.liftweb.json._
 import scala.xml.NodeSeq
 import scala.util.Success
 import scala.util.Failure
+import org.joda.time.DateTime
+import org.joda.time.format.ISODateTimeFormat
+
+//Parse any date string that can be handled by DateTime, and format DateTimes as ISO8601 date and time with millis
+case object BoxesJodaDateTimeSerializer extends CustomSerializer[DateTime](format => (
+  {
+    case JString(s) => Try(new DateTime(s)).getOrElse(throw new MappingException("Invalid date format " + s))
+    case JNull => null
+  },
+  {
+    case d: DateTime => JString(AjaxDataLinkView.dateTimeFormatter.print(d))
+  }
+))
 
 private case class VersionedValue[T](value: T, index: Long)
 private case class VersionedValueAndGUID[T](value: T, index: Long, guid: String)
 
 object AjaxDataLinkView {
   def apply[T](elementId: String, v: String, data: Var[T])(implicit mf: Manifest[T]): AjaxView = new AjaxDataLinkView[T](elementId, v, data)
+
+  val dateTimeFormatter = ISODateTimeFormat.basicDateTime()
+
 }
 
 private class AjaxDataLinkView[T](elementId: String, v: String, data: Var[T])(implicit mf: Manifest[T]) extends AjaxView with Loggable {
   
-  implicit val formats = DefaultFormats 
+  implicit val formats = DefaultFormats + BoxesJodaDateTimeSerializer
   
   //This is accessed only inside a Box transaction, so no additional synchronisation required
   private var clientV = None: Option[T]

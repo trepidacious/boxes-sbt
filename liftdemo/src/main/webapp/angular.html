@@ -50,33 +50,18 @@
     </div> -->
     
 
-    <button ng-model="date.value" show-weeks="false" class="btn btn-default" datepicker-popup="yyyy-MM-dd" ng-model="dateMillis" unixMillis><i class="fa fa-calendar"></i> {{date.value | date:'fullDate'}}</button>
+    <button ng-model="date.value" show-weeks="false" class="btn btn-default" datepicker-popup="yyyy-MM-dd" unixMillis><i class="fa fa-calendar"></i> {{date.value | date:'fullDate'}}</button>
     <input class="form-control" type="number" ng-model="date.value"  />
 
         
       <input class="form-control" ng-model="status.value">
       <div class="lift:AngularTestString"></div>
   
-  <div>    
-  <a class="dropdown-toggle">
-    Click me for a dropdown, yo!
-  </a>
+      <button ng-model="realDate.value" show-weeks="false" class="btn btn-default" datepicker-popup="yyyy-MM-dd"><i class="fa fa-calendar"></i> {{realDate.value | date:'fullDate'}}</button>
+            <input type="text" datepicker-popup="yyyy-MM-dd" id="fromDate" show-weeks="false" ng-model="realDate.value" class="form-control" placeholder="any date"/>
   
-  <ul class="dropdown-menu">
-    <li>
-    a
-    </li>
-    <li>
-    b
-    </li>
-    <li>
-    c
-    </li>
-  </ul>
-      </div>
-      
-	  </div>
-  </div>
+    {{"$" + realDate.value + "$"}}
+  
   
   <lift:with-param name="angular-scripts">
     <!-- Angular controller -->
