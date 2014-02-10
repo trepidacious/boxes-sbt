@@ -1,8 +1,6 @@
-var angularBoxes = angular.module('angularBoxes', []);
+var angularBoxes = angular.module('angularBoxes', ['ui.bootstrap']);
 
 angularBoxes.directive("boxesDataLink", function() {
-//	var editorTemplate = '<div style="display: none;">{{data.value + "@" + data.index + " => " + data.guid}}</div>';
-//	var editorTemplate = '<div>{{data.value + "@" + data.index + " => " + data.guid}}</div>';
 	var editorTemplate = '';
     return {
         restrict: "A",
@@ -14,12 +12,24 @@ angularBoxes.directive("boxesDataLink", function() {
         controller: function($scope) {
         	  $scope.$watch('data', function(current, previous){
         		    if (current && previous && (current.value != previous.value) && (current.index == previous.index) && current.guid) {
-        		      liftAjax.lift_ajaxHandler(current.guid + '={"value": "' + current.value + '", "index": ' + current.index + '}', null, null, null)
+        		   //'{"value": "' + current.value + '", "index": ' + current.index + '}'
+        		      liftAjax.lift_ajaxHandler(current.guid + '=' + JSON.stringify(current), null, null, null)
         		    }
         	  }, true);
         }
     };
 });
+
+angularBoxes.directive('unixmillis', function() {
+	  return {
+			require: 'ngModel',
+			link: function(scope, element, attrs, ngModel) {
+	  		ngModel.$parsers.push(function(viewValue) {
+	       	return +viewValue;
+				});
+			}
+		}
+	});
 
 angularBoxes.filter('inOutFilter', [function(){
     return function(input, param){

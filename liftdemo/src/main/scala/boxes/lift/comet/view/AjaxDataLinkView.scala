@@ -9,47 +9,47 @@ import net.liftweb.http.js.JE
 import net.liftweb.http.js.JsCmd._
 import net.liftweb.http.js.JsCmds._
 import net.liftweb.json.DefaultFormats
-import net.liftweb.json.parse
+import net.liftweb.json._
 import scala.xml.NodeSeq
+import scala.util.Success
+import scala.util.Failure
 
-case class LinkDataIn(value: String, index: Long)
-case class LinkDataOut(value: String, index: Long, guid: String)
+private case class VersionedValue[T](value: T, index: Long)
+private case class VersionedValueAndGUID[T](value: T, index: Long, guid: String)
 
 object AjaxDataLinkView {
-  def apply(elementId: String, v: String, data: Var[String]) = new AjaxDataLinkView(elementId, v, data)
+  def apply[T](elementId: String, v: String, data: Var[T])(implicit mf: Manifest[T]): AjaxView = new AjaxDataLinkView[T](elementId, v, data)
 }
 
-class AjaxDataLinkView(elementId: String, v: String, data: Var[String]) extends AjaxView with Loggable {
+private class AjaxDataLinkView[T](elementId: String, v: String, data: Var[T])(implicit mf: Manifest[T]) extends AjaxView with Loggable {
   
   implicit val formats = DefaultFormats 
   
   //This is accessed only inside a Box transaction, so no additional synchronisation required
-  private var clientV = None: Option[String]
+  private var clientV = None: Option[T]
   private var clientChangesUpTo = None: Option[Long]  //TODO this could probably just be a boolean, set to true on client changes, false on others in partialUpdates
 
-  val guid = {
-    val call = SHtml.ajaxCall(JE.JsRaw("1"), (s:String)=>{
-      logger.info("Got client edit " + s)
-      val json = parse(s)
-      for (in <- Try(json.extract[LinkDataIn])) {
-        Box.transact{
-          logger.info(in)
-          if (in.index == data.lastChangeIndex || (clientChangesUpTo.getOrElse(data.lastChangeIndex-1) >= data.lastChangeIndex)) {
-            clientV = Some(in.value)
-            data() = in.value
-            clientChangesUpTo = Some(data.lastChangeIndex)
-            clientV = None
-            logger.info("Accepted")
-          } else {
-            logger.info("Older than current " + data.lastChangeIndex + " so rejected")            
-          }
-        }
-      }
-    })
-    call.guid
-  }
+  val call = SHtml.ajaxCall(JE.JsRaw("1"), (s:String)=>{
+    val json = parse(s)
+    Try(json.extract[VersionedValue[T]]) match {
+      case Success(in) => Box.transact{
+                            logger.info("Got " + in)
+                            if (in.value == null) {
+                              logger.info("Rejecting null value")
+                            } else if (in.index == data.lastChangeIndex || (clientChangesUpTo.getOrElse(data.lastChangeIndex-1) >= data.lastChangeIndex)) {
+                              clientV = Some(in.value)
+                              data() = in.value
+                              clientChangesUpTo = Some(data.lastChangeIndex)
+                              clientV = None
+                            }
+                          }
+      case Failure(e) => logger.info("Failed to parse '" + s + "'", e)
+    }
+  })
+      
+  val guid = call.guid
   
-  //This creates the controller code in Angular on the browser, that will send commits back to us
+  //This creates the controller code in Angular on the browser, that will send commits back to us on the named variable
   override def renderHeader = <div boxes-data-link={v}></div>
   
   def render = NodeSeq.Empty
@@ -62,10 +62,11 @@ class AjaxDataLinkView(elementId: String, v: String, data: Var[String]) extends 
     //the client to confirm the commits. Note that if we get a change to the data that does NOT come from the
     //client, it will be interrupted and updated with that overriding value
     clientV match {
-      case Some(d) => Noop
+      case Some(x) if x == d => Noop
       case _ => {
         clientChangesUpTo = None
-        val json = "{'value': '" + data() + "', 'index': " + data.lastChangeIndex + ", 'guid': '" + guid + "'}"
+        val vvg = VersionedValueAndGUID(data(), data.lastChangeIndex, guid)
+        val json = Serialization.write(vvg)
         JE.JsRaw("angular.element('#" + elementId + "').scope().$apply(function ($scope) {$scope." + v + " = " + json + ";});")
       } 
     }

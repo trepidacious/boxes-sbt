@@ -41,8 +41,40 @@
         <div class="lift:AngularTimesheetTable"></div>
       </p>
 
-      <input class="form-control" ng-model="testString.value">
+<!--     <pre>Selected date is: <em>{{date.value | date:'fullDate' }}</em></pre>
+    <pre>Model is: <em>{{date.value}}</em></pre>
+
+   <br />
+    <div class="well well-small pull-left" ng-model="date.value" unixmillis>
+        <datepicker min="minDate" show-weeks="showWeeks"></datepciker>
+    </div> -->
+    
+
+    <button ng-model="date.value" show-weeks="false" class="btn btn-default" datepicker-popup="yyyy-MM-dd" ng-model="dateMillis" unixMillis><i class="fa fa-calendar"></i> {{date.value | date:'fullDate'}}</button>
+    <input class="form-control" type="number" ng-model="date.value"  />
+
+        
+      <input class="form-control" ng-model="status.value">
       <div class="lift:AngularTestString"></div>
+  
+  <div>    
+  <a class="dropdown-toggle">
+    Click me for a dropdown, yo!
+  </a>
+  
+  <ul class="dropdown-menu">
+    <li>
+    a
+    </li>
+    <li>
+    b
+    </li>
+    <li>
+    c
+    </li>
+  </ul>
+      </div>
+      
 	  </div>
   </div>
   

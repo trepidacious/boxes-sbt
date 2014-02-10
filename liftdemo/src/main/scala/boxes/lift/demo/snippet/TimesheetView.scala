@@ -33,6 +33,7 @@ import net.liftweb.http.js.JE
 import net.liftweb.http.js.JsCmd
 import boxes.lift.demo.TimeEntry
 import net.liftweb.json._
+import scala.util.Random
 
 object TimesheetView {
   def toNodeSeq(e: TimeEntry) = if (e.in) {
@@ -253,14 +254,30 @@ class AngularTimesheetTable() extends InsertCometView[Option[Timesheet]](Timeshe
 }
 
 class AngularTestString() extends InsertCometView[Option[Timesheet]](Timesheet.forCurrentUser()) with Loggable{
+  
+  val date = Var(42L)
+  
   def mv(t: Timesheet) = {
   
     AjaxListOfViews(
       AjaxDataLinkView(
         "DemoCtrl", 
-        "testString", 
+        "status", 
         t.status
+      ),
+      AjaxButtonView("Log", Val(true), logger.info("LOG!")),
+      AjaxButtonView("Randomise date", Val(true), {
+        date() = Random.nextInt(1000000)
+        logger.info("Randomised date to " + date())
+      }),
+      AjaxStringView("Date", date)
+      ,
+      AjaxDataLinkView(
+        "DemoCtrl", 
+        "date", 
+        date
       )
+
     )
   }
   
