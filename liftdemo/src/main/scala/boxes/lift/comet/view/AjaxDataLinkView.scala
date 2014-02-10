@@ -33,10 +33,7 @@ private class AjaxDataLinkView[T](elementId: String, v: String, data: Var[T])(im
     val json = parse(s)
     Try(json.extract[VersionedValue[T]]) match {
       case Success(in) => Box.transact{
-                            logger.info("Got " + in)
-                            if (in.value == null) {
-                              logger.info("Rejecting null value")
-                            } else if (in.index == data.lastChangeIndex || (clientChangesUpTo.getOrElse(data.lastChangeIndex-1) >= data.lastChangeIndex)) {
+                            if (in.value != null && in.index == data.lastChangeIndex || (clientChangesUpTo.getOrElse(data.lastChangeIndex-1) >= data.lastChangeIndex)) {
                               clientV = Some(in.value)
                               data() = in.value
                               clientChangesUpTo = Some(data.lastChangeIndex)
