@@ -258,6 +258,7 @@ class AngularTestString() extends InsertCometView[Option[Timesheet]](Timesheet.f
   
   val date = Var(42L)
   val realDate = Var(new DateTime())
+  val optionalDate = Var(None:Option[DateTime])
   
   def mv(t: Timesheet) = {
   
@@ -272,14 +273,19 @@ class AngularTestString() extends InsertCometView[Option[Timesheet]](Timesheet.f
         "realDate", 
         realDate
       ),
+      AjaxDataLinkView.optional(
+        "DemoCtrl", 
+        "optionalDate", 
+        optionalDate
+      ),
       AjaxButtonView("Log", Val(true), logger.info("LOG!")),
       AjaxButtonView("Randomise date", Val(true), {
         date() = Random.nextInt(1000000)
         logger.info("Randomised date to " + date())
       }),
       AjaxStringView("Date", date),
-      AjaxStringView("Real Date", realDate)
-      ,
+      AjaxStringView("Real Date", realDate),
+      AjaxStringView("Optional Date", optionalDate),
       AjaxDataLinkView(
         "DemoCtrl", 
         "date", 

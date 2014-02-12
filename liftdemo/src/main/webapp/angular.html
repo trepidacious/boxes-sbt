@@ -56,12 +56,24 @@
         
       <input class="form-control" ng-model="status.value">
       <div class="lift:AngularTestString"></div>
+
+    <h4>Real date</h4>
   
       <button ng-model="realDate.value" show-weeks="false" class="btn btn-default" datepicker-popup="yyyy-MM-dd"><i class="fa fa-calendar"></i> {{realDate.value | date:'fullDate'}}</button>
             <input type="text" datepicker-popup="yyyy-MM-dd" id="fromDate" show-weeks="false" ng-model="realDate.value" class="form-control" placeholder="any date"/>
   
     {{"$" + realDate.value + "$"}}
+    
+    {{realDate.value | date:'medium'}}
   
+    <h4>Optional date</h4>
+  
+    <button ng-model="optionalDate.value" show-weeks="false" class="btn btn-default" datepicker-popup="yyyy-MM-dd"><i class="fa fa-calendar"></i> {{optionalDate.value | date:'fullDate'}}</button>
+            <input type="text" datepicker-popup="yyyy-MM-dd" id="fromDate" show-weeks="false" ng-model="optionalDate.value" class="form-control" placeholder="any date"/>
+  
+    {{"$" + optionalDate.value + "$"}}
+    
+    {{optionalDate.value | date:'medium'}}
   
   <lift:with-param name="angular-scripts">
     <!-- Angular controller -->
