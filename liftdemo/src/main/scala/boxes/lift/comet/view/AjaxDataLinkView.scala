@@ -14,7 +14,7 @@ import scala.xml.NodeSeq
 import scala.util.Success
 import scala.util.Failure
 import org.joda.time.DateTime
-import org.joda.time.format.ISODateTimeFormat
+import boxes.persistence.DateTimeCodec
 
 //Parse any date string that can be handled by DateTime, and format DateTimes as ISO8601 date and time with millis
 case object BoxesJodaDateTimeSerializer extends CustomSerializer[DateTime](format => (
@@ -23,7 +23,7 @@ case object BoxesJodaDateTimeSerializer extends CustomSerializer[DateTime](forma
     case JNull => null
   },
   {
-    case d: DateTime => JString(AjaxDataLinkView.dateTimeFormatter.print(d))
+    case d: DateTime => JString(DateTimeCodec.formatter.print(d))
   }
 ))
 
@@ -33,9 +33,6 @@ private case class VersionedValueAndGUID[T](value: T, index: Long, guid: String)
 object AjaxDataLinkView {
   def apply[T](elementId: String, v: String, data: Var[T])(implicit mf: Manifest[T]): AjaxView = new AjaxDataLinkView[T](elementId, v, data)
   def optional[T](elementId: String, v: String, data: Var[Option[T]])(implicit mf: Manifest[T]): AjaxView = new AjaxOptionalDataLinkView[T](elementId, v, data)
-
-  val dateTimeFormatter = ISODateTimeFormat.basicDateTime()
-
 }
 
 private class AjaxDataLinkView[T](elementId: String, v: String, data: Var[T])(implicit mf: Manifest[T]) extends AjaxView with Loggable {

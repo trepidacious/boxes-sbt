@@ -37,16 +37,18 @@ import scala.util.Random
 import java.util.Date
 
 object TimesheetView {
+  
+  //FIXME format to local times using Angular
   def toNodeSeq(e: TimeEntry) = if (e.in) {
-    <span class="timestamp-large timestamp-in"><i class="fa fa-sign-in"></i> In {Timesheet.printInstant(e.time)}</span>
+    <span class="timestamp-large timestamp-in"><i class="fa fa-sign-in"></i> In {e.time}</span>
   } else {
-    <span class="timestamp-large timestamp-out"><i class="fa fa-sign-out"></i> Out {Timesheet.printInstant(e.time)}</span>
+    <span class="timestamp-large timestamp-out"><i class="fa fa-sign-out"></i> Out {e.time}</span>
   }
 
   def toNodeSeqBrief(e: TimeEntry) = if (e.in) {
-    <span><span class="timestamp timestamp-in"><i class="fa fa-sign-in"></i> {Timesheet.printInstantBrief(e.time)}</span><span> </span></span>
+    <span><span class="timestamp timestamp-in"><i class="fa fa-sign-in"></i> {e.time}</span><span> </span></span>
   } else {
-    <span><span class="timestamp timestamp-out"><i class="fa fa-sign-out"></i> {Timesheet.printInstantBrief(e.time)}</span><span> </span></span>
+    <span><span class="timestamp timestamp-out"><i class="fa fa-sign-out"></i> {e.time}</span><span> </span></span>
   }
 
   def printDuration(duration: Duration) = {
@@ -65,8 +67,8 @@ object TimesheetView {
     }
   }
   
-  def timeElapsedToNodeSeq(millis: Long, e: TimeEntry) = {
-    val duration = new Duration(e.time, millis)
+  def timeElapsedToNodeSeq(now: DateTime, e: TimeEntry) = {
+    val duration = new Duration(e.time, now)
     val s = printDuration(duration)
     if (e.in) {
       <span class="timestamp-large timestamp-in"><i class="fa fa-sign-in"></i> In for {s}</span>
@@ -75,7 +77,7 @@ object TimesheetView {
     }
   }
   
-    def printWorkedDuration(millis: Long) = {
+  def printWorkedDuration(millis: Long) = {
     if (millis == 0) {
       ""
     } else {
@@ -85,9 +87,9 @@ object TimesheetView {
   
   def makeDayView(t: Timesheet, daysOffset: Int) = {
     AjaxDirectView(Cal{
-      val day = new DateTime(Timesheet.now()).toDateMidnight().plusDays(daysOffset).toDateTime()
+      val day = Timesheet.now().toDateMidnight().plusDays(daysOffset).toDateTime()
       val ds = t.daySummary(day, Some(Timesheet.now()))
-      <span>{Timesheet.printDate(day)}</span><span class="pull-right">{printWorkedDuration(ds.totalIn)}</span>
+      <span>{day}</span><span class="pull-right">{printWorkedDuration(ds.totalIn)}</span>
       <div class="progress">
             {ds.intervalLengths.map{case (in, l) =>         
           if (in) {
@@ -136,8 +138,8 @@ class TimesheetView() extends InsertCometView[Option[Timesheet]](Timesheet.forCu
 
         AjaxNodeSeqView(S.?("timesheet.today.list"), Cal{
           //Would be nice to have more than 5, but this wraps badly on small screen
-          val midnight = Timesheet.todayMidnight()
-          t.sortedEntries().takeRight(5).filter(_.time > midnight).map(e => {TimesheetView.toNodeSeqBrief(e)})
+          val midnight = Timesheet.now().toDateMidnight()
+          t.sortedEntries().takeRight(5).filter(_.time.isAfter(midnight)).map(e => {TimesheetView.toNodeSeqBrief(e)})
         }, addP=true)
         
 //        AjaxStringView(S.?("timesheet.time.in.today"),    Cal{
@@ -157,6 +159,7 @@ class TimesheetRecentDaysView() extends InsertCometView[Option[Timesheet]](Times
 
 class TimesheetButtonsView() extends InsertCometView[Option[Timesheet]](Timesheet.forCurrentUser()){
   
+  //Refactor this all to use Angular date input
   def makeView(ot: Option[Timesheet]) = {
     val dateEntry = Var("")
     val timeEntry = Var("")
@@ -182,8 +185,8 @@ class TimesheetButtonsView() extends InsertCometView[Option[Timesheet]](Timeshee
         dateTime() match {
           case Some(dt) => {
             ot.foreach(t => {
-              t.addLateEntry(TimeEntry(in, dt.toInstant().getMillis()))
-              S.notice("Added late " + (if (in) "in" else "out") +" at " + Timesheet.printDate(dt))
+              t.addLateEntry(in, dt)
+              S.notice("Added late " + (if (in) "in" else "out") +" at " + dt)
             })
           }
           case None => {
@@ -240,7 +243,7 @@ class AngularTimesheetTable() extends InsertCometView[Option[Timesheet]](Timeshe
   }
   
   def renderEntry(e: TimeEntry) = {
-    Map("in" -> e.in.toString, "time" -> e.time.toString)
+    Map("index" -> e.index.toString(), "in" -> e.in.toString(), "time" -> e.time.toString())
   }
 
   def makeView(ot: Option[Timesheet]) = {  
@@ -249,7 +252,6 @@ class AngularTimesheetTable() extends InsertCometView[Option[Timesheet]](Timeshe
         "entries", 
         Cal{t.entries()},
         renderEntry,
-        //TODO better delete, should have an id or similar so it can't delete multiple entries that happen to have same in+time
         (delete: TimeEntry) => t.entries()=t.entries().filter(_!=delete))).getOrElse(AjaxNodeSeqView(control = Text(S.?("user.no.user.logged.in"))))
   }
 }
@@ -257,7 +259,7 @@ class AngularTimesheetTable() extends InsertCometView[Option[Timesheet]](Timeshe
 class AngularTestString() extends InsertCometView[Option[Timesheet]](Timesheet.forCurrentUser()) with Loggable{
   
   val date = Var(42L)
-  val realDate = Var(new DateTime())
+  val realDate = Var(Timesheet.dateTime())
   val optionalDate = Var(None:Option[DateTime])
   
   def mv(t: Timesheet) = {
@@ -309,25 +311,25 @@ class TimesheetDebugButtonsView() extends InsertCometView[Option[Timesheet]](Tim
         
         //Fill out today as a typical day, for demo
         AjaxButtonView("Typical day today", Val(true), {
-          val dt = new DateTime()
+          val dt = Timesheet.dateTime()
           val y = dt.year().get()
           val m = dt.monthOfYear().get()
           val d = dt.dayOfMonth().get()
-          t.addEntry(TimeEntry(true, new DateTime(y, m, d, 9, 0).toInstant().getMillis()))
-          t.addEntry(TimeEntry(false, new DateTime(y, m, d, 12, 30).toInstant().getMillis()))
-          t.addEntry(TimeEntry(true, new DateTime(y, m, d, 13, 15).toInstant().getMillis()))
-          t.addEntry(TimeEntry(false, new DateTime(y, m, d, 17, 25).toInstant().getMillis()))
+          t.addEntry(true, new DateTime(y, m, d, 9, 0))
+          t.addEntry(false, new DateTime(y, m, d, 12, 30))
+          t.addEntry(true, new DateTime(y, m, d, 13, 15))
+          t.addEntry(false, new DateTime(y, m, d, 17, 25))
         }),
 
         AjaxButtonView("Typical day yesterday", Val(true), {
-          val dt = new DateTime().plusDays(-1)
+          val dt = Timesheet.dateTime().plusDays(-1)
           val y = dt.year().get()
           val m = dt.monthOfYear().get()
           val d = dt.dayOfMonth().get()
-          t.addEntry(TimeEntry(true, new DateTime(y, m, d, 9, 5).toInstant().getMillis()))
-          t.addEntry(TimeEntry(false, new DateTime(y, m, d, 12, 25).toInstant().getMillis()))
-          t.addEntry(TimeEntry(true, new DateTime(y, m, d, 13, 10).toInstant().getMillis()))
-          t.addEntry(TimeEntry(false, new DateTime(y, m, d, 17, 45).toInstant().getMillis()))
+          t.addEntry(true, new DateTime(y, m, d, 9, 5))
+          t.addEntry(false, new DateTime(y, m, d, 12, 25))
+          t.addEntry(true, new DateTime(y, m, d, 13, 10))
+          t.addEntry(false, new DateTime(y, m, d, 17, 45))
         })
 
     ))).getOrElse(AjaxNodeSeqView(control = Text(S.?("user.no.user.logged.in"))))

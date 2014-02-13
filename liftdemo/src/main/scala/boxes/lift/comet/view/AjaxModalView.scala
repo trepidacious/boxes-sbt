@@ -34,9 +34,6 @@ import scala.language.implicitConversions
 import boxes.lift.user.User
 import net.liftweb.http.js.JsCmds
 import boxes.lift.comet.view.AjaxButtonView
-import org.joda.time.DateTime
-import org.joda.time.format.DateTimeFormat
-import org.joda.time.format.DateTimeFormatter
 
 object AjaxModalView {
   def apply(body: AjaxView, footer: AjaxView, title: String, id: String) = new AjaxModalView(body, footer, title, id)

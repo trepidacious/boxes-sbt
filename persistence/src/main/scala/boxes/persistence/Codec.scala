@@ -3,6 +3,9 @@ package boxes.persistence
 import collection._
 import boxes._
 import com.novus.salat._
+import org.joda.time.DateTime
+import org.joda.time.format.DateTimeFormat
+import org.joda.time.format.ISODateTimeFormat
 
 /**
 * Writes objects to a TokenWriter, and
@@ -38,6 +41,7 @@ class CodecByClass extends Codec[Any] {
     add(new NodeCodec(this), classOf[Node])
     add(new CaseClassCodec(this), classOf[Product])
     add(new OptionCodec(this), classOf[Option[_]])
+    add(new DateTimeCodec(this), classOf[DateTime])
   }
 
   def add(codec:CodecWithClass[_]):Unit = {
@@ -123,6 +127,31 @@ class OptionCodec(delegate:Codec[Any]) extends Codec[Option[_]] {
         delegate.write(s, writer)
       }
     }
+    writer.write(CloseObj)
+  }
+}
+
+
+object DateTimeCodec {
+  val formatter = ISODateTimeFormat.dateTime()
+}
+
+class DateTimeCodec(delegate:Codec[Any]) extends Codec[DateTime] {
+  override def read(reader: TokenReader) = {
+    reader.pullAndAssert(OpenObj(classOf[DateTime]))
+    reader.pullAndAssert(OpenField("iso8601"))
+    reader.pull match {
+      case StringToken(iso) => {
+        reader.pullAndAssert(CloseObj)
+        new DateTime(iso)    
+      }
+      case _ => throw new RuntimeException("Expected String token")
+    }
+  }
+  override def write(dt : DateTime, writer: TokenWriter) = {
+    writer.write(OpenObj(classOf[DateTime]))
+    writer.write(OpenField("iso8601"))
+    writer.write(StringToken(DateTimeCodec.formatter.print(dt)))
     writer.write(CloseObj)
   }
 }

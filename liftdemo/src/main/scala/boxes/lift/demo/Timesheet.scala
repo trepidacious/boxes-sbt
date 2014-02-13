@@ -14,12 +14,24 @@ import java.util.concurrent.TimeUnit
 import org.joda.time.format.DateTimeFormat
 import org.joda.time.DateTime
 import scala.xml.Text
+import org.joda.time.DateTimeZone
+import DateTimeImplicits._
 
-case class TimeEntry(in: Boolean, time: Long)
+  //TODO put this somewhere more general, is there one already?
+object DateTimeImplicits {
+  implicit val DateTimeOrdering = Ordering.by((d: DateTime) =>d.getMillis)  
+}
+
+case class TimeEntry(index: Int, in: Boolean, time: DateTime) extends Ordered[TimeEntry] {
+  def sortKeys = (time, index, in)
+  //TODO why do we need this implicitly and not just sortKeys compare that.sortKeys?
+  def compare(that: TimeEntry): Int = implicitly[Ordering[Tuple3[DateTime, Int, Boolean]]].compare(this.sortKeys, that.sortKeys)
+}
 
 case class DaySummary(totalIn: Long, intervalLengths: List[(Boolean, Double)])
 
 object Timesheet extends MongoMetaNode {
+    
   override def indices = List(MongoNodeIndex("userId", true))
   
   def findByUserId(userId: String) = Data.mb.findOne[Timesheet](MongoDBObject("userId" -> userId))
@@ -27,44 +39,38 @@ object Timesheet extends MongoMetaNode {
   
   def forCurrentUser() = User.loggedIn.map(user => findByUser(user).getOrElse(apply(user.id())))
   
-  def apply(userId: String) = {
+  private def apply(userId: String) = {
     val t = new Timesheet()
     t.userId() = userId
     Data.mb.keep(t)
     t
   }
 
-  val dateTimeFormat = DateTimeFormat.forPattern("EEEE, d MMMM HH:mm:ss");
-//  val dateTimeFormatBrief = DateTimeFormat.forPattern("d MMM HH:mm:ss");
-  val dateTimeFormatBrief = DateTimeFormat.forPattern("HH:mm");
-  val dateTimeFormatDate = DateTimeFormat.forPattern("EEEE, d MMMM");
+  //New DateTime for current time in UTC
+  def dateTime() = new DateTime(DateTimeZone.UTC)
 
-  private val millis = Var(System.currentTimeMillis())
-  
-  val now = Cal{millis()}
-
-  val todayMidnight = Cal{new DateTime(millis()).toDateMidnight().getMillis()}
-
-  val nowString = Cal{printInstant(millis())}
-
-  //FIXME make longer - e.g. 1 minute, also would be nice to synchronise to exact minutes (e.g. run every second but only update to whole minute when it changes)
+  //Private Var is updated regularly to be the current DateTime in UTC
+  private val _now = Var(dateTime)  
   private val executor = Executors.newScheduledThreadPool(1)
   executor.scheduleAtFixedRate(new Runnable(){
-    override def run() = millis() = System.currentTimeMillis()
-  }, 5, 5, TimeUnit.SECONDS)
+    override def run() = _now() = dateTime()
+  }, 5, 5, TimeUnit.SECONDS)   //FIXME make longer - e.g. 1 minute, also would be nice to synchronise to exact minutes (e.g. run every second but only update to whole minute when it changes)
 
-  def printInstant(millis: Long) = dateTimeFormat.print(millis)
-  def printInstantBrief(millis: Long) = dateTimeFormatBrief.print(millis)
-  def printDate(dateTime: DateTime) = dateTimeFormatDate.print(dateTime)
-    
+  //The current DateTime in UTC (to some reasonable granularity for timekeeping, e.g. 1 minute)
+  val now = Cal{_now()}
+
 }
 
 class Timesheet extends MongoNode{
+  
   val meta = Timesheet
   
   val userId = Var("")
   
   val status = Var("No status...")
+  
+  //TODO make this private, will this interfere with mongo persistence?
+  val nextIndex = Var(1)
   
   /**
    * A list of TimeEntries, in the order the entries were input to the system.
@@ -77,35 +83,48 @@ class Timesheet extends MongoNode{
   val entries = ListVar[TimeEntry]()
       
   /**
-   * The contents of entries, sorted to be in increasing order of time.
-   * This is a stable sort, so where there are entries with the same exact
-   * time in millis, the one that is last in the entries list will be last
-   * in the sortedEntries list. Since entries are added at the end of the
-   * entries list, the entry actually added most recently will appear
-   * last in sortedEntries. This gives the behaviour of being able to non-destructively
-   * "overwrite" an entry by adding a new entry with the same exact time.
+   * The contents of entries, sorted by entry natural ordering, which is in 
+   * increasing order of time, then increasing index, then in before out (this last
+   * should never be relevant, since indices are unique).
+   * 
+   * This means that where there are entries with the same exact
+   * time in millis, the one that is added to the list last, with the highest index,
+   * will be last in the sortedEntries list. 
+   * 
+   * This gives the behaviour of being able to non-destructively
+   * "overwrite" an entry by adding a new entry with the same exact time but higher index.
+   * 
    * It also means we have a canonical answer for whether we are in or out for the
    * time period from that time to the next entry.
    */
-  val sortedEntries = Cal{entries().sortWith((a, b) => a.time < b.time)}
+  val sortedEntries = Cal{entries().sorted}
   
   //Looking at the docs for sortedEntries, we can see that by reversing the
-  //list then finding the first entry that is at exactly time millis or less, that
+  //list then finding the first entry that is at exactly time or less, that
   //will be the entry that is currently setting the in/out state at time millis.
-  def entryAt(millis: Long) = sortedEntries().reverse.find(_.time <= millis)
+  //Since there may be no entry at or before the time, we return an Option.
+  def entryAt(time: DateTime) = sortedEntries().reverse.find(!_.time.isAfter(time)) //Entry must be at time or less, so not after.
 
-  //Whether we are signed in at a given time
-  def inAt(millis:Long) = entryAt(millis).map(_.in).getOrElse(false)
+  //Whether we are signed in at a given time, assuming we are out before first entry
+  def inAt(time: DateTime) = entryAt(time).map(_.in).getOrElse(false)
 
+  private def newEntry(in: Boolean, time: DateTime) = {
+    Box.transact{
+      val index = nextIndex()
+      nextIndex() = index + 1
+      TimeEntry(index, in, time)
+    }
+  }
+  
   def signInOrOut(in: Boolean) = {
     Box.transact{
-      val millis = System.currentTimeMillis()
-      val inAtMillis = inAt(millis);
+      val now = Timesheet.dateTime()
+      val inNow = inAt(now);
       
       //If this agrees with the entry we plan to add, don't bother adding the new entry.
       //This avoids adding redundant entries.
-      if (inAtMillis != in) {
-        entries() = entries() :+ TimeEntry(in, millis)
+      if (inNow != in) {
+        entries() = entries() :+ newEntry(in, now)
         true
       } else {
         false
@@ -117,46 +136,49 @@ class Timesheet extends MongoNode{
   def out() = signInOrOut(false)
   def clear() = entries() = List()
   
-  def addEntry(e: TimeEntry) {
-    if (e.time <= System.currentTimeMillis()) {
-      entries() = entries() :+ e
+  def addEntry(in: Boolean, time: DateTime) {
+    if (!time.isAfter(Timesheet.dateTime)) {
+      entries() = entries() :+ newEntry(in, time)
     }
   }
 
-  def addLateEntry(e: TimeEntry) {
+  def addLateEntry(in: Boolean, time: DateTime) {
     //FIXME provide a response, and pass through filters to determine
     //whether we will accept the entry and add directly to main entries list,
     //add to a separate list for later approval, or reject straight away
-    entries() = entries() :+ e
+    entries() = entries() :+ newEntry(in, time)
   }
 
-  def daySummary(start: DateTime, now: Option[Long]) = {
-    val end = start.plusDays(1)
+  def daySummary(start: DateTime, now: Option[DateTime]) = {
+    val startPlusDay = start.plusDays(1)
     
-    val s = start.toInstant().getMillis()
-    val sPlusDay = end.toInstant().getMillis()
+//    val s = start.toInstant().getMillis()
+//    val sPlusDay = end.toInstant().getMillis()
     
-    val e = now match {
-      case Some(millis) if millis < sPlusDay => millis
-      case _ => sPlusDay
+    //If now is specified, and is before the end of the day, use it as our end time, otherwise use end of day.
+    val end = now match {
+      case Some(dt) if dt.isBefore(startPlusDay) => dt
+      case _ => startPlusDay
     }
     
     val te = Box.transact {
       //Start with an entry giving state at exact start of interval, then entries that are strictly inside the interval, then out at the exact end of the interval
-      TimeEntry(inAt(s), s) +: sortedEntries().filter(entry => (entry.time > s) && (entry.time < e)) :+ TimeEntry(false, e)
+      val startEntry = TimeEntry(0, inAt(start), start)
+      val endEntry = TimeEntry(nextIndex(), false, end)
+      startEntry +: sortedEntries().filter(entry => (entry.time.isAfter(start)) && (entry.time.isBefore(end))) :+ endEntry
     }
     
     val pairs = te.zip(te.tail)
     
     //Now scan through the entries, adding up the time worked. We just look at each "in" entry, and count time worked until the next entry
     val totalIn = pairs.map(_ match {
-      case (a, b) if a.in => b.time - a.time
+      case (a, b) if a.in => b.time.getMillis() - a.time.getMillis()
       case _ => 0
     }).sum
     
     //Produce a list of intervals to render time worked as a proportion of day. Note we always use the full day, even if we are capping entries with the "now" time
-    val length = (sPlusDay - s): Double
-    val intervals = pairs.map{case (a, b) => (a.in, (b.time - a.time)/length)}
+    val length = (startPlusDay.getMillis() - start.getMillis()): Double
+    val intervals = pairs.map{case (a, b) => (a.in, (b.time.getMillis() - a.time.getMillis())/length)}
     
     DaySummary(totalIn, intervals)
   }
