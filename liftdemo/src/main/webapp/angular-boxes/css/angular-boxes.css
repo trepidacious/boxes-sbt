@@ -1,0 +1,67 @@
+.animate-repeat.ng-move,
+.animate-repeat.ng-enter,
+.animate-repeat.ng-leave {
+  -webkit-transition:all ease 0.2s;
+  transition:all ease 0.2s;
+}
+ 
+.animate-repeat.ng-leave.ng-leave-active,
+.animate-repeat.ng-move,
+.animate-repeat.ng-enter {
+/* 	-webkit-transform: scaleY(0);
+	-moz-transform: scaleY(0);
+	-ms-transform: scaleY(0);
+	-o-transform: scaleY(0);
+	transform: scaleY(0);
+ */  
+
+  opacity:0;
+  right: -10px;
+
+/* 
+  max-height:0;
+ */
+}
+ 
+.animate-repeat.ng-leave,
+.animate-repeat.ng-move.ng-move-active,
+.animate-repeat.ng-enter.ng-enter-active {
+/* 
+  -webkit-transform: scaleY(1);
+  -moz-transform: scaleY(1);
+  -ms-transform: scaleY(1);
+  -o-transform: scaleY(1);
+  transform: scaleY(1);
+ */ 
+  opacity:1;
+  right: 0;
+/*  	
+  max-height:40px;  Note this needs to be bigger than actual height, but not by too much
+ */
+}
+
+
+
+.animate-recent.ng-move,
+.animate-recent.ng-enter,
+.animate-recent.ng-leave {
+  -webkit-transition:all ease 0.2s;
+  transition:all ease 0.2s;
+/* 
+  margin-right: 5px;
+ */  
+}
+ 
+.animate-recent.ng-leave.ng-leave-active,
+.animate-recent.ng-move,
+.animate-recent.ng-enter {
+  opacity:0;
+  max-width:0;
+}
+ 
+.animate-recent.ng-leave,
+.animate-recent.ng-move.ng-move-active,
+.animate-recent.ng-enter.ng-enter-active {
+  opacity:1;
+  max-width:60px; /* Note this needs to be bigger than actual height, but not by too much */
+}

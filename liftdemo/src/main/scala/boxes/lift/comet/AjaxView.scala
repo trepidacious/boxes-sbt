@@ -36,6 +36,10 @@ import net.liftweb.http.js.JsCmds
 import boxes.lift.comet.view.AjaxButtonView
 import org.joda.time.LocalTime
 import net.liftweb.http.js._
+import net.liftweb.http.js.JsCmd._
+import net.liftweb.http.js.JsCmds._
+import net.liftweb.json.DefaultFormats
+import net.liftweb.json._
 
 object AjaxViewImplicits {
   implicit def refStringToRefNodeSeq(s: Ref[String]) = Cal{Text(s()): NodeSeq}
@@ -74,21 +78,37 @@ trait AjaxView {
 }
 
 object AjaxDataSourceView {
-  def apply(elementId: String, v: String, data: Ref[String]) = new AjaxDataSourceView(elementId, v, data)
+  def apply[T<:AnyRef](elementId: String, v: String, data: Ref[T]) = new AjaxDataSourceView[T](elementId, v, data)
+  def option[T<:AnyRef](elementId: String, v: String, data: Ref[Option[T]]) = new AjaxOptionalDataSourceView[T](elementId, v, data)
 }
 
-class AjaxDataSourceView(elementId: String, v: String, data: Ref[String]) extends AjaxView {
-  lazy val id = net.liftweb.util.Helpers.nextFuncName
+class AjaxDataSourceView[T<:AnyRef](elementId: String, v: String, data: Ref[T]) extends AjaxView with Loggable {
+  implicit val formats = DefaultFormats + BoxesJodaDateTimeSerializer
 
-  def render = AjaxView.form(<span id={"data_source_" + id}></span>)
+  def render = NodeSeq.Empty
   
   override def partialUpdates = List(
-//      () => JE.JsRaw("angular.element('#" + elementId + "').scope().$apply(function () {angular.element('#" + elementId + "').scope()." + v + " = " + data() + ";});")
-      () => JE.JsRaw("angular.element('#" + elementId + "').scope().$apply(function ($scope) {$scope." + v + " = " + data() + ";});")
-//      ,() => JE.JsRaw("alert(\"" + data() + "\")")
+      () => {
+        val json = Serialization.write(data())
+        logger.info("Sending " + v + "=" + json)
+        JE.JsRaw("angular.element('#" + elementId + "').scope().$apply(function ($scope) {$scope." + v + " = " + json + ";});")
+      }
   )
 }
 
+class AjaxOptionalDataSourceView[T<:AnyRef](elementId: String, v: String, data: Ref[Option[T]]) extends AjaxView with Loggable {
+  implicit val formats = DefaultFormats + BoxesJodaDateTimeSerializer
+
+  def render = NodeSeq.Empty
+  
+  override def partialUpdates = List(
+      () => {
+        val json = Serialization.write(data().getOrElse(null))
+        logger.info("Sending " + v + "=" + json)
+        JE.JsRaw("angular.element('#" + elementId + "').scope().$apply(function ($scope) {$scope." + v + " = " + json + ";});")
+      }
+  )
+}
 
 object AjaxListDataSourceView {
   def apply[T](elementId: String, v: String, list: Ref[List[T]], renderElement: (T)=>Map[String, String], deleteElement: (T)=>Unit) = new AjaxListDataSourceView(elementId, v, list, renderElement, deleteElement)
@@ -114,7 +134,10 @@ class AjaxListDataSourceView[T](elementId: String, v: String, list: Ref[List[T]]
   
   override def partialUpdates = List(
 //      () => JE.JsRaw("angular.element('#" + elementId + "').scope().$apply(function () {angular.element('#" + elementId + "').scope()." + v + " = " + data() + ";});")
-      () => JE.JsRaw("angular.element('#" + elementId + "').scope().$apply(function ($scope) {$scope." + v + " = " + data() + ";});")
+      () => {
+        logger.info("Sending " + data())
+        JE.JsRaw("angular.element('#" + elementId + "').scope().$apply(function ($scope) {$scope." + v + " = " + data() + ";});")
+      }
 //      ,() => JE.JsRaw("alert(\"" + data() + "\")")
   )}
 

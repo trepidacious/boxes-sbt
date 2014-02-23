@@ -46,6 +46,7 @@
  */	
   min-width: 10px;
   border-radius: 10px;
+  margin-right: 5px;
 }
 
 .timestamp-large {

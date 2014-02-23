@@ -23,15 +23,16 @@
 			</form>
 	    <p>			
         <ul class="list-group">
-          <li class="animate-repeat list-group-item" ng-animate="'animate'" ng-repeat="entry in entries | inOutFilter:inOutSetting | fromDateFilter:fromDate | toDateFilter:toDate " ng-class="{'list-group-item-success': entry.in}">
+          <li class="animate-repeat list-group-item" ng-animate="'animate'" ng-repeat="entry in entries | inOutFilter:inOutSetting | fromDateFilter:fromDate | toDateFilter:toDate track by entry.index" ng-class="{'list-group-item-success': entry.in}">
             <div class="row">
-              <div class="col-md-2">{{entry.in}}</div>
+              <div class="col-md-1">{{entry.index}}</div>
+              <div class="col-md-1">{{entry.in}}</div>
               <div class="col-md-9">{{entry.time | date:'yyyy-MM-dd HH:mm:ss'}}</div>
               <div class="col-md-1"><button class="btn btn-danger btn-xs pull-right" ng-click="remove(entry.deleteGUID)"><i class="fa fa-times"></i></button></div>
             </div>
           </li>
         </ul>
-
+        
 <!--        
         <input type="text" datepicker-popup="yyyy-MM-dd" id="fromDate" show-weeks="false" ng-model="dateMillis" class="form-control" placeholder="any date"/>
         <input type="text" ng-model="dateMillis"  />
@@ -59,8 +60,17 @@
 
     <h4>Real date</h4>
   
-      <button ng-model="realDate.value" show-weeks="false" class="btn btn-default" datepicker-popup="yyyy-MM-dd"><i class="fa fa-calendar"></i> {{realDate.value | date:'fullDate'}}</button>
-            <input type="text" datepicker-popup="yyyy-MM-dd" id="fromDate" show-weeks="false" ng-model="realDate.value" class="form-control" placeholder="any date"/>
+    <button ng-model="realDate.value" show-weeks="false" class="btn btn-default" datepicker-popup="yyyy-MM-dd"><i class="fa fa-calendar"></i> {{realDate.value | date:'fullDate'}}</button>
+          <input type="text" datepicker-popup="yyyy-MM-dd" id="fromDate" show-weeks="false" ng-model="realDate.value" class="form-control" placeholder="any date"/>
+
+    <div class="row" >
+      <div class="col-md-4">
+        <datepicker ng-model="realDate.value" show-weeks="false"></datepicker>
+      </div>
+      <div class="col-md-4">
+        <timepicker ng-model="realDate.value" hour-step="1" minute-step="5" show-meridian="false"></timepicker>
+      </div>
+    </div>  
   
     {{"$" + realDate.value + "$"}}
     

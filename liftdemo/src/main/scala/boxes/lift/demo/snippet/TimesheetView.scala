@@ -35,6 +35,7 @@ import boxes.lift.demo.TimeEntry
 import net.liftweb.json._
 import scala.util.Random
 import java.util.Date
+import boxes.lift.demo.TimeEntry
 
 object TimesheetView {
   
@@ -46,9 +47,9 @@ object TimesheetView {
   }
 
   def toNodeSeqBrief(e: TimeEntry) = if (e.in) {
-    <span><span class="timestamp timestamp-in"><i class="fa fa-sign-in"></i> {e.time}</span><span> </span></span>
+    <span><span class="timestamp timestamp-in"><i class="fa fa-sign-in"></i> {"{{" + e.time + " | date:'HH:mm'}}"}</span><span> </span></span>
   } else {
-    <span><span class="timestamp timestamp-out"><i class="fa fa-sign-out"></i> {e.time}</span><span> </span></span>
+    <span><span class="timestamp timestamp-out"><i class="fa fa-sign-out"></i> {"{{" + e.time + " | date:'HH:mm'}}"}</span><span> </span></span>
   }
 
   def printDuration(duration: Duration) = {
@@ -124,31 +125,65 @@ object TimesheetView {
   }
 }
 
-class TimesheetView() extends InsertCometView[Option[Timesheet]](Timesheet.forCurrentUser()){
-  
-  def makeView(ot: Option[Timesheet]) = {
-    
-    ot.map(t => AjaxListOfViews(List(
-        AjaxTextView(S.?("timesheet.status"),    Path(t.status)),
-        
-        AjaxNodeSeqView(S.?("timesheet.current.state"), Cal{
-          t.sortedEntries().lastOption.map(e => TimesheetView.timeElapsedToNodeSeq(Timesheet.now(), e)).getOrElse(Text("Never signed in or out"))          
-        }),
+//class TimesheetView() extends InsertCometView[Option[Timesheet]](Timesheet.forCurrentUser()){
+//  
+//  def makeView(ot: Option[Timesheet]) = {
+//    
+//    ot.map(t => AjaxListOfViews(List(
+//        AjaxTextView(S.?("timesheet.status"),    Path(t.status))
+//        
+//        AjaxNodeSeqView(S.?("timesheet.current.state"), Cal{
+//          t.sortedEntries().lastOption.map(e => TimesheetView.timeElapsedToNodeSeq(Timesheet.now(), e)).getOrElse(Text("Never signed in or out"))          
+//        })
 //        AjaxStringView(S.?("timesheet.now"),    Timesheet.nowString),
-
-        AjaxNodeSeqView(S.?("timesheet.today.list"), Cal{
-          //Would be nice to have more than 5, but this wraps badly on small screen
-          val midnight = Timesheet.now().toDateMidnight()
-          t.sortedEntries().takeRight(5).filter(_.time.isAfter(midnight)).map(e => {TimesheetView.toNodeSeqBrief(e)})
-        }, addP=true)
-        
+//        
 //        AjaxStringView(S.?("timesheet.time.in.today"),    Cal{
 //          val ds = t.daySummary(new DateTime(Timesheet.todayMidnight()), Some(Timesheet.now()))
 //          TimesheetView.printDuration(new Duration(ds.totalIn))
 //        })
-    ))).getOrElse(AjaxNodeSeqView(control = Text(S.?("user.no.user.logged.in"))))
+//    ))).getOrElse(AjaxNodeSeqView(control = Text(S.?("user.no.user.logged.in"))))
+//  }
+//}
+
+case class LateEntry(in: Boolean, time: DateTime)
+
+class TimesheetDataView() extends InsertCometView[Option[Timesheet]](Timesheet.forCurrentUser()) with Loggable{
+  def makeView(ot: Option[Timesheet]) = {
+    ot.map(t =>
+      AjaxListOfViews(
+        AjaxDataSourceView("angular", "recentEntries", Cal{
+          val midnight = Timesheet.now().toDateMidnight()
+          t.sortedEntries().takeRight(5).filter(_.time.isAfter(midnight))
+        }),
+        AjaxDataSourceView.option("angular", "mostRecentEntry", Cal{
+          t.sortedEntries().takeRight(1).headOption
+        }),
+        AjaxDataSourceView("angular", "last7Days", Cal{
+          val start = Timesheet.now().minusDays(7)
+          t.sortedEntries().filter(_.time.isAfter(start))
+        }),
+        AjaxDataLinkView(
+          "angular", 
+          "status", 
+          t.status
+        ),
+        AjaxAngularActionView(
+            "angular",
+            "in"){t.in()},
+        AjaxAngularActionView(
+            "angular",
+            "out"){t.out()},
+        AjaxAngularActionView(
+            "angular",
+            "late", (l:LateEntry)=>{
+              logger.info("Late: " + l)
+              t.addLateEntry(l.in, l.time)
+            })
+      )
+    ).getOrElse(AjaxNodeSeqView(control = Text(S.?("user.no.user.logged.in"))))
   }
 }
+
 
 class TimesheetRecentDaysView() extends InsertCometView[Option[Timesheet]](Timesheet.forCurrentUser()){  
   def makeView(ot: Option[Timesheet]) = {
@@ -243,7 +278,7 @@ class AngularTimesheetTable() extends InsertCometView[Option[Timesheet]](Timeshe
   }
   
   def renderEntry(e: TimeEntry) = {
-    Map("index" -> e.index.toString(), "in" -> e.in.toString(), "time" -> e.time.toString())
+    Map("index" -> e.index.toString(), "in" -> e.in.toString(), "time" -> ("'" + e.time.toString() + "'"))
   }
 
   def makeView(ot: Option[Timesheet]) = {  
