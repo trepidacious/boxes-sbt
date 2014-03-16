@@ -2,6 +2,9 @@
 //The core project has minimal library dependencies, and provides the basic Box system
 lazy val core = project
 
+//New prototype stuff for providing concurrent transactions
+lazy val transact = project
+
 //Swing bindings for boxes
 lazy val swing = project.dependsOn(core)
 
@@ -26,7 +29,7 @@ lazy val demo = project.dependsOn(core, swing, graph, swinggraph, persistence)
 lazy val liftdemo = project.dependsOn(core, graph, persistence)
 
 //Root project just aggregates all subprojects
-lazy val root = project.in(file(".")).aggregate(core, swing, graph, swinggraph, persistence, demo, liftdemo)
+lazy val root = project.in(file(".")).aggregate(core, transact, swing, graph, swinggraph, persistence, demo, liftdemo)
 
 scalacOptions in ThisBuild  ++= Seq("-unchecked", "-deprecation", "-feature")
 
