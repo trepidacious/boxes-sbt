@@ -39,3 +39,9 @@ Each transaction will:
 2. **Run.** The transaction reads data from boxes at RS, and so sees a consistent state of the Shelf. A read log is kept of all Boxes that are read. When boxes are updated (their value changed) the changes are added to a write log. If updated boxes are read, the most recent value from the write log is seen.
 3. **Commit.** The transaction completes, and an attempt is made to commit the changes in the log. If no changes have been made to any Boxes in the read or write log since RS, the transaction is committed, creating a new revision where all changes in the write log are made atomically. If changes have been made, the read and write logs are discarded and the transaction restarts from stage 1 with a new start revision.
 
+Implementation
+==============
+Each revision can be represented by an immutable map from boxes to values. Since values are immutable the entire data structure is immutable, providing a "free" snapshot of a revision by just retaining the map for that revision.
+In order not to use increasing memory allocation as changes occur, we must discard old revisions - this is easily implemented since transactions will retain the map for the revision they use until they commit, at which point it should become available for GC. Optionally, revisions may be retained longer to allow for a view of data history, for example for "undo" functionality.
+In order to operate reasonably efficiently, the immutable map must be a persistent data structure, luckily this is provided by Scala. In general, persistent data structures work well, since we will often for example update a Box containing a List by adding elements, which is efficient when a persistent List is used.
+The sparse nature of Box changes is well suited to a peristent data structure, since we expect only to have to rebuild a small portion of the map data structure when only one Box changes, and other portions of the data structure will be shared.
