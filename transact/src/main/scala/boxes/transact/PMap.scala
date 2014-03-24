@@ -1,5 +1,4 @@
-package boxes
-
+package boxes.transact
 import scala.language.higherKinds
 
 case class PEntry[K[_], V[_], T](key: K[T], value: V[T])
