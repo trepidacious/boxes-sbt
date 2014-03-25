@@ -87,6 +87,7 @@ private class RevisionDefault(val index: Long, map: Map[Long, State[_]]) extends
 trait Shelf {
   def now: Revision
   def transact[T](f: TransactionTry => T): T
+  def create[T](t: T): Box[T]
 }
 
 private class ShelfDefault extends Shelf {
@@ -98,6 +99,15 @@ private class ShelfDefault extends Shelf {
   private val refToId = new mutable.HashMap[Reference[_ <: Box[_]], Long]()
 
 //  def apply[T](box: Box[T])(implicit r: Revision) = r.values.get(box).getOrElse(throw new RuntimeException("Box does not exist in current revision")).data
+  
+  //TODO can do this more efficiently without a full transaction
+  def create[T](v: T): Box[T] = {
+    transact{
+      implicit t: TransactionTry => {
+        Box(v)
+      }
+    }
+  }
   
   def transact[T](f: TransactionTry => T): T = {
       Range(0, 10000).view.map(_ => transactTry(f)).find(o => o.isDefined).flatten.getOrElse(throw new RuntimeException("Transaction failed too many times"))
