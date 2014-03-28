@@ -9,63 +9,12 @@ import java.lang.ref.Reference
 import scala.collection.mutable.ListBuffer
 import scala.Option.option2Iterable
 
-class RWLock() {
-  private val lock: ReentrantReadWriteLock = new ReentrantReadWriteLock()
-  
-  def write[T](w: =>T): T = {
-    lock.writeLock().lock()
-    try {
-      return w
-    } finally {
-      lock.writeLock().unlock()
-    }
-  }
-
-  def read[T](r: =>T): T = {
-    lock.readLock().lock()
-    try {
-      return r
-    } finally {
-      lock.readLock().unlock()
-    }
-  }
-}
-
-object RWLock {
-  def apply() = new RWLock()
-}
-
-trait Box[T] {
-  def apply()(implicit t: TransactionTry): T = t.get(this)
-  def get()(implicit t: TransactionTry): T = apply()(t)
-  
-  def update(v: T)(implicit t: TransactionTry) = t.set(this, v)
-  def set(v: T)(implicit t: TransactionTry) = update(v)(t)
-  
-  def id(): Long
-}
-
-object Box {
-  def apply[T](v: T)(implicit t: TransactionTry): Box[T] = t.create(v)
-}
 
 private class BoxDefault[T](val id: Long) extends Box[T]
 
 private object BoxDefault {
   private val nextId = new AtomicInteger(0)
   def apply[T](): Box[T] = new BoxDefault[T](nextId.getAndIncrement())
-}
-
-case class State[T](revision: Long, value: T)
-
-trait Revision {
-  val index: Long
-  
-  def stateOf[T](box: Box[T]): Option[State[T]]
-  def indexOf(box: Box[_]): Option[Long]
-  def valueOf[T](box: Box[T]): Option[T]
-  
-  def apply[T](box: Box[T]) = stateOf[T](box)
 }
 
 private class RevisionDefault(val index: Long, map: Map[Long, State[_]]) extends Revision {
@@ -84,12 +33,6 @@ private class RevisionDefault(val index: Long, map: Map[Long, State[_]]) extends
   } 
 }
 
-trait Shelf {
-  def now: Revision
-  def transact[T](f: TransactionTry => T): T
-  def create[T](t: T): Box[T]
-}
-
 private class ShelfDefault extends Shelf {
   private val lock = RWLock()
 
@@ -98,32 +41,46 @@ private class ShelfDefault extends Shelf {
   private val refQueue = new ReferenceQueue[Box[_]]()
   private val refToId = new mutable.HashMap[Reference[_ <: Box[_]], Long]()
 
-//  def apply[T](box: Box[T])(implicit r: Revision) = r.values.get(box).getOrElse(throw new RuntimeException("Box does not exist in current revision")).data
+  private val retries = 10000
   
   //TODO can do this more efficiently without a full transaction
   def create[T](v: T): Box[T] = {
     transact{
-      implicit t: TransactionTry => {
+      implicit t: Txn => {
         Box(v)
       }
     }
   }
   
-  def transact[T](f: TransactionTry => T): T = {
-      Range(0, 10000).view.map(_ => transactTry(f)).find(o => o.isDefined).flatten.getOrElse(throw new RuntimeException("Transaction failed too many times"))
+  def read[T](f: TxnR => T): T = f(new TxnRDefault(now))
+  
+  def transact[T](f: Txn => T): T = {
+    def tf(r: Revision) = new TxnSingle(r)
+    transactRepeatedTry(f, tf, retries)
+  }
+
+  def transactMulti[T](f: Txn => T): T = {
+    def tf(r: Revision) = new TxnMulti(r)
+    transactRepeatedTry(f, tf, retries)
+  }
+
+  private def transactRepeatedTry[T](f: Txn => T, tf: Revision => TxnDefault, retries: Int): T = {
+    Range(0, retries).view.map(_ => transactTry(f, tf)).find(o => o.isDefined).flatten.getOrElse(throw new RuntimeException("Transaction failed too many times"))
   }
   
-  private def transactTry[T](f: TransactionTry => T): Option[T] = {
-    val t = new TransactionTryDefault(now)
+  private def transactTry[T](f: Txn => T, transFactory: Revision => TxnDefault): Option[T] = {
+    val t = transFactory(now)
     val r = f(t)
     
     lock.write {
       val start = t.revision.index
       //If we any boxes that were read have changed, we fail
       if (t.reads.iterator.flatMap(current.indexOfId(_)).exists(_>start)) {
+//        println("read fail")
         None
       //Same for writes - note that newly created boxes will have no index, so will not fail
       } else if (t.writes.keysIterator.flatMap(current.indexOfId(_)).exists(_>start)) {
+//        println("write fail")
         None
       } else {
         
@@ -146,52 +103,60 @@ private class ShelfDefault extends Shelf {
         val deletes = gcedIds.toList
         val next = current.updated(t.writes, deletes)
         current = next
+//        println("success")
         Some(r)
       }
     }
   }
   
-  def now = {
-    lock.read {
-      current
-    }
-  } 
+  def now = lock.read {
+    current
+  }
 }
 
-object Shelf {
+object ShelfDefault {
   def apply(): Shelf = new ShelfDefault
 }
 
-trait TransactionTry {
-  def create[T](t: T): Box[T]
-  def set[T](box: Box[T], t: T): Box[T]
-  def get[T](box: Box[T]): T
-  def revision(): Revision
+private trait TxnDefault extends Txn {
+  def reads(): Set[Long]
+  def writes(): Map[Long, Any]
+  def creates(): Set[Box[_]]
 }
 
-private class TransactionTryDefault(val revision: Revision) extends TransactionTry {
-  //TODO if the transaction code is guaranteed to be single-threaded, we don't need the lock
-  val lock = RWLock()
+private class TxnRDefault(val revision: Revision) extends TxnR {
+  def get[T](box: Box[T]): T = revision.valueOf(box).getOrElse(throw new RuntimeException("Missing Box"))
+}
+
+private class TxnSingle(val revision: Revision) extends TxnDefault {
+  
   val writes = new mutable.HashMap[Long, Any]()
   val reads = new mutable.HashSet[Long]()
   val creates = new mutable.HashSet[Box[_]]()
   
-  def create[T](t: T): Box[T] = lock.write{
+  def create[T](t: T): Box[T] = {
     val box = BoxDefault[T]()
     creates.add(box)
     writes.put(box.id, t)
     box
   }
   
-  def set[T](box: Box[T], t: T): Box[T] = lock.write{
+  def set[T](box: Box[T], t: T): Box[T] = {
     writes.put(box.id, t)
     box
   }
-  def get[T](box: Box[T]): T = lock.read{
+  def get[T](box: Box[T]): T = {
     val v = writes.get(box.id).asInstanceOf[Option[T]].getOrElse(revision.valueOf(box).getOrElse(throw new RuntimeException("Missing Box")))
     reads.add(box.id)
     return v
   }
+}
+
+private class TxnMulti(revision: Revision) extends TxnSingle(revision) {
+  val lock = RWLock()
+  override def create[T](t: T): Box[T] = lock.write{super.create(t)}
+  override def set[T](box: Box[T], t: T): Box[T] = lock.write{super.set(box, t)}
+  override def get[T](box: Box[T]): T = lock.read{super.get(box)}
 }
 
 
