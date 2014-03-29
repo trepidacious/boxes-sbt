@@ -37,18 +37,15 @@ private class ShelfDefault extends Shelf {
   private val lock = RWLock()
 
   private var current = new RevisionDefault(0, Map.empty)
-  
-  private val refQueue = new ReferenceQueue[Box[_]]()
-  private val refToId = new mutable.HashMap[Reference[_ <: Box[_]], Long]()
 
   private val retries = 10000
   
-  //TODO can do this more efficiently without a full transaction
-  def create[T](v: T): Box[T] = {
-    transact{
-      implicit t: Txn => {
-        Box(v)
-      }
+  private val watcher = new BoxGCWatcher()
+  
+  //TODO can we do this more efficiently without a full transaction?
+  def create[T](v: T): Box[T] = transact{
+    implicit t: Txn => {
+      Box(v)
     }
   }
   
@@ -72,38 +69,27 @@ private class ShelfDefault extends Shelf {
     val t = transFactory(now)
     val r = f(t)
     
+    //TODO note we could just lock long enough to get the current revision, and build the new map
+    //outside the lock, then re-lock to attempt to make the new map the next revision, failing if
+    //someone else got there first. This would make the write lock VERY brief, but potentially require
+    //multiple rebuilds of the map before one "sticks"
     lock.write {
       val start = t.revision.index
       //If we any boxes that were read have changed, we fail
       if (t.reads.iterator.flatMap(current.indexOfId(_)).exists(_>start)) {
-//        println("read fail")
         None
       //Same for writes - note that newly created boxes will have no index, so will not fail
       } else if (t.writes.keysIterator.flatMap(current.indexOfId(_)).exists(_>start)) {
-//        println("write fail")
         None
       } else {
         
-        //Any new boxes need to be tracked for GC - make a weak reference to the box, and use that to map to the id of the box
-        t.creates.filter(box => current.stateOf(box).isEmpty).foreach{b => {
-            val r = new WeakReference(b, refQueue)
-            refToId.put(r, b.id)
-          }
-        }
+        //Any new boxes need to be tracked for GC
+        watcher.watch(t.creates)
         
-        //Now we also check for any boxes that have been GCed since last update
-        val gcedIds = new ListBuffer[Long]()
-        var gced = refQueue.poll()
-        while (gced != null) {
-          val id = refToId.remove(gced)
-          id.foreach(gcedIds += _)
-          gced = refQueue.poll()
-        }
+        //Update map with the writes, also deleting any boxes that have been GCed
+        current = current.updated(t.writes, watcher.deletes())
         
-        val deletes = gcedIds.toList
-        val next = current.updated(t.writes, deletes)
-        current = next
-//        println("success")
+        //Success, return Txn result
         Some(r)
       }
     }

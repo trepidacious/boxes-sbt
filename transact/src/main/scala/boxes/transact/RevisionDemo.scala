@@ -45,8 +45,8 @@ object RevisionDemo {
         }
       }
       println("Thread " + i + " done")
-      s.transact{
-        implicit t: Txn => {
+      s.read{
+        implicit t: TxnR => {
           println("x = " + x())
           println("y = " + y())
         }
@@ -55,7 +55,7 @@ object RevisionDemo {
     
     thread{
       Range(0, 1000).foreach{_ =>
-        s.read{
+        s.read {
           implicit t: TxnR => {
             println("x = " + x() + ", y = " + y())
             Thread.sleep(5)
