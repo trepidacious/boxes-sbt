@@ -12,6 +12,7 @@ object SlowViewDemo {
     val s = ShelfDefault()
 
     val counter = s.create(0)
+    val uninteresting = s.create(0)
     
     val view = s.view{
       implicit t: TxnR => {
@@ -34,8 +35,20 @@ object SlowViewDemo {
           }
         }
       }
-      println("Finished incrementing")
+      println("Finished incrementing counter")
+      Range(0, 1000).foreach{_ => {
+          s.transact{
+            implicit t: Txn => {
+              Thread.sleep(1)
+              uninteresting() = uninteresting() + 1
+            }
+          }
+        }
+      }
+      println("Finished incrementing uninteresting")
     }
+    
+
 
     //View runs in daemon thread, so we give it time to finish
     Thread.sleep(5000)
