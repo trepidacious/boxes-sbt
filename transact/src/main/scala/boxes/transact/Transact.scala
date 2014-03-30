@@ -8,6 +8,7 @@ import java.lang.ref.ReferenceQueue
 import java.lang.ref.Reference
 import scala.collection.mutable.ListBuffer
 import scala.Option.option2Iterable
+import java.util.concurrent.ExecutorService
 
 trait Box[T] {
   def apply()(implicit t: TxnR): T = t.get(this)
@@ -41,8 +42,12 @@ trait Shelf {
   def create[T](t: T): Box[T]
 
   def transact[T](f: Txn => T): T
-  def transactMulti[T](f: Txn => T): T
+//  def transactMulti[T](f: Txn => T): T
   def read[T](f: TxnR => T): T
+  
+
+  def view(f: TxnR => Unit): Long
+  def view(f: TxnR => Unit, exe: ExecutorService, onlyMostRecent: Boolean): Long
 }
 
 trait TxnR {
@@ -54,3 +59,7 @@ trait Txn extends TxnR {
   def create[T](t: T): Box[T]
   def set[T](box: Box[T], t: T): Box[T]
 }
+
+trait View
+
+

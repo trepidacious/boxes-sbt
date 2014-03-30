@@ -8,6 +8,9 @@ import java.lang.ref.ReferenceQueue
 import java.lang.ref.Reference
 import scala.collection.mutable.ListBuffer
 import scala.Option.option2Iterable
+import java.util.concurrent.locks.ReentrantLock
+import java.util.concurrent.ThreadFactory
+import java.util.concurrent.Executors
 
 class RWLock() {
   private val lock: ReentrantReadWriteLock = new ReentrantReadWriteLock()
@@ -33,4 +36,33 @@ class RWLock() {
 
 object RWLock {
   def apply() = new RWLock()
+}
+
+class Lock {
+  private val lock: ReentrantLock = new ReentrantLock()
+  def run[T](w: =>T): T = {
+    lock.lock()
+    try {
+      return w
+    } finally {
+      lock.unlock()
+    }
+  }
+}
+
+object Lock {
+  def apply() = new Lock()
+}
+
+class DaemonThreadFactory extends ThreadFactory {
+  val del = Executors.defaultThreadFactory()
+  override def newThread(r: Runnable) = {
+    val t = del.newThread(r)
+    t.setDaemon(true)
+    t
+  }
+}
+
+object DaemonThreadFactory {
+  def apply() = new DaemonThreadFactory()
 }
