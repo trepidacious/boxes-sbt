@@ -118,7 +118,7 @@ class MongoBox(dbName: String, aliases: ClassAliases) {
     t match {
       case mn: MongoNode => mn.meta.indices.foreach(
           i => db(alias).ensureIndex(
-            MongoDBObject(i.key -> (if (i.ascending) "1" else "-1")), 
+            MongoDBObject(i.key -> (if (i.ascending) 1 else -1)), 
             i.key, 
             i.unique))
       case _ => {}
