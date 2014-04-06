@@ -42,12 +42,14 @@ trait Shelf {
   def create[T](t: T): Box[T]
 
   def transact[T](f: Txn => T): T
-//  def transactMulti[T](f: Txn => T): T
   def read[T](f: TxnR => T): T
   
 
   def view(f: TxnR => Unit): Long
   def view(f: TxnR => Unit, exe: ExecutorService, onlyMostRecent: Boolean): Long
+  
+  def auto[T](f: Txn => T): Long  
+  def auto[T](f: Txn => T, exe: ExecutorService, target: T => Unit): Long
 }
 
 trait TxnR {
@@ -58,8 +60,29 @@ trait TxnR {
 trait Txn extends TxnR {
   def create[T](t: T): Box[T]
   def set[T](box: Box[T], t: T): Box[T]
+  
+  def failEarly(): Unit
 }
 
 trait View
 
+trait Auto
+
+class TxnEarlyFailException(msg: String = "") extends Exception
+
+private class TxnMulti(txn: Txn) extends Txn{
+  val lock = RWLock()
+  override def create[T](t: T): Box[T] = lock.write{txn.create(t)}
+  override def set[T](box: Box[T], t: T): Box[T] = lock.write{txn.set(box, t)}
+  override def get[T](box: Box[T]): T = lock.read{txn.get(box)}
+  override def revision() = txn.revision()
+  override def failEarly() = txn.failEarly()
+}
+
+/** This can be used to wrap a Txn to make it safe for concurrent multi-threaded
+  * access, by using a RWLock(). 
+  */
+object TxnMulti {
+  def apply(txn: Txn): Txn = new TxnMulti(txn)
+}
 
