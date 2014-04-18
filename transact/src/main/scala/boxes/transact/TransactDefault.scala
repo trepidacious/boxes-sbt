@@ -15,6 +15,10 @@ import java.util.concurrent.Executors
 import scala.util.Try
 import scala.util.Success
 import scala.util.Failure
+import boxes.transact.util.RWLock
+import boxes.transact.util.BoxGCWatcher
+import boxes.transact.util.DaemonThreadFactory
+import boxes.transact.util.Lock
 
 
 private class BoxDefault[T](val id: Long) extends Box[T]

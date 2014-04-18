@@ -1,9 +1,10 @@
-package boxes.transact
+package boxes.transact.util
 
 import scala.collection._
 import java.lang.ref.WeakReference
 import java.lang.ref.ReferenceQueue
 import java.lang.ref.Reference
+import boxes.transact.Box
 
 class BoxGCWatcher {
   private val refQueue = new ReferenceQueue[Box[_]]()

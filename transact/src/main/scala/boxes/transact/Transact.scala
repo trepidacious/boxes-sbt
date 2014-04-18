@@ -9,6 +9,7 @@ import java.lang.ref.Reference
 import scala.collection.mutable.ListBuffer
 import scala.Option.option2Iterable
 import java.util.concurrent.ExecutorService
+import boxes.transact.util.RWLock
 
 trait Box[T] {
   def apply()(implicit t: TxnR): T = t.get(this)

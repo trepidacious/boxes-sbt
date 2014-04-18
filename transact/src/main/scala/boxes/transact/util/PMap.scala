@@ -1,4 +1,5 @@
-package boxes.transact
+package boxes.transact.util
+
 import scala.language.higherKinds
 
 trait PMap[K[_], V[_]] {

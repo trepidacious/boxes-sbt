@@ -1,13 +1,7 @@
-package boxes.transact
+package boxes.transact.util
 
 import java.util.concurrent.locks.ReentrantReadWriteLock
-import java.util.concurrent.atomic.AtomicInteger
 import scala.collection._
-import java.lang.ref.WeakReference
-import java.lang.ref.ReferenceQueue
-import java.lang.ref.Reference
-import scala.collection.mutable.ListBuffer
-import scala.Option.option2Iterable
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.Executors
