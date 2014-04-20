@@ -5,12 +5,13 @@ import java.lang.ref.WeakReference
 import java.lang.ref.ReferenceQueue
 import java.lang.ref.Reference
 import boxes.transact.Box
+import boxes.transact.Identifiable
 
-class BoxGCWatcher {
-  private val refQueue = new ReferenceQueue[Box[_]]()
-  private val refToId = new mutable.HashMap[Reference[_ <: Box[_]], Long]()
+class GCWatcher {
+  private val refQueue = new ReferenceQueue[Identifiable]()
+  private val refToId = new mutable.HashMap[Reference[_ <: Identifiable], Long]()
      
-  def watch(boxes: Set[Box[_]]) {
+  def watch(boxes: Set[_ <: Identifiable]) {
     //Any new boxes need to be tracked for GC - make a weak reference to the box, and use that to map to the id of the box
     boxes.foreach{b => {
         val r = new WeakReference(b, refQueue)

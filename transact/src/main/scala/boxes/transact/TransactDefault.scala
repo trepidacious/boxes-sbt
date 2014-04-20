@@ -16,9 +16,10 @@ import scala.util.Try
 import scala.util.Success
 import scala.util.Failure
 import boxes.transact.util.RWLock
-import boxes.transact.util.BoxGCWatcher
+import boxes.transact.util.GCWatcher
 import boxes.transact.util.DaemonThreadFactory
 import boxes.transact.util.Lock
+import scala.collection.immutable.HashSet
 
 
 private class BoxDefault[T](val id: Long) extends Box[T]
@@ -170,7 +171,7 @@ private class ShelfDefault extends Shelf {
 
   private val retries = 10000
   
-  private val watcher = new BoxGCWatcher()
+  private val watcher = new GCWatcher()
   
   private val views = new WeakHashSet[ViewDefault]()
   private val autos = new WeakHashSet[AutoDefault[_]]()
@@ -206,13 +207,13 @@ private class ShelfDefault extends Shelf {
     }
   }
   
-  def transactFromAuto[T](f: Txn => T): (T, TxnSingle) = {
-    def tf(r: RevisionDefault) = new TxnSingle(this, r)
+  def transactFromAuto[T](f: Txn => T): (T, TxnDefault) = {
+    def tf(r: RevisionDefault) = new TxnDefault(this, r)
     transactRepeatedTry(f, tf, retries)
   }
 
   def transact[T](f: Txn => T): T = {
-    def tf(r: RevisionDefault) = new TxnSingle(this, r)
+    def tf(r: RevisionDefault) = new TxnDefault(this, r)
     transactRepeatedTry(f, tf, retries)._1
   }
 
@@ -250,24 +251,7 @@ private class ShelfDefault extends Shelf {
         case Failure(e) => throw e                      //Exception that is not part of transaction system
         case _ => None                                  //Conflict
       }
-//
-//      
-//      //If current revision has changes conflicting with transaction,
-//      //fail and return None
-//      if (current.conflictsWith(t)) {
-//        None
-//        
-//      //If there are no conflicts, make a new revision using the transaction writes and creates
-//      } else {
-//        //Any new boxes need to be tracked for GC
-//        watcher.watch(t.creates)
-//        
-//        //Update map with the writes, also deleting any boxes that have been GCed
-//        revise(current.updated(t.writes, watcher.deletes()))
-//        
-//        //Success, return Txn result and Txn itself
-//        Some((tryR.get, t))
-//      }
+
     }
   }
   
@@ -284,12 +268,6 @@ object ShelfDefault {
   def apply(): Shelf = new ShelfDefault
 }
 
-private trait TxnDefault extends Txn {
-  def reads(): Set[Long]
-  def writes(): Map[Long, Any]
-  def creates(): Set[Box[_]]
-  def revision(): RevisionDefault
-}
 
 private class TxnRDefault(val shelf: ShelfDefault, val revision: RevisionDefault) extends TxnR {
   def get[T](box: Box[T]): T = revision.valueOf(box).getOrElse(throw new RuntimeException("Missing Box"))
@@ -304,11 +282,14 @@ private class TxnRLogging(val revision: RevisionDefault) extends TxnR {
   }
 }
 
-private class TxnSingle(val shelf: ShelfDefault, val revision: RevisionDefault) extends TxnDefault {
+private case class ReactionNode (sources: Set[Box[_]] = HashSet.empty, targets: Set[Box[_]] = HashSet.empty)
+
+private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault) extends Txn {
   
   val writes = new mutable.HashMap[Long, Any]()
   val reads = new mutable.HashSet[Long]()
   val creates = new mutable.HashSet[Box[_]]()
+  val reactions = new mutable.HashMap[Txn => Boolean, ReactionNode]()
   
   def create[T](t: T): Box[T] = {
     val box = BoxDefault[T]()
@@ -325,6 +306,11 @@ private class TxnSingle(val shelf: ShelfDefault, val revision: RevisionDefault) 
     val v = writes.get(box.id).asInstanceOf[Option[T]].getOrElse(revision.valueOf(box).getOrElse(throw new RuntimeException("Missing Box")))
     reads.add(box.id)
     return v
+  }
+  
+  def react(f: Txn => Boolean) = {
+    reactions.put(f, new ReactionNode())
+    //TODO start a cycle to apply the reaction for the first time.
   }
   
   def failEarly() = if (shelf.now.conflictsWith(this)) throw new TxnEarlyFailException

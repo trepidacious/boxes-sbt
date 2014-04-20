@@ -11,14 +11,16 @@ import scala.Option.option2Iterable
 import java.util.concurrent.ExecutorService
 import boxes.transact.util.RWLock
 
-trait Box[T] {
+trait Identifiable {
+  def id(): Long
+}
+
+trait Box[T] extends Identifiable {
   def apply()(implicit t: TxnR): T = t.get(this)
   def get()(implicit t: TxnR): T = apply()(t)
   
   def update(v: T)(implicit t: Txn) = t.set(this, v)
   def set(v: T)(implicit t: Txn) = update(v)(t)
-  
-  def id(): Long
 }
 
 object Box {
@@ -62,6 +64,8 @@ trait Txn extends TxnR {
   def create[T](t: T): Box[T]
   def set[T](box: Box[T], t: T): Box[T]
   
+  def react(f: Txn => Boolean)
+  
   def failEarly(): Unit
 }
 
@@ -75,6 +79,8 @@ private class TxnMulti(txn: Txn) extends Txn{
   val lock = RWLock()
   override def create[T](t: T): Box[T] = lock.write{txn.create(t)}
   override def set[T](box: Box[T], t: T): Box[T] = lock.write{txn.set(box, t)}
+  override def react(f: Txn => Boolean) = lock.write{txn.react(f)}
+
   override def get[T](box: Box[T]): T = lock.read{txn.get(box)}
   override def revision() = txn.revision()
   override def failEarly() = txn.failEarly()
