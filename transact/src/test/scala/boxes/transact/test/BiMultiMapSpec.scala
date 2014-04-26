@@ -1,5 +1,6 @@
 package boxes.transact.test
 
+
 import org.scalatest.WordSpec
 import org.scalatest.junit.JUnitRunner
 import boxes.transact._
