@@ -40,7 +40,9 @@ class BiMultiMap[K, V](forward: Map[K, Set[V]], backward: Map[V, Set[K]]) {
     new BiMultiMap(newForward, newBackward)
   }
 
-  def removedValues(values: Set[V]): BiMultiMap[K, V] = values.foldLeft(this){case (bmm, value) => bmm.removedValue(value)}  
+  def removedValues(values: Set[V]): BiMultiMap[K, V] = values.foldLeft(this){case (bmm, value) => bmm.removedValue(value)}
+  
+  override def toString() = "F " + forward + ", B " + backward
 }
 
 object BiMultiMap {
