@@ -29,7 +29,14 @@ private object BoxDefault {
   def apply[T](): Box[T] = new BoxDefault[T](nextId.getAndIncrement())
 }
 
-private class RevisionDefault(val index: Long, map: Map[Long, State[_]]) extends Revision {
+private class ReactionDefault(val id: Long) extends Reaction
+
+private object ReactionDefault {
+  private val nextId = new AtomicInteger(0)
+  def apply(): Reaction = new ReactionDefault(nextId.getAndIncrement())  
+}
+
+private class RevisionDefault(val index: Long, map: Map[Long, State[_]], reactionMap: Map[Long, Txn=>Unit]) extends Revision {
 
   def stateOf[T](box: Box[T]): Option[State[T]] = map.get(box.id).asInstanceOf[Option[State[T]]]
   def indexOf(box: Box[_]): Option[Long] = map.get(box.id).map(_.revision)
@@ -37,11 +44,17 @@ private class RevisionDefault(val index: Long, map: Map[Long, State[_]]) extends
 
   def indexOfId(id: Long): Option[Long] = map.get(id).map(_.revision)
 
-  def updated(writes: Map[Long, _], deletes: List[Long]) = {
+  def reactionOfId(id: Long): Option[Txn=>Unit] = reactionMap.get(id)
+  
+  def updated(writes: Map[Long, _], deletes: List[Long], newReactions: Map[Reaction, Txn=>Unit], reactionDeletes: List[Long]) = {
     val newIndex = index + 1
     val prunedMap = deletes.foldLeft(map){case (map, id) => map - id}
     val newMap = writes.foldLeft(prunedMap){case (map, (id, value)) => map.updated(id, State(newIndex, value))}
-    new RevisionDefault(newIndex, newMap)
+    
+    val prunedReactionMap = reactionDeletes.foldLeft(reactionMap){case (map, id) => map - id}
+    val newReactionMap = newReactions.foldLeft(prunedReactionMap){case (map, (reaction, f)) => map.updated(reaction.id, f)}
+    
+    new RevisionDefault(newIndex, newMap, newReactionMap)
   } 
 
   def conflictsWith(t: TxnDefault) = {
@@ -167,11 +180,12 @@ private class AutoDefault[T](val shelf: ShelfDefault, val f: Txn => T, val exe: 
 private class ShelfDefault extends Shelf {
   private val lock = RWLock()
 
-  private var current = new RevisionDefault(0, Map.empty)
+  private var current = new RevisionDefault(0, Map.empty, Map.empty)
 
   private val retries = 10000
   
   private val watcher = new GCWatcher()
+  private val reactionWatcher = new GCWatcher()
   
   private val views = new WeakHashSet[ViewDefault]()
   private val autos = new WeakHashSet[AutoDefault[_]]()
@@ -244,7 +258,8 @@ private class ShelfDefault extends Shelf {
         case Success(r) if !current.conflictsWith(t) => {
           //Watch new boxes, make new revision with GCed boxes deleted, and return result and successful transaction
           watcher.watch(t.creates)
-          revise(current.updated(t.writes, watcher.deletes()))
+          reactionWatcher.watch(t.reactionCreates.keySet)
+          revise(current.updated(t.writes, watcher.deletes(), t.reactionCreates, reactionWatcher.deletes()))
           Some((r, t))
         }
         case Failure(e: TxnEarlyFailException) => None  //Exception indicating early failure, e.g. due to conflict
@@ -289,7 +304,7 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
   val writes = new mutable.HashMap[Long, Any]()
   val reads = new mutable.HashSet[Long]()
   val creates = new mutable.HashSet[Box[_]]()
-  val reactions = new mutable.HashMap[Txn => Boolean, ReactionNode]()
+  val reactionCreates = new mutable.HashMap[Reaction, Txn=>Unit]()
   
   def create[T](t: T): Box[T] = {
     val box = BoxDefault[T]()
@@ -308,9 +323,10 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
     return v
   }
   
-  def react(f: Txn => Boolean) = {
-    reactions.put(f, new ReactionNode())
-    //TODO start a cycle to apply the reaction for the first time.
+  def createReaction(f: Txn => Unit): Reaction = {
+    val reaction = ReactionDefault()
+    reactionCreates.put(reaction, f)
+    reaction
   }
   
   def failEarly() = if (shelf.now.conflictsWith(this)) throw new TxnEarlyFailException

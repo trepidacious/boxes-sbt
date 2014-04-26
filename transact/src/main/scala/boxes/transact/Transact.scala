@@ -23,6 +23,9 @@ trait Box[T] extends Identifiable {
   def set(v: T)(implicit t: Txn) = update(v)(t)
 }
 
+trait Reaction extends Identifiable {
+}
+
 object Box {
   def apply[T](v: T)(implicit t: Txn): Box[T] = t.create(v)
 }
@@ -64,7 +67,7 @@ trait Txn extends TxnR {
   def create[T](t: T): Box[T]
   def set[T](box: Box[T], t: T): Box[T]
   
-  def react(f: Txn => Boolean)
+  def createReaction(f: Txn => Unit): Reaction
   
   def failEarly(): Unit
 }
@@ -79,7 +82,7 @@ private class TxnMulti(txn: Txn) extends Txn{
   val lock = RWLock()
   override def create[T](t: T): Box[T] = lock.write{txn.create(t)}
   override def set[T](box: Box[T], t: T): Box[T] = lock.write{txn.set(box, t)}
-  override def react(f: Txn => Boolean) = lock.write{txn.react(f)}
+  override   def createReaction(f: Txn => Unit) = lock.write{txn.createReaction(f)}
 
   override def get[T](box: Box[T]): T = lock.read{txn.get(box)}
   override def revision() = txn.revision()
