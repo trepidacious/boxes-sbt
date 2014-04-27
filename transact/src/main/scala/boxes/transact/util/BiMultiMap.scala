@@ -3,7 +3,7 @@ package boxes.transact.util
 import scala.collection.immutable.HashSet
 import scala.collection.immutable.HashMap
 
-class BiMultiMap[K, V](forward: Map[K, Set[V]], backward: Map[V, Set[K]]) {
+class BiMultiMap[K, V](val forward: Map[K, Set[V]], val backward: Map[V, Set[K]]) {
   def valuesFor(key: K): Set[V] = forward.get(key).getOrElse(HashSet.empty)
   def keysFor(value: V): Set[K] = backward.get(value).getOrElse(HashSet.empty)
   

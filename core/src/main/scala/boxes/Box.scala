@@ -195,7 +195,7 @@ object Box {
     lock.lock
     if (!canWrite) throw new InvalidWriteException(b)
 
-    //This box is a source of any active reaction
+    //This box is a target of any active reaction
     activeReaction.foreach(r => associateReactionTarget(r, b))
   }
 
@@ -369,9 +369,9 @@ object Box {
         //Clear this targets expected targets and sources,
         //so that they can be added from fresh by calling
         //reaction.respond and then applying that response
-      //TODO should use temp set for tracking new sources, then
-      //modify the sourceReactions from this, to allow for keeping the same
-      //weak references (if appropriate) rather than regenerating every cycle.
+        //TODO should use temp set for tracking new sources, then
+        //modify the sourceReactions from this, to allow for keeping the same
+        //weak references (if appropriate) rather than regenerating every cycle.
         clearReactionSourcesAndTargets(nextReaction)
 
         try {

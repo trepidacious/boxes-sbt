@@ -96,3 +96,6 @@ object TxnMulti {
   def apply(txn: Txn): Txn = new TxnMulti(txn)
 }
 
+class BoxException(message: String = "") extends Exception(message)
+class FailedReactionsException(message: String = "") extends BoxException(message)
+class ConflictingReactionException(message: String = "") extends BoxException(message)
