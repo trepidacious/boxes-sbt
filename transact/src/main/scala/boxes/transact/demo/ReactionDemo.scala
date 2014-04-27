@@ -15,7 +15,7 @@ object ReactionDemo {
     val c = s.create("")
     
     println(">Adding reaction")
-    s.transact{
+    val r = s.transact{
       implicit txn => {
         txn.createReaction{implicit txn => {
           c() = a() + ", " + b()

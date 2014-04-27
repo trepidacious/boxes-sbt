@@ -49,7 +49,8 @@ trait Shelf {
 
   def transact[T](f: Txn => T): T
   def read[T](f: TxnR => T): T
-  
+
+  def react(f: Txn => Unit): Reaction
 
   def view(f: TxnR => Unit): Long
   def view(f: TxnR => Unit, exe: ExecutorService, onlyMostRecent: Boolean): Long
