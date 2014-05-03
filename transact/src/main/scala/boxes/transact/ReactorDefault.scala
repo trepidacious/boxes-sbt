@@ -3,7 +3,7 @@ package boxes.transact
 import scala.collection._
 import scala.collection.mutable.MultiMap
 
-private class ReactorDefault(txn: ReactorTxn) extends Reactor {
+private class ReactorDefault(txn: TxnForReactor) extends ReactorForTxn with ReactorTxn {
   
   //Track ids of reactions that are newly added to the system (added AFTER the most recent full cycle), and so may need extra checks.
   private val newReactions = new mutable.HashSet[Long]()
@@ -199,5 +199,12 @@ private class ReactorDefault(txn: ReactorTxn) extends Reactor {
       activeReaction = None
     }
   }
+  
+  def create[T](t: T) = txn.create(t) 
+  def createReaction(f: boxes.transact.ReactorTxn => Unit) = txn.createReaction(f)
+  def failEarly() = txn.failEarly()
+  def set[T](box: boxes.transact.Box[T], t: T) = txn.set(box, t)
+  def get[T](box: boxes.transact.Box[T]) = txn.get(box)
+  def revision() = txn.revision
   
 }

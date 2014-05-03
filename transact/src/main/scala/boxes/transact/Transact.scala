@@ -50,7 +50,7 @@ trait Shelf {
   def transact[T](f: Txn => T): T
   def read[T](f: TxnR => T): T
 
-  def react(f: Txn => Unit): Reaction
+  def react(f: ReactorTxn => Unit): Reaction
 
   def view(f: TxnR => Unit): Long
   def view(f: TxnR => Unit, exe: ExecutorService, onlyMostRecent: Boolean): Long
@@ -68,7 +68,7 @@ trait Txn extends TxnR {
   def create[T](t: T): Box[T]
   def set[T](box: Box[T], t: T): Box[T]
   
-  def createReaction(f: Txn => Unit): Reaction
+  def createReaction(f: ReactorTxn => Unit): Reaction
   
   def failEarly(): Unit
 }
@@ -83,7 +83,7 @@ private class TxnMulti(txn: Txn) extends Txn{
   val lock = RWLock()
   override def create[T](t: T): Box[T] = lock.write{txn.create(t)}
   override def set[T](box: Box[T], t: T): Box[T] = lock.write{txn.set(box, t)}
-  override   def createReaction(f: Txn => Unit) = lock.write{txn.createReaction(f)}
+  override   def createReaction(f: ReactorTxn => Unit) = lock.write{txn.createReaction(f)}
 
   override def get[T](box: Box[T]): T = lock.read{txn.get(box)}
   override def revision() = txn.revision()

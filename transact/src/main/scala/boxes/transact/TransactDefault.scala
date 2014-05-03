@@ -38,7 +38,7 @@ private object ReactionDefault {
   def apply() = new ReactionDefault(nextId.getAndIncrement())  
 }
 
-private class RevisionDefault(val index: Long, val map: Map[Long, State[_]], reactionMap: Map[Long, Txn=>Unit], val sources: BiMultiMap[Long, Long], val targets: BiMultiMap[Long, Long]) extends Revision {
+private class RevisionDefault(val index: Long, val map: Map[Long, State[_]], reactionMap: Map[Long, ReactorTxn=>Unit], val sources: BiMultiMap[Long, Long], val targets: BiMultiMap[Long, Long]) extends Revision {
 
   def stateOf[T](box: Box[T]): Option[State[T]] = map.get(box.id).asInstanceOf[Option[State[T]]]
   def indexOf(box: Box[_]): Option[Long] = map.get(box.id).map(_.revision)
@@ -46,9 +46,9 @@ private class RevisionDefault(val index: Long, val map: Map[Long, State[_]], rea
 
   def indexOfId(id: Long): Option[Long] = map.get(id).map(_.revision)
 
-  def reactionOfId(id: Long): Option[Txn=>Unit] = reactionMap.get(id)
+  def reactionOfId(id: Long): Option[ReactorTxn => Unit] = reactionMap.get(id)
   
-  def updated(writes: Map[Long, _], deletes: List[Long], newReactions: Map[Reaction, Txn=>Unit], reactionDeletes: List[Long], sources: BiMultiMap[Long, Long], targets: BiMultiMap[Long, Long]) = {
+  def updated(writes: Map[Long, _], deletes: List[Long], newReactions: Map[Reaction, ReactorTxn=>Unit], reactionDeletes: List[Long], sources: BiMultiMap[Long, Long], targets: BiMultiMap[Long, Long]) = {
     val newIndex = index + 1
     val prunedMap = deletes.foldLeft(map){case (map, id) => map - id}
     val newMap = writes.foldLeft(prunedMap){case (map, (id, value)) => map.updated(id, State(newIndex, value))}
@@ -276,7 +276,7 @@ private class ShelfDefault extends Shelf {
     current
   }
   
-  def react(f: Txn => Unit) = transact{
+  def react(f: ReactorTxn => Unit) = transact{
     implicit txn => {
       txn.createReaction{f}
     }
@@ -306,13 +306,13 @@ private class TxnRLogging(val revision: RevisionDefault) extends TxnR {
   }
 }
 
-private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault) extends ReactorTxn {
+private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault) extends TxnForReactor {
   
   val writes = new mutable.HashMap[Long, Any]()
   val reads = new mutable.HashSet[Long]()
   val creates = new mutable.HashSet[Box[_]]()
-  val reactionCreates = new mutable.HashMap[Reaction, Txn=>Unit]()
-  val reactionIdCreates = new mutable.HashMap[Long, Txn=>Unit]()
+  val reactionCreates = new mutable.HashMap[Reaction, ReactorTxn=>Unit]()
+  val reactionIdCreates = new mutable.HashMap[Long, ReactorTxn=>Unit]()
   var sources = revision.sources
   var targets = revision.targets
   
@@ -345,7 +345,7 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
     return v
   }
   
-  def createReaction(f: Txn => Unit): Reaction = {
+  def createReaction(f: ReactorTxn => Unit): Reaction = {
     val reaction = ReactionDefault()
     reactionCreates.put(reaction, f)
     reactionIdCreates.put(reaction.id, f)
@@ -372,8 +372,8 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
   
   def reactionFinished() {
     currentReactor = None
-    println("Reaction finished, sources " + sources + ", targets " + targets)
-    println("Boxes " + revision.map)
+//    println("Reaction finished, sources " + sources + ", targets " + targets)
+//    println("Boxes " + revision.map)
   }
   
   def clearReactionSourcesAndTargets(rid: Long) {
@@ -387,11 +387,11 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
   def reactionsTargettingBox(bid: Long) = targets.keysFor(bid)
   def reactionsSourcingBox(bid: Long) = sources.keysFor(bid)
   
-  private def reactionFunctionForId(rid: Long): Txn => Unit = {
+  private def reactionFunctionForId(rid: Long): ReactorTxn => Unit = {
     reactionIdCreates.get(rid).getOrElse(revision.reactionOfId(rid).getOrElse(throw new RuntimeException("Missing Reaction")))
   }
   
-  def react(rid: Long) = reactionFunctionForId(rid).apply(this)
+  def react(rid: Long) = reactionFunctionForId(rid).apply(currentReactor.getOrElse(throw new RuntimeException("Missing Reactor")))
   
   def addTargetForReaction(rid: Long, bid: Long) = {
     println("Reaction " + rid + " targets " + bid)

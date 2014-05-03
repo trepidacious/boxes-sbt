@@ -1,12 +1,32 @@
 package boxes.transact
 
-trait Reactor {
+/**
+ * The interface available to Reactions as they run, which provides both the
+ * transaction the Reaction is running in, and additional data that is only
+ * useful to Reactions, and only exists while a Reactor is processing reactions
+ * in one "cycle".
+ */
+trait ReactorTxn extends Txn {
+//  def 
+}
+
+/**
+ * ReactorForTxn and TxnForReactor provide one possible means of communication
+ * between a Reactor and a Transaction, for example when using the ReactorDefault
+ * implementation, but is not part of public API.
+ */
+trait ReactorForTxn {
   def afterSet[T](box: Box[T], t: T): Unit  
   def afterGet[T](box: Box[T]): Unit
   def registerReaction(r: ReactionDefault): Unit
 }
 
-trait ReactorTxn extends Txn {
+/**
+ * ReactorForTxn and TxnForReactor provide one possible means of communication
+ * between a Reactor and a Transaction, for example when using the ReactorDefault
+ * implementation, but is not part of public API.
+ */
+trait TxnForReactor extends Txn {
   def reactionFinished()
   def clearReactionSourcesAndTargets(rid: Long)
   
