@@ -2,6 +2,7 @@ package boxes.transact
 
 import scala.collection._
 import scala.collection.mutable.MultiMap
+import scala.collection.immutable.HashSet
 
 private class ReactorDefault(txn: TxnForReactor) extends ReactorForTxn with ReactorTxn {
   
@@ -26,6 +27,8 @@ private class ReactorDefault(txn: TxnForReactor) extends ReactorForTxn with Reac
   //for reads/writes, if there is none then reads/writes are external
   private var activeReaction:Option[Long] = None
 
+  def changedSources = changedSourcesForReaction.get(activeReaction.getOrElse(throw new RuntimeException("No active reaction in call to changedSources - code error"))).getOrElse(immutable.HashSet.empty).toSet
+  
   def afterSet[T](box: Box[T], t: T) {
     //This box is a target of any active reaction
     activeReaction.foreach(r => txn.addTargetForReaction(r, box.id))
@@ -41,10 +44,6 @@ private class ReactorDefault(txn: TxnForReactor) extends ReactorForTxn with Reac
       }
     }
 
-//    if (activeReaction == None) {
-//      _firstWrite = Some(b, newQ)
-//    }
-    
 //    var q = boxToChanges.get(b).getOrElse(immutable.Queue[(Long,C)]()).asInstanceOf[immutable.Queue[(Long,C)]] ++ newQ
 //    boxToChanges.put(b, q)
 

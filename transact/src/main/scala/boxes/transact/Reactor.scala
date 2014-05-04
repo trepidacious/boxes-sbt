@@ -7,7 +7,12 @@ package boxes.transact
  * in one "cycle".
  */
 trait ReactorTxn extends Txn {
-//  def 
+  
+  /**
+   * Get the set of Boxes that are sources of the Reaction, and have changed
+   * during this Reactor's execution
+   */
+  def changedSources: Set[Box[_]]
 }
 
 /**

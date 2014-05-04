@@ -16,7 +16,12 @@ object ReactionDemo {
     
     println(">Adding reaction")
     val r = s.react{ 
-      implicit txn => c() = a() + ", " + b()
+      implicit txn => {
+        print("Changes to '")
+        txn.changedSources.foreach(box => print(box() + " "))
+        println("'.")
+        c() = a() + ", " + b()
+      }
     }
 
     println(">Printing c")

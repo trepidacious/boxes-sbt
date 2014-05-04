@@ -366,14 +366,10 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
     } 
   }
   
-  
   def failEarly() = if (shelf.now.conflictsWith(this)) throw new TxnEarlyFailException
-  
   
   def reactionFinished() {
     currentReactor = None
-//    println("Reaction finished, sources " + sources + ", targets " + targets)
-//    println("Boxes " + revision.map)
   }
   
   def clearReactionSourcesAndTargets(rid: Long) {
@@ -394,12 +390,10 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
   def react(rid: Long) = reactionFunctionForId(rid).apply(currentReactor.getOrElse(throw new RuntimeException("Missing Reactor")))
   
   def addTargetForReaction(rid: Long, bid: Long) = {
-    println("Reaction " + rid + " targets " + bid)
     targets = targets.updated(rid, targets.valuesFor(rid) + bid)
   }
 
   def addSourceForReaction(rid: Long, bid: Long) = {
-    println("Reaction " + rid + " sources " + bid)
     sources = sources.updated(rid, sources.valuesFor(rid) + bid)
   }
 
