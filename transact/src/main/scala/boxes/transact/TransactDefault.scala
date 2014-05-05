@@ -38,13 +38,13 @@ private object ReactionDefault {
   def apply() = new ReactionDefault(nextId.getAndIncrement())  
 }
 
-//case class ReactionFunc(f: ReactorTxn => Unit) {
-//  def exec(txn: ReactorTxn) {
-//    f.apply(txn)
-//  }
-//}
+case class ReactionFunc(f: ReactorTxn => Unit) {
+  def exec(txn: ReactorTxn) {
+    f.apply(txn)
+  }
+}
 
-private class RevisionDefault(val index: Long, val map: Map[Long, State[_]], reactionMap: Map[Long, ReactorTxn=>Unit], val sources: BiMultiMap[Long, Long], val targets: BiMultiMap[Long, Long], val boxReactions: Map[Long, Set[ReactorTxn=>Unit]]) extends Revision {
+private class RevisionDefault(val index: Long, val map: Map[Long, State[_]], reactionMap: Map[Long, ReactionFunc], val sources: BiMultiMap[Long, Long], val targets: BiMultiMap[Long, Long], val boxReactions: Map[Long, Set[Reaction]]) extends Revision {
 
   def stateOf[T](box: Box[T]): Option[State[T]] = map.get(box.id).asInstanceOf[Option[State[T]]]
   def indexOf(box: Box[_]): Option[Long] = map.get(box.id).map(_.revision)
@@ -52,9 +52,9 @@ private class RevisionDefault(val index: Long, val map: Map[Long, State[_]], rea
 
   def indexOfId(id: Long): Option[Long] = map.get(id).map(_.revision)
 
-  def reactionOfId(id: Long): Option[ReactorTxn => Unit] = reactionMap.get(id)
+  def reactionOfId(id: Long): Option[ReactionFunc] = reactionMap.get(id)
   
-  def updated(writes: Map[Long, _], deletes: List[Long], newReactions: Map[Reaction, ReactorTxn=>Unit], reactionDeletes: List[Long], sources: BiMultiMap[Long, Long], targets: BiMultiMap[Long, Long], boxReactions: Map[Long, Set[ReactorTxn=>Unit]]) = {
+  def updated(writes: Map[Long, _], deletes: List[Long], newReactions: Map[Reaction, ReactionFunc], reactionDeletes: List[Long], sources: BiMultiMap[Long, Long], targets: BiMultiMap[Long, Long], boxReactions: Map[Long, Set[Reaction]]) = {
     val newIndex = index + 1
     
     //Remove boxes that have been GCed, then add new ones
@@ -278,7 +278,7 @@ private class ShelfDefault extends Shelf {
           //Watch new boxes, make new revision with GCed boxes deleted, and return result and successful transaction
           watcher.watch(t.creates)
           reactionWatcher.watch(t.reactionCreates.keySet)
-          println("Added reactions " + t.reactionCreates.values.map(_.hashCode()) + ", now retaining " + t.boxReactions.values.map(_.hashCode))
+//          println("Added reactions " + t.reactionCreates.keys.map(_.hashCode()) + ", now retaining " + t.boxReactions.values.map(_.map(_.hashCode)))
           revise(current.updated(t.writes, watcher.deletes(), t.reactionCreates, reactionWatcher.deletes(), t.sources, t.targets, t.boxReactions))
           Some((r, t))
         }
@@ -329,8 +329,8 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
   val writes = new mutable.HashMap[Long, Any]()
   val reads = new mutable.HashSet[Long]()
   val creates = new mutable.HashSet[Box[_]]()
-  val reactionCreates = new mutable.HashMap[Reaction, ReactorTxn=>Unit]()
-  val reactionIdCreates = new mutable.HashMap[Long, ReactorTxn=>Unit]()
+  val reactionCreates = new mutable.HashMap[Reaction, ReactionFunc]()
+  val reactionIdCreates = new mutable.HashMap[Long, ReactionFunc]()
   var sources = revision.sources
   var targets = revision.targets
   var boxReactions = revision.boxReactions
@@ -366,8 +366,9 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
   
   def createReaction(f: ReactorTxn => Unit): Reaction = {
     val reaction = ReactionDefault()
-    reactionCreates.put(reaction, f)
-    reactionIdCreates.put(reaction.id, f)
+    val func = ReactionFunc(f)
+    reactionCreates.put(reaction, func)
+    reactionIdCreates.put(reaction.id, func)
     withReactor(_.registerReaction(reaction))
     reaction
   }
@@ -388,11 +389,11 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
   def failEarly() = if (shelf.now.conflictsWith(this)) throw new TxnEarlyFailException
   
   override def boxRetainsReaction(box: Box[_], r: Reaction) {
-    boxReactions = boxReactions.updated(box.id, boxReactions.get(box.id).getOrElse(Set.empty) + reactionFunctionForId(r.id))
+    boxReactions = boxReactions.updated(box.id, boxReactions.get(box.id).getOrElse(Set.empty) + r)
   }
 
   override def boxReleasesReaction(box: Box[_], r: Reaction) {
-    boxReactions = boxReactions.updated(box.id, boxReactions.get(box.id).getOrElse(Set.empty) - reactionFunctionForId(r.id))
+    boxReactions = boxReactions.updated(box.id, boxReactions.get(box.id).getOrElse(Set.empty) - r)
   }
   
   def reactionFinished() {
@@ -410,12 +411,12 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
   def reactionsTargettingBox(bid: Long) = targets.keysFor(bid)
   def reactionsSourcingBox(bid: Long) = sources.keysFor(bid)
   
-  private def reactionFunctionForId(rid: Long): ReactorTxn => Unit = {
+  private def reactionFunctionForId(rid: Long): ReactionFunc = {
     //TODO we may get a missing reaction, if a reaction is GCed but is still pointed to by a box source/target
     reactionIdCreates.get(rid).getOrElse(revision.reactionOfId(rid).getOrElse(throw new RuntimeException("Missing Reaction")))
   }
   
-  def react(rid: Long) = reactionFunctionForId(rid).apply(currentReactor.getOrElse(throw new RuntimeException("Missing Reactor")))
+  def react(rid: Long) = reactionFunctionForId(rid).exec(currentReactor.getOrElse(throw new RuntimeException("Missing Reactor")))
   
   def addTargetForReaction(rid: Long, bid: Long) = {
     targets = targets.updated(rid, targets.valuesFor(rid) + bid)
