@@ -205,5 +205,7 @@ private class ReactorDefault(txn: TxnForReactor) extends ReactorForTxn with Reac
   def set[T](box: boxes.transact.Box[T], t: T) = txn.set(box, t)
   def get[T](box: boxes.transact.Box[T]) = txn.get(box)
   def revision() = txn.revision
+  def boxReleasesReaction(box: boxes.transact.Box[_],r: boxes.transact.Reaction) = txn.boxReleasesReaction(box, r)
+  def boxRetainsReaction(box: boxes.transact.Box[_],r: boxes.transact.Reaction) = txn.boxRetainsReaction(box, r)
   
 }

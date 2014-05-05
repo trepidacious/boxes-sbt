@@ -21,6 +21,9 @@ trait Box[T] extends Identifiable {
   
   def update(v: T)(implicit t: Txn) = t.set(this, v)
   def set(v: T)(implicit t: Txn) = update(v)(t)
+  
+  def retainReaction(r: Reaction)(implicit t: Txn) = t.boxRetainsReaction(this, r)
+  def releaseReaction(r: Reaction)(implicit t: Txn) = t.boxReleasesReaction(this, r)
 }
 
 trait Reaction extends Identifiable {
@@ -52,11 +55,11 @@ trait Shelf {
 
   def react(f: ReactorTxn => Unit): Reaction
 
-  def view(f: TxnR => Unit): Long
-  def view(f: TxnR => Unit, exe: ExecutorService, onlyMostRecent: Boolean): Long
+  def view(f: TxnR => Unit): View
+  def view(f: TxnR => Unit, exe: ExecutorService, onlyMostRecent: Boolean): View
   
-  def auto[T](f: Txn => T): Long  
-  def auto[T](f: Txn => T, exe: ExecutorService, target: T => Unit): Long
+  def auto[T](f: Txn => T): Auto  
+  def auto[T](f: Txn => T, exe: ExecutorService, target: T => Unit): Auto
 }
 
 trait TxnR {
@@ -69,6 +72,9 @@ trait Txn extends TxnR {
   def set[T](box: Box[T], t: T): Box[T]
   
   def createReaction(f: ReactorTxn => Unit): Reaction
+  
+  def boxRetainsReaction(box: Box[_], r: Reaction)
+  def boxReleasesReaction(box: Box[_], r: Reaction)
   
   def failEarly(): Unit
 }
@@ -83,7 +89,10 @@ private class TxnMulti(txn: Txn) extends Txn{
   val lock = RWLock()
   override def create[T](t: T): Box[T] = lock.write{txn.create(t)}
   override def set[T](box: Box[T], t: T): Box[T] = lock.write{txn.set(box, t)}
-  override   def createReaction(f: ReactorTxn => Unit) = lock.write{txn.createReaction(f)}
+  override def createReaction(f: ReactorTxn => Unit) = lock.write{txn.createReaction(f)}
+
+  override def boxRetainsReaction(box: Box[_], r: Reaction) = lock.write{txn.boxRetainsReaction(box, r)}
+  override def boxReleasesReaction(box: Box[_], r: Reaction) = lock.write{txn.boxReleasesReaction(box, r)}
 
   override def get[T](box: Box[T]): T = lock.read{txn.get(box)}
   override def revision() = txn.revision()

@@ -17,19 +17,26 @@ object PathDemo {
     val c = Person()
 
     
-    val aFriendAndReaction = Path(implicit txn => a.friend)
-    val aFriend = aFriendAndReaction._1
-    val reaction = aFriendAndReaction._2
+    val aFriend = Path(implicit txn => a.friend)
 
+//    val aFriendAndReaction = Path.boxAndReaction(implicit txn => a.friend)
+//    val aFriend = aFriendAndReaction._1
+//    val reaction = aFriendAndReaction._2
+    
     println(">Viewing a's friend's name")
-    s.view(implicit txn => {
+    val v1 = s.view(implicit txn => {
       println(a.name() + "'s friend is " + a.friend().map(_.name()))
     })
 
     println(">Viewing aFriend's name")
-    s.view(implicit txn => {
+    val v2 = s.view(implicit txn => {
       println("aFriend's name is " + aFriend().map(_.name()))
     })
+    
+    println("Performing GC")
+    1 to 10 foreach {
+      _ => System.gc()
+    }
     
     //Views are dispatched on another thread, and so we need to give them a while to run
     //in order to see an update for each transaction, otherwise some may be skipped.
