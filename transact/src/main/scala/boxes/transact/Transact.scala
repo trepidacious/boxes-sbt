@@ -15,23 +15,65 @@ trait Identifiable {
   def id(): Long
 }
 
+/**
+ * Wraps a Box, and provides the same interface but using an implicit Shelf rather 
+ * than an implicit Txn in each case, and executing each corresponding Box method
+ * in a single transaction. This can make user code less verbose by removing the
+ * explicit transactions creation for transactions that consist of only a single
+ * Box method call.
+ * Each Box provides a BoxNow wrapping it, in "now" val.
+ */
+class BoxNow[T](box: Box[T]) {
+  def apply()(implicit s: Shelf): T = s.read(implicit txn => txn.get(box))
+  def update(v: T)(implicit s: Shelf) = s.transact(implicit txn => txn.set(box, v))
+
+  def get()(implicit s: Shelf): T = apply()(s)
+  def set(v: T)(implicit s: Shelf) = update(v)(s)
+
+  def retainReaction(r: Reaction)(implicit s: Shelf) = s.transact{t => t.boxRetainsReaction(box, r)}
+  def releaseReaction(r: Reaction)(implicit s: Shelf) = s.transact{t => t.boxReleasesReaction(box, r)}
+  
+  def << (r: ReactorTxn => T)(implicit s: Shelf) = {
+    s.transact(implicit t => {
+      val reaction = t.createReaction(implicit rtxn=>{
+        box.update(r(rtxn))
+      })
+      box.retainReaction(reaction)
+      reaction
+    })
+  }
+}
+
 trait Box[T] extends Identifiable {
   def apply()(implicit t: TxnR): T = t.get(this)
-  def get()(implicit t: TxnR): T = apply()(t)
-  
   def update(v: T)(implicit t: Txn) = t.set(this, v)
+
+  def get()(implicit t: TxnR): T = apply()(t)
   def set(v: T)(implicit t: Txn) = update(v)(t)
   
   def retainReaction(r: Reaction)(implicit t: Txn) = t.boxRetainsReaction(this, r)
   def releaseReaction(r: Reaction)(implicit t: Txn) = t.boxReleasesReaction(this, r)
-}
-
-trait Reaction extends Identifiable {
+  
+  def << (r: ReactorTxn => T)(implicit t: Txn) = {
+    val reaction = t.createReaction(implicit rtxn=>{
+      Box.this.update(r(rtxn))
+    })
+    Box.this.retainReaction(reaction)
+    reaction
+  }
+  
+  lazy val now = new BoxNow(this)
 }
 
 object Box {
   def apply[T](v: T)(implicit t: Txn): Box[T] = t.create(v)
 }
+
+object BoxNow {
+  def apply[T](v: T)(implicit s: Shelf): Box[T] = s.transact{t => t.create(v)}
+}
+
+trait Reaction extends Identifiable
 
 case class State[T](revision: Long, value: T)
 
