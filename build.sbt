@@ -5,6 +5,9 @@ lazy val core = project
 //New prototype stuff for providing concurrent transactions
 lazy val transact = project.dependsOn(core)
 
+//Swing bindings for transact
+lazy val transactswing = project.dependsOn(transact, swing)
+
 //Swing bindings for boxes
 lazy val swing = project.dependsOn(core)
 

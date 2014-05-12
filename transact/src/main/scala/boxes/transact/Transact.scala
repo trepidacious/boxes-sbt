@@ -10,6 +10,7 @@ import scala.collection.mutable.ListBuffer
 import scala.Option.option2Iterable
 import java.util.concurrent.ExecutorService
 import boxes.transact.util.RWLock
+import java.util.concurrent.Executor
 
 trait Identifiable {
   def id(): Long
@@ -98,10 +99,10 @@ trait Shelf {
   def react(f: ReactorTxn => Unit): Reaction
 
   def view(f: TxnR => Unit): View
-  def view(f: TxnR => Unit, exe: ExecutorService, onlyMostRecent: Boolean): View
+  def view(f: TxnR => Unit, exe: Executor, onlyMostRecent: Boolean): View
   
   def auto[T](f: Txn => T): Auto  
-  def auto[T](f: Txn => T, exe: ExecutorService, target: T => Unit): Auto
+  def auto[T](f: Txn => T, exe: Executor, target: T => Unit): Auto
 }
 
 trait TxnR {

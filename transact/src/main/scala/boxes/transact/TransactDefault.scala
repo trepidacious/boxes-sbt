@@ -22,6 +22,7 @@ import boxes.transact.util.Lock
 import scala.collection.immutable.HashSet
 import boxes.transact.util.BiMultiMap
 import scala.collection.mutable.MultiMap
+import java.util.concurrent.Executor
 
 
 private class BoxDefault[T](val id: Long) extends Box[T]
@@ -83,7 +84,7 @@ private class RevisionDefault(val index: Long, val map: Map[Long, State[_]], rea
   }
 }
 
-private class ViewDefault(val shelf: ShelfDefault, val f: TxnR => Unit, val exe: ExecutorService, onlyMostRecent: Boolean = true) extends View {
+private class ViewDefault(val shelf: ShelfDefault, val f: TxnR => Unit, val exe: Executor, onlyMostRecent: Boolean = true) extends View {
   private val revisionQueue = new mutable.Queue[RevisionDefault]()
   private val lock = Lock()
   private var state: Option[(Long, Set[Long])] = None
@@ -140,7 +141,7 @@ private class ViewDefault(val shelf: ShelfDefault, val f: TxnR => Unit, val exe:
   }
 }
 
-private class AutoDefault[T](val shelf: ShelfDefault, val f: Txn => T, val exe: ExecutorService, target: T => Unit = (t:T) => Unit) extends Auto {
+private class AutoDefault[T](val shelf: ShelfDefault, val f: Txn => T, val exe: Executor, target: T => Unit = (t:T) => Unit) extends Auto {
   private val revisionQueue = new mutable.Queue[RevisionDefault]()
   private val lock = Lock()
   private var state: Option[(Long, Set[Long])] = None
@@ -218,9 +219,9 @@ private class ShelfDefault extends Shelf {
   
   def read[T](f: TxnR => T): T = f(new TxnRDefault(this, now))
 
-  def view(f: TxnR => Unit) = view(f, ShelfDefault.defaultExecutorService, true)
+  def view(f: TxnR => Unit) = view(f, ShelfDefault.defaultExecutor, true)
   
-  def view(f: TxnR => Unit, exe: ExecutorService = ShelfDefault.defaultExecutorService, onlyMostRecent: Boolean = true): View = {
+  def view(f: TxnR => Unit, exe: Executor = ShelfDefault.defaultExecutor, onlyMostRecent: Boolean = true): View = {
     lock.write {
       val view = new ViewDefault(this, f, exe, onlyMostRecent)
       views.add(view)
@@ -229,9 +230,9 @@ private class ShelfDefault extends Shelf {
     }
   }
 
-  def auto[T](f: Txn => T) = auto(f, ShelfDefault.defaultExecutorService, (t:T) => Unit)
+  def auto[T](f: Txn => T) = auto(f, ShelfDefault.defaultExecutor, (t:T) => Unit)
   
-  def auto[T](f: Txn => T, exe: ExecutorService = ShelfDefault.defaultExecutorService, target: T => Unit = (t: T) => Unit): Auto = {
+  def auto[T](f: Txn => T, exe: Executor = ShelfDefault.defaultExecutor, target: T => Unit = (t: T) => Unit): Auto = {
     lock.write {
       val auto = new AutoDefault(this, f, exe, target)
       autos.add(auto)
@@ -305,7 +306,7 @@ private class ShelfDefault extends Shelf {
 object ShelfDefault {
   val defaultExecutorPoolSize = 8
   val defaultThreadFactory = DaemonThreadFactory()
-  lazy val defaultExecutorService = Executors.newFixedThreadPool(defaultExecutorPoolSize, defaultThreadFactory)
+  lazy val defaultExecutor: Executor = Executors.newFixedThreadPool(defaultExecutorPoolSize, defaultThreadFactory)
 
   def apply(): Shelf = new ShelfDefault
 }
