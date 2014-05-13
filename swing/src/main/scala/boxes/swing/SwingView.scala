@@ -171,6 +171,12 @@ object SwingView {
     if (!e) g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f))
   }
 
+  def later(f: => Unit) {
+    SwingUtilities.invokeLater(new Runnable(){
+      override def run() = f
+    })
+  }
+  
   //TODO add this
 //  val iconFactory = new ResourceIconFactory()
 }

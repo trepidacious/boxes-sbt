@@ -1,23 +1,10 @@
-package boxes.transact.swing
+package boxes.transact.swing.views
 
 import boxes.transact._
-import boxes.swing.LinkingJLabel
 import boxes.swing.SwingView
-import boxes.transact.Box
-import boxes.transact.Shelf
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executor
-import javax.swing.SwingUtilities
-
-object SwingExecutorService extends Executor {
-  override def execute(command: Runnable) = SwingUtilities.invokeLater(command)
-}
-
-object TSwingView {
-  def swingView(f: TxnR => Unit)(implicit shelf: Shelf) = {
-    shelf.view(f, SwingExecutorService, true)
-  }
-}
+import boxes.swing.LinkingJLabel
+import boxes.transact.swing.TSwingView
+import boxes.swing.EmbossedLabelUI
 
 //TODO use a renderer to customise display
 private class LabelOptionView[G](v:Box[G], c:GConverter[G, String])(implicit shelf: Shelf) extends SwingView {
@@ -49,4 +36,20 @@ object LabelView {
 
 object LabelOptionView {
   def apply(v:Box[Option[String]])(implicit shelf: Shelf) = new LabelOptionView(v, new OptionTConverter[String]).asInstanceOf[SwingView]
+}
+
+object EmbossedLabelView {
+  def apply(v:Box[String])(implicit shelf: Shelf) = {
+    val view = new LabelOptionView(v, new TConverter[String])
+    view.component.setUI(new EmbossedLabelUI())
+    view.asInstanceOf[SwingView]
+  }
+}
+
+object EmbossedLabelOptionView {
+  def apply(v:Box[Option[String]])(implicit shelf: Shelf) = {
+    val view = new LabelOptionView(v, new OptionTConverter[String]) 
+    view.component.setUI(new EmbossedLabelUI())
+    view.asInstanceOf[SwingView]
+  }
 }
