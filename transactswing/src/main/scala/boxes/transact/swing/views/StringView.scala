@@ -48,7 +48,6 @@ private class StringOptionView[G](v:Box[G], c:GConverter[G, String], multiline:B
   }
 
   val view = TSwingView.swingView(implicit txn => {
-//    println("StringView view")
     //Store the value for later use on Swing Thread
     val newV = v()
     //This will be called from Swing Thread
@@ -56,12 +55,9 @@ private class StringOptionView[G](v:Box[G], c:GConverter[G, String], multiline:B
   })
 
   private def commit = {
-//    println("About to StringView commit transact")
     shelf.transact(implicit txn=>{
-//      println("Will try to set v() = " + c.toG(text.getText()))
       v() = c.toG(text.getText)
     })
-//    println("Completed StringView commit transact")
   }
 
   //Update display if necessary
