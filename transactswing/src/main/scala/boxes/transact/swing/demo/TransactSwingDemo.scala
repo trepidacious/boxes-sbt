@@ -15,18 +15,33 @@ object TransactSwingDemo {
 
   def main(args: Array[String]): Unit = {
     SwingView.later {
+      
+      SwingView.nimbox
+      
       implicit val shelf = new ShelfDefault()
   
       val text = BoxNow("Initial Text")
+      
+      val b = BoxNow(false)
       
       val l = LabelView(text)
       
       val s = StringView(text)
       
+      val bString = BoxNow("")
+      bString.now << {implicit txn => ""+b()}
+      
+      val lb = LabelView(bString)
+
+      
+      val check = BooleanView(b, BoxNow(""), SlideCheck, BoxNow(None))
+      
       val frame = new JFrame("Transact Swing Demo")
       val panel = new JPanel()
       panel.add(l.component)
       panel.add(s.component)
+      panel.add(check.component)
+      panel.add(lb.component)
       panel.add(new JButton(new AbstractAction("Change"){
         override def actionPerformed(e: ActionEvent) = shelf.transact(implicit txn => text() = text() + ".")
       }))
