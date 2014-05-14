@@ -32,10 +32,10 @@ object TransactSwingDemo {
       val s = StringView(text)
       
       
-      val b = BoxNow(false)
-      val bString = BoxNow.calc{implicit txn => ""+b()}
+      val bo = BoxNow(false)
+      val bString = BoxNow.calc{implicit txn => ""+bo()}
       
-      val check = BooleanView(b, BoxNow(""), SlideCheck, BoxNow(None))
+      val check = BooleanView(bo, BoxNow(""), SlideCheck, BoxNow(None))
       
       val lb = LabelView(bString)
 
@@ -45,11 +45,44 @@ object TransactSwingDemo {
       val iSlider = RangeView(i, 1, 100)
       
       
-      val d = BoxNow(1.0d)
-      val dString = BoxNow.calc{implicit txn => format.format(d())}
+      val dub = BoxNow(1.0d)
+      val dString = BoxNow.calc{implicit txn => format.format(dub())}
       val dLabel = LabelView(dString)
-      val dPie = PieView(d, BoxNow(1.0d))
-      val dSpinner = NumberView(d)
+      val dPie = PieView(dub, BoxNow(1.0d))
+      val dSpinner = NumberView(dub)
+      
+      val a = BoxNow(20d)
+      val b = BoxNow(20d)
+      val c = BoxNow(20d)
+      val d = BoxNow(20d)
+      val e = BoxNow(20d)
+      val all = Set(a, b, c, d, e)
+      
+      shelf.transact(implicit txn => {
+        val r = txn.createReaction(implicit r => {
+          all.foreach(_())
+          val done = all.find(box => {
+            if (r.changedSources == Set(box)) {
+              val sum = all.toSeq.map(_()).sum
+              val adjust = (100d - sum)/(all.size - 1)
+              all.-(box).foreach(oBox => oBox() = oBox() + adjust)
+              true
+            } else {
+              false
+            }
+          }).isDefined
+          //If no individual box was changed without the others changing,
+          //just adjust all together
+          if (!done) {
+            val sum = all.toSeq.map(_()).sum
+              val adjust = (100d - sum)/(all.size)
+              all.foreach(oBox => oBox() = oBox() + adjust)
+          }
+        })
+        a.retainReaction(r)
+      })
+      
+      
       
       val frame = new JFrame("Transact Swing Demo")
       val panel = new JPanel()
@@ -62,6 +95,7 @@ object TransactSwingDemo {
       panel.add(dLabel.component)
       panel.add(dPie.component)
       panel.add(dSpinner.component)
+      all.foreach(box => panel.add(NumberView(box).component))
       panel.add(new JButton(new AbstractAction("Change"){
         override def actionPerformed(e: ActionEvent) = shelf.transact(implicit txn => text() = text() + ".")
       }))
