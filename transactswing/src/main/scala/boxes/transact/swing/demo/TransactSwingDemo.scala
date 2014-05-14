@@ -33,20 +33,20 @@ object TransactSwingDemo {
       
       
       val b = BoxNow(false)
-      val bString = BoxNow("")
-      bString.now << {implicit txn => ""+b()}
+      val bString = BoxNow.calc{implicit txn => ""+b()}
+      
       val check = BooleanView(b, BoxNow(""), SlideCheck, BoxNow(None))
       
       val lb = LabelView(bString)
 
       val i = BoxNow(1)
-      val iString = BoxNow{implicit txn:Txn => ""+i()}
+      val iString = BoxNow.calc{implicit txn => ""+i()}
       val iLabel = LabelView(iString)
       val iSlider = RangeView(i, 1, 100)
       
       
       val d = BoxNow(1.0d)
-      val dString = BoxNow{implicit txn:Txn => format.format(d())}
+      val dString = BoxNow.calc{implicit txn => format.format(d())}
       val dLabel = LabelView(dString)
       val dPie = PieView(d, BoxNow(1.0d))
       val dSpinner = NumberView(d)

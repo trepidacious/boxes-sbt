@@ -76,7 +76,7 @@ object BoxNow {
   /**
    * Create a Box with a value set by the given reaction
    */
-  def apply[T](r: Txn => T)(implicit s: Shelf) = {
+  def calc[T](r: Txn => T)(implicit s: Shelf) = {
     s.transact(implicit txn => {
       //Create a box with initial value given by running the reaction now, in a normal transaction
       val b = txn.create(r(txn))
