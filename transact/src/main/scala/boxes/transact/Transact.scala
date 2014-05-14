@@ -72,6 +72,20 @@ object Box {
 
 object BoxNow {
   def apply[T](v: T)(implicit s: Shelf): Box[T] = s.transact{t => t.create(v)}
+  
+  /**
+   * Create a Box with a value set by the given reaction
+   */
+  def apply[T](r: Txn => T)(implicit s: Shelf) = {
+    s.transact(implicit txn => {
+      //Create a box with initial value given by running the reaction now, in a normal transaction
+      val b = txn.create(r(txn))
+      //Now add the reaction to the box
+      val reaction = txn.createReaction(implicit rtxn => b() = r(rtxn))
+      b.retainReaction(reaction)
+      b
+    })
+  }
 }
 
 trait Reaction extends Identifiable

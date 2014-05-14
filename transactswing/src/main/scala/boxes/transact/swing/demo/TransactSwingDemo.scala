@@ -10,11 +10,15 @@ import java.awt.event.ActionEvent
 import boxes.transact.swing.views._
 import javax.swing.SwingUtilities
 import boxes.swing.SwingView
+import boxes.transact.Txn
+import java.text.DecimalFormat
 
 object TransactSwingDemo {
 
   def main(args: Array[String]): Unit = {
     SwingView.later {
+      
+      val format = new DecimalFormat("0.00")
       
       SwingView.nimbox
       
@@ -22,19 +26,30 @@ object TransactSwingDemo {
   
       val text = BoxNow("Initial Text")
       
-      val b = BoxNow(false)
       
       val l = LabelView(text)
       
       val s = StringView(text)
       
+      
+      val b = BoxNow(false)
       val bString = BoxNow("")
       bString.now << {implicit txn => ""+b()}
+      val check = BooleanView(b, BoxNow(""), SlideCheck, BoxNow(None))
       
       val lb = LabelView(bString)
 
+      val i = BoxNow(1)
+      val iString = BoxNow{implicit txn:Txn => ""+i()}
+      val iLabel = LabelView(iString)
+      val iSlider = RangeView(i, 1, 100)
       
-      val check = BooleanView(b, BoxNow(""), SlideCheck, BoxNow(None))
+      
+      val d = BoxNow(1.0d)
+      val dString = BoxNow{implicit txn:Txn => format.format(d())}
+      val dLabel = LabelView(dString)
+      val dPie = PieView(d, BoxNow(1.0d))
+      val dSpinner = NumberView(d)
       
       val frame = new JFrame("Transact Swing Demo")
       val panel = new JPanel()
@@ -42,6 +57,11 @@ object TransactSwingDemo {
       panel.add(s.component)
       panel.add(check.component)
       panel.add(lb.component)
+      panel.add(iLabel.component)
+      panel.add(iSlider.component)
+      panel.add(dLabel.component)
+      panel.add(dPie.component)
+      panel.add(dSpinner.component)
       panel.add(new JButton(new AbstractAction("Change"){
         override def actionPerformed(e: ActionEvent) = shelf.transact(implicit txn => text() = text() + ".")
       }))
