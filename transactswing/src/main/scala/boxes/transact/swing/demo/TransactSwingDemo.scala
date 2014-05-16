@@ -56,27 +56,35 @@ object TransactSwingDemo {
       val c = BoxNow(20d)
       val d = BoxNow(20d)
       val e = BoxNow(20d)
+      val requiredTotal = BoxNow(100)
       val all = Set(a, b, c, d, e)
       
       shelf.transact(implicit txn => {
         val r = txn.createReaction(implicit r => {
-          all.foreach(_())
-          val done = all.find(box => {
-            if (r.changedSources == Set(box)) {
-              val sum = all.toSeq.map(_()).sum
-              val adjust = (100d - sum)/(all.size - 1)
-              all.-(box).foreach(oBox => oBox() = oBox() + adjust)
-              true
-            } else {
-              false
-            }
-          }).isDefined
-          //If no individual box was changed without the others changing,
-          //just adjust all together
-          if (!done) {
-            val sum = all.toSeq.map(_()).sum
-              val adjust = (100d - sum)/(all.size)
+          println("Reacting")
+          //Sum all boxes first - this ensures we react to changes
+          //in any of them, since we have read them
+          val sum = all.toSeq.map(_()).sum
+          val t = requiredTotal() 
+          
+          if (Math.abs(sum - t) > 0.0001) {
+          
+            //See if one box was changed first - if so preserve its value
+            val done = all.find(box => {
+              if (r.changedSources == Set(box)) {
+                val adjust = (t - sum)/(all.size - 1)
+                all.-(box).foreach(oBox => oBox() = oBox() + adjust)
+                true
+              } else {
+                false
+              }
+            }).isDefined
+            
+            //Otherwise adjust all boxes equally
+            if (!done) {
+              val adjust = (t - sum)/(all.size)
               all.foreach(oBox => oBox() = oBox() + adjust)
+            }
           }
         })
         a.retainReaction(r)
@@ -96,6 +104,7 @@ object TransactSwingDemo {
       panel.add(dPie.component)
       panel.add(dSpinner.component)
       all.foreach(box => panel.add(NumberView(box).component))
+      panel.add(NumberView(requiredTotal).component)
       panel.add(new JButton(new AbstractAction("Change"){
         override def actionPerformed(e: ActionEvent) = shelf.transact(implicit txn => text() = text() + ".")
       }))
