@@ -14,6 +14,9 @@ lazy val transactgraph = project.dependsOn(transact, swing, graph)
 //Swing bindings for boxes
 lazy val swing = project.dependsOn(core)
 
+//Swing bindings for graph system for transact
+lazy val transactswinggraph = project.dependsOn(transact, transactswing, swing, graph, transactgraph, swinggraph)
+
 //Graph system for boxes - see also swinggraph for Swing bindings of graphs
 //TODO need to remove dependency on swing by moving colors and icons to a ui 
 //project, and preferably making graph project use non-Swing class instead 
