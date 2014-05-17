@@ -8,6 +8,9 @@ lazy val transact = project.dependsOn(core)
 //Swing bindings for transact
 lazy val transactswing = project.dependsOn(transact, swing)
 
+//Graph system for transact
+lazy val transactgraph = project.dependsOn(transact, swing, graph)
+
 //Swing bindings for boxes
 lazy val swing = project.dependsOn(core)
 
