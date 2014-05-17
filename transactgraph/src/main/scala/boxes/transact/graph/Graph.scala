@@ -18,6 +18,10 @@ import java.awt.geom.Rectangle2D
 import java.text.DecimalFormat
 import Axis._
 import GraphMouseEventType._
+import boxes.graph.GraphThreePartPainter
+import boxes.graph.GraphThreePartPainterVertical
+import boxes.graph.GraphZoomerAxis
+import boxes.graph.SeriesSelection
 
 trait GraphLayer {
   //When called, reads Box state and returns a method that will draw this state to a canvas
@@ -360,8 +364,7 @@ object GraphGrab{
 
 class GraphGrab(enabled:Box[Boolean], manualDataArea:Box[Option[Area]], displayedDataArea:Box[Area])(implicit shelf: Shelf) extends GraphLayer {
 
-  //FIXME Not happy with this... should be a Box?
-  private var maybeInitial:Option[GraphMouseEvent] = None
+  private val maybeInitial: Box[Option[GraphMouseEvent]] = BoxNow(None)
 
   def paint() = (canvas:GraphCanvas) => {}
 
@@ -370,11 +373,11 @@ class GraphGrab(enabled:Box[Boolean], manualDataArea:Box[Option[Area]], displaye
       if (enabled()) {
         current.eventType match {
           case PRESS => {
-            maybeInitial = Some(current)
+            maybeInitial() = Some(current)
             true
           }
           case DRAG => {
-            maybeInitial.foreach(initial => {
+            maybeInitial().foreach(initial => {
               //If there is no manual zoom area, set it to the displayed area
               if (manualDataArea() == None) {
                 manualDataArea() = Some(displayedDataArea())
@@ -390,11 +393,116 @@ class GraphGrab(enabled:Box[Boolean], manualDataArea:Box[Option[Area]], displaye
             true
           }
           case RELEASE => {
-            maybeInitial = None
+            maybeInitial() = None
             true
           }
           case _ => false
         }
+      } else {
+        false
+      }
+    })
+  }
+
+  val dataBounds = BoxNow(None:Option[Area])
+
+}
+
+
+
+object AxisTooltip {
+  val format = new DecimalFormat("0.0000")
+  def apply(axis:Axis, enabled:Box[Boolean])(implicit shelf: Shelf) = new AxisTooltip(axis, enabled)
+  val horizTabPainter = new GraphThreePartPainter(IconFactory.image("HorizontalLineLabel"))
+  val vertTabPainter = new GraphThreePartPainterVertical(IconFactory.image("VerticalLineLabel"))
+  val lineColor = SwingView.shadedBoxColor
+
+  def drawAxisLine(canvas:GraphCanvas, v:Double, a:Axis, label:String, color:Option[Color]) = {
+    canvas.clipToData()
+    val dataArea = canvas.spaces.dataArea
+    val start = canvas.spaces.toPixel(dataArea.axisPosition(a, v))
+    val end = start + canvas.spaces.pixelArea.axisPerpVec2(a)
+
+    canvas.lineWidth = 1
+    canvas.color = color.getOrElse(AxisTooltip.lineColor)
+    canvas.line(start, end)
+
+    canvas.color = GraphAxis.fontColor
+    canvas.fontSize = GraphAxis.fontSize
+
+    val size = canvas.stringSize(label)
+
+    val colorOffset = if (color == None) 0 else 12;
+
+    //TODO combine code
+    a match {
+      case X => {
+        AxisTooltip.vertTabPainter.paint(canvas, start + Vec2(-16, -4 - 23 - size.x - colorOffset), Vec2(16, size.x + 23 + colorOffset))
+        canvas.color = SwingView.selectedTextColor
+        canvas.string(label, start + Vec2(-3, -15 - colorOffset), Vec2(0, 0), -1)
+        color.foreach(c => {
+          val swatch = Area(start + Vec2(-11, -21), Vec2(7, 7))
+          canvas.color = c
+          canvas.fillRect(swatch)
+          canvas.color = SwingView.selectedTextColor
+          canvas.drawRect(swatch)
+        })
+      }
+      case Y => {
+        AxisTooltip.horizTabPainter.paint(canvas, start + Vec2(4, -16), Vec2(size.x + 23 + colorOffset, 16))
+        canvas.color = SwingView.selectedTextColor
+        canvas.string(label, start + Vec2(15 + colorOffset, -3), Vec2(0, 0), 0)
+        color.foreach(c => {
+          val swatch = Area(start + Vec2(14, -11), Vec2(7, 7))
+          canvas.color = c
+          canvas.fillRect(swatch)
+          canvas.color = SwingView.selectedTextColor
+          canvas.drawRect(swatch)
+        })
+      }
+    }
+
+    size.x + 23 + 4 + colorOffset
+
+  }
+
+}
+
+class AxisTooltip(axis:Axis, enabled:Box[Boolean])(implicit shelf: Shelf) extends GraphLayer {
+
+  private val value: Box[Option[Double]] = BoxNow(None)
+
+  def paint() = {
+
+    val a = axis
+    
+    val (maybeV, e) = shelf.read(implicit txn => (value(), enabled()))
+
+    (canvas:GraphCanvas) => {
+      if (e) {
+        maybeV.foreach(v => {
+          val label = AxisTooltip.format.format(v)
+          AxisTooltip.drawAxisLine(canvas, v, a, label, None)
+        })
+      }
+    }
+  }
+
+  def onMouse(e:GraphMouseEvent) = {
+    shelf.transact(implicit txn => {
+      if (enabled()) {
+        e.eventType match {
+          case MOVE => {
+            val axisPosition = e.spaces.pixelArea.axisRelativePosition(Axis.other(axis), e.spaces.toPixel(e.dataPoint)) * (if (axis == X) -1 else 1)
+            if (axisPosition <= 0 && axisPosition > -32) {
+              value() = Some(e.dataPoint.onAxis(axis))
+            } else {
+              value() = None
+            }
+          }
+          case _ => value() = None
+        }
+        false
       } else {
         false
       }
@@ -404,4 +512,298 @@ class GraphGrab(enabled:Box[Boolean], manualDataArea:Box[Option[Area]], displaye
 
   val dataBounds = BoxNow(None:Option[Area])
 
+}
+
+class GraphZoomer(
+    val dataBounds: Box[Option[Area]],
+    val manualBounds: Box[Option[Area]],
+    val xAxis: Box[GraphZoomerAxis],
+    val yAxis: Box[GraphZoomerAxis])(implicit shelf: Shelf) {
+
+  def autoArea = {
+    shelf.read(implicit txn => {
+      dataBounds() match {
+        case None => {
+          //We have no data bounds, so use the axes required ranges,
+          //or 0 to 1 in each axis if there are none.
+          val xRange = xAxis().requiredRange().getOrElse((0d, 1d))
+          val yRange = yAxis().requiredRange().getOrElse((0d, 1d))
+          Area(Vec2(xRange._1, yRange._1), Vec2(xRange._2, yRange._2)).normalise
+        }
+        case Some(area) => {
+          //We have a data bounds area, so pad it appropriately
+          val auto = area.pad(Vec2(xAxis().paddingBefore(), yAxis().paddingBefore()), Vec2(xAxis().paddingAfter(), yAxis().paddingAfter()))
+  
+          val padX = xAxis().requiredRange().foldLeft(auto){(area, range) => area.extendToContain(Vec2(range._1, auto.origin.y)).extendToContain(Vec2(range._2, auto.origin.y))}
+          val padY = yAxis().requiredRange().foldLeft(padX){(area, range) => area.extendToContain(Vec2(auto.origin.x, range._1)).extendToContain(Vec2(auto.origin.x, range._2))}
+  
+          padY
+        }
+      }
+    })
+  }
+
+  val dataArea = BoxNow.calc(implicit txn => {
+    //Use manual bounds if specified, automatic area from data bounds etc.
+    //Make sure that size is at least the minimum for each axis
+    val a = manualBounds().getOrElse(autoArea)
+    a.sizeAtLeast(Vec2(xAxis().minSize(), yAxis().minSize()))
+  })
+}
+
+object GraphClickToSelectSeries{
+  def apply[K](series: Box[List[Series[K]]], selectionOut: Box[Set[K]], enabled: Box[Boolean])(implicit shelf: Shelf) = new GraphClickToSelectSeries(series, selectionOut, enabled)
+}
+
+class GraphClickToSelectSeries[K](series: Box[List[Series[K]]], selectionOut: Box[Set[K]], enabled: Box[Boolean])(implicit shelf: Shelf) extends GraphLayer {
+
+  def paint() = (canvas:GraphCanvas) => {}
+
+  def onMouse(e:GraphMouseEvent) = {
+    shelf.transact(implicit txn => {
+      if (enabled()) {
+        e.eventType match {
+          case CLICK => {
+            val selectedSeries = SeriesSelection.selectedSeries(series(), e)
+            selectedSeries.foreach((ss) => selectionOut() = Set(ss.key))
+            selectedSeries.isDefined
+          }
+          case _ => false
+        }
+      } else {
+        false
+      }      
+    })
+  }
+
+  val dataBounds = BoxNow(None:Option[Area])
+
+}
+
+case class GraphBasic(layers: Box[List[GraphLayer]], overlayers: Box[List[GraphLayer]], dataArea: Box[Area], borders: Box[Borders], highQuality: Box[Boolean])(implicit shelf: Shelf) extends Graph {}
+
+object GraphBasic {
+  
+  def withSeries[K](
+      series:Box[List[Series[K]]],
+      xName:Box[String],
+      yName:Box[String],
+      borders:Box[Borders],
+      zoomEnabled:Box[Boolean],
+      manualBounds:Box[Option[Area]],
+      xAxis:Box[GraphZoomerAxis],
+      yAxis:Box[GraphZoomerAxis],
+      selectEnabled:Box[Boolean],
+      clickSelectEnabled:Box[Boolean],
+      selection:Box[Set[K]],
+      grabEnabled:Box[Boolean],
+      seriesTooltipsEnabled:Box[Boolean],
+      seriesTooltipsPrint:(K=>String),
+      axisTooltipsEnabled:Box[Boolean],
+      extraMainLayers:List[GraphLayer],
+      extraOverLayers:List[GraphLayer],
+      highQuality: Box[Boolean],
+      border: Color = SwingView.background,
+      background: Color = Color.white
+      )(implicit shelf: Shelf) = {
+
+    val layers = BoxNow(
+      extraMainLayers ::: List(
+        new GraphBG(border, background),
+        new GraphHighlight(),
+        new GraphSeries(series, true),
+        new GraphAxis(Y, 50),
+        new GraphAxis(X),
+        new GraphShadow(),
+        new GraphSeries[K](series),
+        new GraphOutline(),
+        new GraphAxisTitle(X, xName),
+        new GraphAxisTitle(Y, yName)
+      )
+    )
+
+    val dataBounds = BoxNow.calc(implicit txn => {
+      layers().foldLeft(None:Option[Area]){
+        (areaOption, layer) => areaOption match {
+          case None => layer.dataBounds()
+
+          case Some(area) => layer.dataBounds() match {
+            case None => Some(area)
+            case Some(layerArea) => Some(area.extendToContain(layerArea))
+          }
+        }
+      }
+    })
+
+    val zoomer = new GraphZoomer(dataBounds, manualBounds, xAxis, yAxis)
+
+    val overlayers = BoxNow(
+        //FIXME reinstate series tooltips
+        /*SeriesTooltips.highlight(series, seriesTooltipsEnabled)) ::: */extraOverLayers ::: List(
+        GraphZoomBox(BoxNow(new Color(0, 0, 200, 50)), BoxNow(new Color(100, 100, 200)), manualBounds, zoomEnabled),
+        GraphSelectBox(series, BoxNow(new Color(0, 200, 0, 50)), BoxNow(new Color(100, 200, 100)), selection, selectEnabled),
+        GraphGrab(grabEnabled, manualBounds, zoomer.dataArea),
+        GraphClickToSelectSeries(series, selection, clickSelectEnabled),
+        AxisTooltip(X, axisTooltipsEnabled),
+        AxisTooltip(Y, axisTooltipsEnabled)//,
+        //SeriesTooltips.string(series, seriesTooltipsEnabled, seriesTooltipsPrint)
+      )
+    )
+
+    new GraphBasic(
+      layers,
+      overlayers,
+      zoomer.dataArea,
+      borders,
+      highQuality
+    )
+  }
+  
+//  
+//  def withBarsSelectByCat[C1, C2, K](
+//      data: Ref[Map[(C1, C2), Bar[K]]],
+//      cat1Print: (C1 => String) = (c: C1)=>c.toString, 
+//      cat2Print: (C2 => String) = (c: C2)=>c.toString,
+//      barWidth: Ref[Double] = Val(1.0), catPadding: Ref[Double] = Val(1.0), barPadding: Ref[Double] = Val(0.4),
+//      yName:Ref[String] = Val("y"),
+//      borders:Ref[Borders] = Val(Borders(16, 74, 53, 16)),
+//      zoomEnabled:Ref[Boolean] = Val(true),
+//      manualBounds:Var[Option[Area]] = Var(None),
+//      xAxis:Ref[GraphZoomerAxis] = Val(GraphZoomerAxis()),
+//      yAxis:Ref[GraphZoomerAxis] = Val(GraphZoomerAxis()),
+//      selectEnabled:Ref[Boolean] = Val(false),
+//      clickSelectEnabled:Ref[Boolean] = Val(true),
+//      selection:Var[Set[(C1, C2)]] = Var(Set[(C1, C2)]()),
+//      grabEnabled:Ref[Boolean] = Val(false),
+//      barTooltipsEnabled:Ref[Boolean] = Val(true),
+//      barTooltipsPrint:((C1, C2, Bar[K]) => String) = BarTooltips.defaultPrint[C1, C2, K],
+//      axisTooltipsEnabled:Ref[Boolean] = Val(true),
+//      extraMainLayers:List[GraphLayer] = List[GraphLayer](),
+//      extraOverLayers:List[GraphLayer] = List[GraphLayer](),
+//      highQuality: Ref[Boolean] = Val(true)
+//      )(implicit ord1: Ordering[C1], ord2: Ordering[C2]) = {
+//
+//    val layers = ListVal[GraphLayer](
+//      extraMainLayers ::: List(
+//        new GraphBG(SwingView.background, Color.white),
+//        new GraphHighlight(),
+//        new GraphBars(data, barWidth, catPadding, barPadding, true)(ord1, ord2),  //Shadows
+//        new GraphAxis(Y, 50),
+//        new GraphBarAxis(data, barWidth, catPadding, barPadding, X, cat1Print, cat2Print)(ord1, ord2),
+//        new GraphShadow(),
+//        new GraphBars(data, barWidth, catPadding, barPadding, false)(ord1, ord2), //Data
+//        new GraphOutline(),
+//        new GraphAxisTitle(Y, yName)
+//      )
+//    )
+//
+//    val dataBounds = Cal{
+//      layers().foldLeft(None:Option[Area]){
+//        (areaOption, layer) => areaOption match {
+//          case None => layer.dataBounds()
+//
+//          case Some(area) => layer.dataBounds() match {
+//            case None => Some(area)
+//            case Some(layerArea) => Some(area.extendToContain(layerArea))
+//          }
+//        }
+//      }
+//    }
+//
+//    val zoomer = new GraphZoomer(dataBounds, manualBounds, xAxis, yAxis)
+//
+//    val overlayers = ListVal[GraphLayer](
+////      List(SeriesTooltips.highlight(series, seriesTooltipsEnabled)) ::: 
+//        extraOverLayers ::: List(
+//        GraphZoomBox(Val(new Color(0, 0, 200, 50)), Val(new Color(100, 100, 200)), manualBounds, zoomEnabled),
+//        GraphSelectBarsByCatWithBox(data, selection, barWidth, catPadding, barPadding, selectEnabled, Val(new Color(0, 200, 0, 50)), Val(new Color(100, 200, 100))),
+//        GraphGrab(grabEnabled, manualBounds, zoomer.dataArea),
+//        GraphClickToSelectBarByCat(data, selection, barWidth, catPadding, barPadding, clickSelectEnabled),
+//        AxisTooltip(Y, axisTooltipsEnabled),
+//        BarTooltips.string(barTooltipsEnabled, data, barWidth, catPadding, barPadding, barTooltipsPrint)(ord1, ord2)
+//      )
+//    )
+//
+//    new GraphBasic(
+//      layers,
+//      overlayers,
+//      zoomer.dataArea,
+//      borders,
+//      highQuality
+//    )
+//  }
+// 
+//    def withBarsSelectByKey[C1, C2, K](
+//      data: Ref[Map[(C1, C2), Bar[K]]],
+//      cat1Print: (C1 => String) = (c: C1)=>c.toString, 
+//      cat2Print: (C2 => String) = (c: C2)=>c.toString,
+//      barWidth: Ref[Double] = Val(1.0), catPadding: Ref[Double] = Val(1.0), barPadding: Ref[Double] = Val(0.4),
+//      yName:Ref[String] = Val("y"),
+//      borders:Ref[Borders] = Val(Borders(16, 74, 53, 16)),
+//      zoomEnabled:Ref[Boolean] = Val(true),
+//      manualBounds:Var[Option[Area]] = Var(None),
+//      xAxis:Ref[GraphZoomerAxis] = Val(GraphZoomerAxis()),
+//      yAxis:Ref[GraphZoomerAxis] = Val(GraphZoomerAxis()),
+//      selectEnabled:Ref[Boolean] = Val(false),
+//      clickSelectEnabled:Ref[Boolean] = Val(true),
+//      selection:Var[Set[K]] = Var(Set[K]()),
+//      grabEnabled:Ref[Boolean] = Val(false),
+//      barTooltipsEnabled:Ref[Boolean] = Val(true),
+//      barTooltipsPrint:((C1, C2, Bar[K]) => String) = BarTooltips.defaultPrint[C1, C2, K],
+//      axisTooltipsEnabled:Ref[Boolean] = Val(true),
+//      extraMainLayers:List[GraphLayer] = List[GraphLayer](),
+//      extraOverLayers:List[GraphLayer] = List[GraphLayer](),
+//      highQuality: Ref[Boolean] = Val(true)
+//      )(implicit ord1: Ordering[C1], ord2: Ordering[C2]) = {
+//
+//    val layers = ListVal[GraphLayer](
+//      extraMainLayers ::: List(
+//        new GraphBG(SwingView.background, Color.white),
+//        new GraphHighlight(),
+//        new GraphBars(data, barWidth, catPadding, barPadding, true)(ord1, ord2),  //Shadows
+//        new GraphAxis(Y, 50),
+//        new GraphBarAxis(data, barWidth, catPadding, barPadding, X, cat1Print, cat2Print)(ord1, ord2),
+//        new GraphShadow(),
+//        new GraphBars(data, barWidth, catPadding, barPadding, false)(ord1, ord2), //Data
+//        new GraphOutline(),
+//        new GraphAxisTitle(Y, yName)
+//      )
+//    )
+//
+//    val dataBounds = Cal{
+//      layers().foldLeft(None:Option[Area]){
+//        (areaOption, layer) => areaOption match {
+//          case None => layer.dataBounds()
+//
+//          case Some(area) => layer.dataBounds() match {
+//            case None => Some(area)
+//            case Some(layerArea) => Some(area.extendToContain(layerArea))
+//          }
+//        }
+//      }
+//    }
+//
+//    val zoomer = new GraphZoomer(dataBounds, manualBounds, xAxis, yAxis)
+//
+//    val overlayers = ListVal[GraphLayer](
+////      List(SeriesTooltips.highlight(series, seriesTooltipsEnabled)) ::: 
+//        extraOverLayers ::: List(
+//        GraphZoomBox(Val(new Color(0, 0, 200, 50)), Val(new Color(100, 100, 200)), manualBounds, zoomEnabled),
+//        GraphSelectBarsByKeyWithBox(data, selection, barWidth, catPadding, barPadding, selectEnabled, Val(new Color(0, 200, 0, 50)), Val(new Color(100, 200, 100))),
+//        GraphGrab(grabEnabled, manualBounds, zoomer.dataArea),
+//        GraphClickToSelectBarByKey(data, selection, barWidth, catPadding, barPadding, clickSelectEnabled),
+//        AxisTooltip(Y, axisTooltipsEnabled),
+//        BarTooltips.string(barTooltipsEnabled, data, barWidth, catPadding, barPadding, barTooltipsPrint)(ord1, ord2)
+//      )
+//    )
+//
+//    new GraphBasic(
+//      layers,
+//      overlayers,
+//      zoomer.dataArea,
+//      borders,
+//      highQuality
+//    )
+//  }
+ 
 }
