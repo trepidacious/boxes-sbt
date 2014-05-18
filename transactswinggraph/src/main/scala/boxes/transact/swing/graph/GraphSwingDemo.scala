@@ -16,7 +16,7 @@ object GraphSwingDemo {
 
   def main(args: Array[String]): Unit = {
     SwingView.later {
-      SwingView.nimbox
+      SwingView.nimbus
       implicit val shelf = new ShelfDefault()
 
       val series = new Series("Key", List(Vec2(0,0), Vec2(1,1)))

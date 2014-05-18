@@ -20,7 +20,7 @@ object TransactSwingDemo {
       
       val format = new DecimalFormat("0.00")
       
-      SwingView.nimbox
+      SwingView.nimbus
       
       implicit val shelf = new ShelfDefault()
   

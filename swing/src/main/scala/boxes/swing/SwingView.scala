@@ -130,19 +130,19 @@ object SwingView {
   }
 
 
-  def nimbox() {
-    try {
-      UIManager.setLookAndFeel( new MetalLookAndFeel() )
-      UIManager.put("Table.alternateRowColor", alternateBackgroundColor)
-      UIManager.put("Table.backgroundColor", selectedTextColor)
-      UIManager.put("Table.selectionForeground", selectedTextColor)
-      UIManager.put("Table.selectionBackground", selectionColor)
-      UIManager.put("Table.focusCellHighlightBorder", new MatteBorder(1, 1, 1, 1, selectionColor.darker.darker))
-    }
-    catch {
-      case _:Throwable => {}
-    }
-  }
+//  def nimbox() {
+//    try {
+//      UIManager.setLookAndFeel( new MetalLookAndFeel() )
+//      UIManager.put("Table.alternateRowColor", alternateBackgroundColor)
+//      UIManager.put("Table.backgroundColor", selectedTextColor)
+//      UIManager.put("Table.selectionForeground", selectedTextColor)
+//      UIManager.put("Table.selectionBackground", selectionColor)
+//      UIManager.put("Table.focusCellHighlightBorder", new MatteBorder(1, 1, 1, 1, selectionColor.darker.darker))
+//    }
+//    catch {
+//      case _:Throwable => {}
+//    }
+//  }
 
   val background = new Color(240, 240, 240)
   val dividingColor = new Color(150, 150, 150)

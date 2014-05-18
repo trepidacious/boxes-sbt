@@ -9,12 +9,12 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executor
 import javax.swing.SwingUtilities
 
-object SwingExecutorService extends Executor {
+object SwingExecutor extends Executor {
   override def execute(command: Runnable) = SwingUtilities.invokeLater(command)
 }
 
 object TSwingView {
   def swingView(f: TxnR => Unit)(implicit shelf: Shelf) = {
-    shelf.view(f, SwingExecutorService, true)
+    shelf.view(f, SwingExecutor, true)
   }
 }
