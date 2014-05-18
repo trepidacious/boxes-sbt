@@ -25,14 +25,14 @@ import boxes.graph.SeriesSelection
 
 trait GraphLayer {
   //When called, reads Box state and returns a method that will draw this state to a canvas
-  def paint():(GraphCanvas => Unit)
+  def paint(implicit txn: TxnR):(GraphCanvas => Unit)
   //Handle an event, returns false to allow it to reach other layers, or true to consume it
-  def onMouse(event:GraphMouseEvent):Boolean
+  def onMouse(event:GraphMouseEvent)(implicit txn: Txn): Boolean
   def dataBounds:Box[Option[Area]]
 }
 
 trait GraphDisplayLayer extends GraphLayer {
-  def onMouse(event:GraphMouseEvent) = false
+  def onMouse(event:GraphMouseEvent)(implicit txn: Txn) = false
 }
 
 abstract class UnboundedGraphDisplayLayer(implicit shelf: Shelf) extends GraphDisplayLayer {
@@ -41,8 +41,8 @@ abstract class UnboundedGraphDisplayLayer(implicit shelf: Shelf) extends GraphDi
 
 class GraphSeries[K](series:Box[List[Series[K]]], shadow:Boolean = false)(implicit shelf: Shelf) extends GraphLayer {
 
-  def paint() = {
-    val currentSeries = series.now()
+  def paint(implicit txn: TxnR) = {
+    val currentSeries = series()
     (canvas:GraphCanvas) => {
       canvas.clipToData
       for (s <- currentSeries) {
@@ -60,7 +60,7 @@ class GraphSeries[K](series:Box[List[Series[K]]], shadow:Boolean = false)(implic
     }}
   })
 
-  def onMouse(event:GraphMouseEvent) = false
+  def onMouse(event:GraphMouseEvent)(implicit txn: Txn) = false
 
 }
 
@@ -73,7 +73,7 @@ trait Graph {
 }
 
 class GraphBG(val bg:Color, val dataBG:Color)(implicit shelf: Shelf) extends UnboundedGraphDisplayLayer {
-  def paint() = {
+  def paint(implicit txn: TxnR) = {
     (canvas:GraphCanvas) => {
       canvas.color = bg
       canvas.fillRect(canvas.spaces.componentArea.origin, canvas.spaces.componentArea.size)
@@ -85,7 +85,7 @@ class GraphBG(val bg:Color, val dataBG:Color)(implicit shelf: Shelf) extends Unb
 }
 
 class GraphOutline(implicit shelf: Shelf) extends UnboundedGraphDisplayLayer {
-  def paint() = {
+  def paint(implicit txn: TxnR) = {
     (canvas:GraphCanvas) => {
       canvas.color = GraphAxis.axisColor
       canvas.drawRect(canvas.spaces.pixelArea.origin, canvas.spaces.pixelArea.size)
@@ -94,7 +94,7 @@ class GraphOutline(implicit shelf: Shelf) extends UnboundedGraphDisplayLayer {
 }
 
 class GraphHighlight(implicit shelf: Shelf) extends UnboundedGraphDisplayLayer {
-  def paint() = {
+  def paint(implicit txn: TxnR) = {
     (canvas:GraphCanvas) => {
       canvas.color = SwingView.alternateBackgroundColor.brighter
       canvas.drawRect(canvas.spaces.pixelArea.origin + Vec2(-1, 1), canvas.spaces.pixelArea.size + Vec2(1, -1))
@@ -107,8 +107,8 @@ object GraphBusy {
 }
 
 class GraphBusy(val alpha: Box[Double])(implicit shelf: Shelf) extends UnboundedGraphDisplayLayer {
-  def paint() = {
-    val a = alpha.now()
+  def paint(implicit txn: TxnR) = {
+    val a = alpha()
     (canvas:GraphCanvas) => {
       canvas.color = SwingView.transparentColor(SwingView.selectionColor, a)
       val pa = canvas.spaces.pixelArea
@@ -126,7 +126,7 @@ object GraphShadow {
 }
 
 class GraphShadow(implicit shelf: Shelf) extends UnboundedGraphDisplayLayer {
-  def paint() = {
+  def paint(implicit txn: TxnR) = {
     (canvas:GraphCanvas) => {
       canvas.clipToData
       val w = GraphShadow.topLeft.getWidth(null)
@@ -160,7 +160,7 @@ object GraphAxis {
 
 class GraphAxis(val axis:Axis, val pixelsPerMajor:Int = 100, val format:DecimalFormat = GraphAxis.defaultFormat, val gridlines: Boolean = true)(implicit shelf: Shelf) extends UnboundedGraphDisplayLayer {
 
-  def paint() = {
+  def paint(implicit txn: TxnR) = {
     (canvas:GraphCanvas) => {
       val dataArea = canvas.spaces.dataArea
 
@@ -204,8 +204,8 @@ class GraphAxis(val axis:Axis, val pixelsPerMajor:Int = 100, val format:DecimalF
 }
 
 class GraphAxisTitle(val axis:Axis, name:Box[String])(implicit shelf: Shelf) extends UnboundedGraphDisplayLayer {
-  def paint() = {
-    val currentName = name.now()
+  def paint(implicit txn: TxnR) = {
+    val currentName = name()
 
     (canvas:GraphCanvas) => {
       val a = canvas.spaces.pixelArea
@@ -222,15 +222,20 @@ class GraphAxisTitle(val axis:Axis, name:Box[String])(implicit shelf: Shelf) ext
   }
 }
 
-class GraphBox(fill:Box[Color], outline:Box[Color], enabled:Box[Boolean], action:(Area, GraphSpaces) => Unit, val minSize:Int = 5, val axis: Option[Axis] = None)(implicit shelf: Shelf) extends GraphLayer {
+trait GraphBoxAction {
+  def apply(area: Area, spaces: GraphSpaces)(implicit txn: Txn): Unit
+}
+
+class GraphBox(fill:Box[Color], outline:Box[Color], enabled:Box[Boolean], action: GraphBoxAction, val minSize:Int = 5, val axis: Option[Axis] = None)(implicit shelf: Shelf) extends GraphLayer {
   private val area: Box[Option[Area]] = BoxNow(None)
 
   def bigEnough(a:Area) = (math.abs(a.size.x) > minSize || math.abs(a.size.y) > minSize)
 
-  def paint() = {
-    val (cFill, cOutline, cEnabled, cArea) = shelf.read(implicit txn => {
-      (fill(), outline(), enabled(), area())
-    })
+  def paint(implicit txn: TxnR) = {
+    val cFill = fill()
+    val cOutline = outline()
+    val cEnabled = enabled()
+    val cArea = area()
 
     (canvas:GraphCanvas) => {
       if (cEnabled) {
@@ -247,38 +252,36 @@ class GraphBox(fill:Box[Color], outline:Box[Color], enabled:Box[Boolean], action
     }
   }
 
-  def onMouse(e:GraphMouseEvent) = {
-    shelf.transact(implicit txn => {
-      if (enabled()) {
-        e.eventType match {
-          case PRESS => {
-            area() = Some(Area(e.dataPoint, Vec2(0, 0)).replaceAxis(axis, e.spaces.dataArea))
-            true
-          }
-          case DRAG => {
-            area().foreach(a => {
-              area() = Some(Area(a.origin, e.dataPoint - a.origin).replaceAxis(axis, e.spaces.dataArea))
-            })
-            true
-          }
-          
-          case RELEASE => {
-            area().foreach(a => {
-              area() = None
-              val dragArea = Area(a.origin, e.dataPoint - a.origin)
-              val pixelDragArea = e.spaces.toPixel(dragArea)
-              if (bigEnough(pixelDragArea)) {
-                action.apply(dragArea.replaceAxis(axis, e.spaces.dataArea), e.spaces)
-              }
-            })
-            true
-          }
-          case _ => false
+  def onMouse(e:GraphMouseEvent)(implicit txn: Txn) = {
+    if (enabled()) {
+      e.eventType match {
+        case PRESS => {
+          area() = Some(Area(e.dataPoint, Vec2(0, 0)).replaceAxis(axis, e.spaces.dataArea))
+          true
         }
-      } else {
-        false
+        case DRAG => {
+          area().foreach(a => {
+            area() = Some(Area(a.origin, e.dataPoint - a.origin).replaceAxis(axis, e.spaces.dataArea))
+          })
+          true
+        }
+        
+        case RELEASE => {
+          area().foreach(a => {
+            area() = None
+            val dragArea = Area(a.origin, e.dataPoint - a.origin)
+            val pixelDragArea = e.spaces.toPixel(dragArea)
+            if (bigEnough(pixelDragArea)) {
+              action.apply(dragArea.replaceAxis(axis, e.spaces.dataArea), e.spaces)
+            }
+          })
+          true
+        }
+        case _ => false
       }
-    })
+    } else {
+      false
+    }
 
   }
 
@@ -332,28 +335,35 @@ object GraphSelectBox {
 
 
   def apply[K](series:Box[List[Series[K]]], fill:Box[Color], outline:Box[Color], selectionOut:Box[Set[K]], enabled:Box[Boolean])(implicit shelf: Shelf) = {
-    new GraphBox(fill, outline, enabled, (area:Area, spaces:GraphSpaces) => {
-      val areaN = area.normalise
-      shelf.transact(implicit txn=>{
+    
+    val action = new GraphBoxAction {
+      def apply(area: Area, spaces: GraphSpaces)(implicit txn: Txn) {
+        val areaN = area.normalise
         val selected = series().collect{
           case s if (seriesSelected(s, areaN)) => s.key
         }
         selectionOut() = selected.toSet        
-      })
-    })
+      }
+    }
+    
+    new GraphBox(fill, outline, enabled, action)
   }
 }
 
 object GraphZoomBox {
   def apply(fill: Box[Color], outline: Box[Color], areaOut: Box[Option[Area]], enabled: Box[Boolean])(implicit shelf: Shelf) = {
-    new GraphBox(fill, outline, enabled, (zoomArea:Area, spaces:GraphSpaces) => {
-      //Zoom out for second quadrant drag (x negative, y positive)
-      if (zoomArea.size.x < 0 && zoomArea.size.y > 0) {
-        areaOut.now() = None
-      } else {
-        areaOut.now() = Some(zoomArea.normalise)
+    val action = new GraphBoxAction {
+      def apply(area: Area, spaces: GraphSpaces)(implicit txn: Txn) {
+        //Zoom out for second quadrant drag (x negative, y positive)
+        if (area.size.x < 0 && area.size.y > 0) {
+          areaOut() = None
+        } else {
+          areaOut() = Some(area.normalise)
+        }
       }
-    })
+    }
+    
+    new GraphBox(fill, outline, enabled, action)
   }
 }
 
@@ -366,49 +376,45 @@ class GraphGrab(enabled:Box[Boolean], manualDataArea:Box[Option[Area]], displaye
 
   private val maybeInitial: Box[Option[GraphMouseEvent]] = BoxNow(None)
 
-  def paint() = (canvas:GraphCanvas) => {}
+  def paint(implicit txn: TxnR) = (canvas:GraphCanvas) => {}
 
-  def onMouse(current:GraphMouseEvent) = {
-    shelf.transact(implicit txn => {
-      if (enabled()) {
-        current.eventType match {
-          case PRESS => {
-            maybeInitial() = Some(current)
-            true
-          }
-          case DRAG => {
-            maybeInitial().foreach(initial => {
-              //If there is no manual zoom area, set it to the displayed area
-              if (manualDataArea() == None) {
-                manualDataArea() = Some(displayedDataArea())
-              }
-              manualDataArea().foreach(a => {
-                val initialArea = initial.spaces.dataArea
-                val currentPixelOnInitialArea = initial.spaces.toData(current.spaces.toPixel(current.dataPoint))
-
-                val dataDrag = initial.dataPoint - currentPixelOnInitialArea
-                manualDataArea() = Some(Area(initialArea.origin + dataDrag, initialArea.size))
-              })
-            })
-            true
-          }
-          case RELEASE => {
-            maybeInitial() = None
-            true
-          }
-          case _ => false
+  def onMouse(current:GraphMouseEvent)(implicit txn: Txn) = {
+    if (enabled()) {
+      current.eventType match {
+        case PRESS => {
+          maybeInitial() = Some(current)
+          true
         }
-      } else {
-        false
+        case DRAG => {
+          maybeInitial().foreach(initial => {
+            //If there is no manual zoom area, set it to the displayed area
+            if (manualDataArea() == None) {
+              manualDataArea() = Some(displayedDataArea())
+            }
+            manualDataArea().foreach(a => {
+              val initialArea = initial.spaces.dataArea
+              val currentPixelOnInitialArea = initial.spaces.toData(current.spaces.toPixel(current.dataPoint))
+
+              val dataDrag = initial.dataPoint - currentPixelOnInitialArea
+              manualDataArea() = Some(Area(initialArea.origin + dataDrag, initialArea.size))
+            })
+          })
+          true
+        }
+        case RELEASE => {
+          maybeInitial() = None
+          true
+        }
+        case _ => false
       }
-    })
+    } else {
+      false
+    }
   }
 
   val dataBounds = BoxNow(None:Option[Area])
 
 }
-
-
 
 object AxisTooltip {
   val format = new DecimalFormat("0.0000")
@@ -472,11 +478,12 @@ class AxisTooltip(axis:Axis, enabled:Box[Boolean])(implicit shelf: Shelf) extend
 
   private val value: Box[Option[Double]] = BoxNow(None)
 
-  def paint() = {
+  def paint(implicit txn: TxnR) = {
 
     val a = axis
     
-    val (maybeV, e) = shelf.read(implicit txn => (value(), enabled()))
+    val maybeV = value()
+    val e = enabled()
 
     (canvas:GraphCanvas) => {
       if (e) {
@@ -488,25 +495,23 @@ class AxisTooltip(axis:Axis, enabled:Box[Boolean])(implicit shelf: Shelf) extend
     }
   }
 
-  def onMouse(e:GraphMouseEvent) = {
-    shelf.transact(implicit txn => {
-      if (enabled()) {
-        e.eventType match {
-          case MOVE => {
-            val axisPosition = e.spaces.pixelArea.axisRelativePosition(Axis.other(axis), e.spaces.toPixel(e.dataPoint)) * (if (axis == X) -1 else 1)
-            if (axisPosition <= 0 && axisPosition > -32) {
-              value() = Some(e.dataPoint.onAxis(axis))
-            } else {
-              value() = None
-            }
+  def onMouse(e:GraphMouseEvent)(implicit txn: Txn) = {
+    if (enabled()) {
+      e.eventType match {
+        case MOVE => {
+          val axisPosition = e.spaces.pixelArea.axisRelativePosition(Axis.other(axis), e.spaces.toPixel(e.dataPoint)) * (if (axis == X) -1 else 1)
+          if (axisPosition <= 0 && axisPosition > -32) {
+            value() = Some(e.dataPoint.onAxis(axis))
+          } else {
+            value() = None
           }
-          case _ => value() = None
         }
-        false
-      } else {
-        false
+        case _ => value() = None
       }
-    })
+      false
+    } else {
+      false
+    }
 
   }
 
@@ -520,27 +525,25 @@ class GraphZoomer(
     val xAxis: Box[GraphZoomerAxis],
     val yAxis: Box[GraphZoomerAxis])(implicit shelf: Shelf) {
 
-  def autoArea = {
-    shelf.read(implicit txn => {
-      dataBounds() match {
-        case None => {
-          //We have no data bounds, so use the axes required ranges,
-          //or 0 to 1 in each axis if there are none.
-          val xRange = xAxis().requiredRange().getOrElse((0d, 1d))
-          val yRange = yAxis().requiredRange().getOrElse((0d, 1d))
-          Area(Vec2(xRange._1, yRange._1), Vec2(xRange._2, yRange._2)).normalise
-        }
-        case Some(area) => {
-          //We have a data bounds area, so pad it appropriately
-          val auto = area.pad(Vec2(xAxis().paddingBefore(), yAxis().paddingBefore()), Vec2(xAxis().paddingAfter(), yAxis().paddingAfter()))
-  
-          val padX = xAxis().requiredRange().foldLeft(auto){(area, range) => area.extendToContain(Vec2(range._1, auto.origin.y)).extendToContain(Vec2(range._2, auto.origin.y))}
-          val padY = yAxis().requiredRange().foldLeft(padX){(area, range) => area.extendToContain(Vec2(auto.origin.x, range._1)).extendToContain(Vec2(auto.origin.x, range._2))}
-  
-          padY
-        }
+  def autoArea(implicit txn: Txn) = {
+    dataBounds() match {
+      case None => {
+        //We have no data bounds, so use the axes required ranges,
+        //or 0 to 1 in each axis if there are none.
+        val xRange = xAxis().requiredRange().getOrElse((0d, 1d))
+        val yRange = yAxis().requiredRange().getOrElse((0d, 1d))
+        Area(Vec2(xRange._1, yRange._1), Vec2(xRange._2, yRange._2)).normalise
       }
-    })
+      case Some(area) => {
+        //We have a data bounds area, so pad it appropriately
+        val auto = area.pad(Vec2(xAxis().paddingBefore(), yAxis().paddingBefore()), Vec2(xAxis().paddingAfter(), yAxis().paddingAfter()))
+
+        val padX = xAxis().requiredRange().foldLeft(auto){(area, range) => area.extendToContain(Vec2(range._1, auto.origin.y)).extendToContain(Vec2(range._2, auto.origin.y))}
+        val padY = yAxis().requiredRange().foldLeft(padX){(area, range) => area.extendToContain(Vec2(auto.origin.x, range._1)).extendToContain(Vec2(auto.origin.x, range._2))}
+
+        padY
+      }
+    }
   }
 
   val dataArea = BoxNow.calc(implicit txn => {
@@ -557,23 +560,21 @@ object GraphClickToSelectSeries{
 
 class GraphClickToSelectSeries[K](series: Box[List[Series[K]]], selectionOut: Box[Set[K]], enabled: Box[Boolean])(implicit shelf: Shelf) extends GraphLayer {
 
-  def paint() = (canvas:GraphCanvas) => {}
+  def paint(implicit txn: TxnR) = (canvas:GraphCanvas) => {}
 
-  def onMouse(e:GraphMouseEvent) = {
-    shelf.transact(implicit txn => {
-      if (enabled()) {
-        e.eventType match {
-          case CLICK => {
-            val selectedSeries = SeriesSelection.selectedSeries(series(), e)
-            selectedSeries.foreach((ss) => selectionOut() = Set(ss.key))
-            selectedSeries.isDefined
-          }
-          case _ => false
+  def onMouse(e:GraphMouseEvent)(implicit txn: Txn) = {
+    if (enabled()) {
+      e.eventType match {
+        case CLICK => {
+          val selectedSeries = SeriesSelection.selectedSeries(series(), e)
+          selectedSeries.foreach((ss) => selectionOut() = Set(ss.key))
+          selectedSeries.isDefined
         }
-      } else {
-        false
-      }      
-    })
+        case _ => false
+      }
+    } else {
+      false
+    }      
   }
 
   val dataBounds = BoxNow(None:Option[Area])

@@ -29,9 +29,12 @@ import boxes.graph.Area
 import java.awt.Graphics2D
 import java.awt.RenderingHints
 import java.awt.AlphaComposite
+import java.awt.BorderLayout
 import java.awt.geom.Rectangle2D
 import boxes.swing.GraphCanvasFromGraphics2D
 import boxes.transact.graph.GraphBusy
+import boxes.swing.LinkingJPanel
+import boxes.transact.TxnR
 
 object GraphSwingView {
 
@@ -79,7 +82,7 @@ object GraphSwingView {
 //TODO remove shared code from GraphSwingView and GraphSwingBGView
 class GraphSwingView(graph: Box[_ <: Graph])(implicit shelf: Shelf) extends SwingView {
 
-  val componentSize = BoxNow(Vec2(10, 10))
+  val componentSize = BoxNow(Vec2(400, 400))
 
   val mainBuffer = new GraphBuffer()
   val overBuffer = new GraphBuffer()
@@ -87,7 +90,7 @@ class GraphSwingView(graph: Box[_ <: Graph])(implicit shelf: Shelf) extends Swin
   val concBuffer = new GraphBuffer()
   val concBackBuffer = new GraphBuffer()
 
-  val component = new JPanel() {
+  val component = new LinkingJPanel(this, new BorderLayout()) {
 
     override def paintComponent(gr: Graphics) {
       mainBuffer.lock.synchronized{
@@ -102,7 +105,8 @@ class GraphSwingView(graph: Box[_ <: Graph])(implicit shelf: Shelf) extends Swin
     }
 
     def updateSize() {
-      componentSize.now() = Vec2(this.getWidth, this.getHeight)
+      val v = Vec2(this.getWidth, this.getHeight)
+      componentSize.now() = v
     }
 
     this.addComponentListener(new ComponentListener(){
@@ -115,34 +119,34 @@ class GraphSwingView(graph: Box[_ <: Graph])(implicit shelf: Shelf) extends Swin
     })
 
     def fireMouse(e:MouseEvent, eventType:GraphMouseEventType) {
-      val s = buildSpaces
-      val p = e.getPoint
-      val b = e.getButton match {
-        case MouseEvent.BUTTON1 => LEFT
-        case MouseEvent.BUTTON2 => MIDDLE
-        case MouseEvent.BUTTON3 => RIGHT
-        case _ => NONE
-      }
-      var x = p.x
-      var y = p.y
-      val w = getWidth
-      val h = getHeight
-      if (x < 0) {
-        x = 0
-      } else if (x > w) {
-        x = w
-      }
-      if (y < 0) {
-        y = 0
-      } else if (y > h) {
-        y = h
-      }
+      shelf.transact(implicit txn => {
+        val s = buildSpaces
+        val p = e.getPoint
+        val b = e.getButton match {
+          case MouseEvent.BUTTON1 => LEFT
+          case MouseEvent.BUTTON2 => MIDDLE
+          case MouseEvent.BUTTON3 => RIGHT
+          case _ => NONE
+        }
+        var x = p.x
+        var y = p.y
+        val w = getWidth
+        val h = getHeight
+        if (x < 0) {
+          x = 0
+        } else if (x > w) {
+          x = w
+        }
+        if (y < 0) {
+          y = 0
+        } else if (y > h) {
+          y = h
+        }
+  
+        val dataPoint = s.toData(Vec2(x, y))
+        val gme = GraphMouseEvent(s, dataPoint, eventType, b)
+        val consumedGME = GraphMouseEvent(s, dataPoint, CONSUMED, b)
 
-      val dataPoint = s.toData(Vec2(x, y))
-      val gme = GraphMouseEvent(s, dataPoint, eventType, b)
-      val consumedGME = GraphMouseEvent(s, dataPoint, CONSUMED, b)
-
-      shelf.read(implicit txn => {
         val consumed = graph().overlayers().foldLeft(false)((consumed, layer) => if(!consumed) layer.onMouse(gme) else {layer.onMouse(consumedGME); true})
         graph().layers().foldLeft(consumed)((consumed, layer) => if(!consumed) layer.onMouse(gme) else {layer.onMouse(consumedGME); true})
       })
@@ -191,27 +195,25 @@ class GraphSwingView(graph: Box[_ <: Graph])(implicit shelf: Shelf) extends Swin
     }
   })
 
-  def buildSpaces = {
-    shelf.read(implicit txn => {
-      val size = componentSize()
-      val area = graph().dataArea()
-      val borders = graph().borders()
-  
-      val w = size.x.asInstanceOf[Int]
-      val h = size.y.asInstanceOf[Int]
-  
-      val l = borders.left.asInstanceOf[Int]
-      val r = borders.right.asInstanceOf[Int]
-      val t = borders.top.asInstanceOf[Int]
-      val b = borders.bottom.asInstanceOf[Int]
-      val dw = w - l - r
-      val dh = h - t - b
-  
-      GraphSpaces(area, Area(Vec2(l, t+dh), Vec2(dw, -dh)), Area(Vec2.zero, size))
-    })
+  def buildSpaces(implicit txn: TxnR) = {
+    val size = componentSize()
+    val area = graph().dataArea()
+    val borders = graph().borders()
+
+    val w = size.x.asInstanceOf[Int]
+    val h = size.y.asInstanceOf[Int]
+
+    val l = borders.left.asInstanceOf[Int]
+    val r = borders.right.asInstanceOf[Int]
+    val t = borders.top.asInstanceOf[Int]
+    val b = borders.bottom.asInstanceOf[Int]
+    val dw = w - l - r
+    val dh = h - t - b
+
+    GraphSpaces(area, Area(Vec2(l, t+dh), Vec2(dw, -dh)), Area(Vec2.zero, size))
   }
 
-  def drawBuffer(buffer:GraphBuffer, layers:List[GraphLayer]) {
+  def drawBuffer(buffer:GraphBuffer, layers:List[GraphLayer])(implicit txn: TxnR) {
     buffer.lock.synchronized{
       val spaces = buildSpaces
 
@@ -230,11 +232,9 @@ class GraphSwingView(graph: Box[_ <: Graph])(implicit shelf: Shelf) extends Swin
 
       //Each layer paints on a fresh canvas, to avoid side effects from one affecting the next
       layers.foreach(layer => {
-        val paint = layer.paint()
-        shelf.read(implicit txn => {
-          val highQuality = graph().highQuality()
-          paint.apply(new GraphCanvasFromGraphics2D(g.create().asInstanceOf[Graphics2D], spaces, highQuality))
-        })
+        val paint = layer.paint
+        val highQuality = graph().highQuality()
+        paint.apply(new GraphCanvasFromGraphics2D(g.create().asInstanceOf[Graphics2D], spaces, highQuality))
       })
 
       g.dispose
@@ -365,26 +365,6 @@ object GraphSwing {
 //    panel
 //  }
 }
-
-
-//class GraphSwingBGView(graph: Box[_ <: Graph])(implicit shelf: Shelf) extends SwingView {
-//
-//  val componentSize = BoxNow(Vec2(10, 10))
-//
-//  val overBuffer = new GraphBuffer()
-//
-//  val concBuffer = new GraphBuffer()
-//  val concBackBuffer = new GraphBuffer()
-//
-//  val busyAlpha = BoxNow(0d)
-//  val busyLayer = new GraphBusy(busyAlpha)
-//
-//  val component = new JPanel() {
-//
-//    override def paintComponent(gr:Graphics) {
-//      concBuffer.lock.synchronized{
-//        gr.drawImage(concBuffer.image, 0, 0, null)
-//      }
 //      overBuffer.lock.synchronized{
 //        gr.drawImage(overBuffer.image, 0, 0, null)
 //      }

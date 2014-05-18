@@ -263,7 +263,7 @@ private class ShelfDefault extends Shelf {
     views.foreach(_.add(updated))
     autos.foreach(_.add(updated))
     
-    println("updated at " + System.currentTimeMillis())
+//    println("updated at " + System.currentTimeMillis())
   }
   
   private def transactTry[T, TT <: TxnDefault](f: Txn => T, transFactory: RevisionDefault => TT): Option[(T, TT)] = {

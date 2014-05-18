@@ -22,26 +22,26 @@ object GraphSwingDemo {
       val series = new Series("Key", List(Vec2(0,0), Vec2(1,1)))
       
       val graph = GraphBasic.withSeries[String](
-          BoxNow(List(series)), 
-          BoxNow("x"), 
-          BoxNow("y"), 
-          BoxNow(Borders(10, 10, 10, 10)), 
-          BoxNow(true), 
-          BoxNow(None), 
-          BoxNow(GraphZoomerAxis()), 
-          BoxNow(GraphZoomerAxis()), 
-          BoxNow(true), 
-          BoxNow(true), 
-          BoxNow(Set("Key")), 
-          BoxNow(true), 
-          BoxNow(true), 
-          (s: String) => s, 
-          BoxNow(true), 
-          Nil, 
-          Nil, 
-          BoxNow(true), 
-          SwingView.background, 
-          Color.white)
+          BoxNow(List(series)),             //series
+          BoxNow("x"),                      //xName
+          BoxNow("y"),                      //yName
+          BoxNow(Borders(16, 74, 53, 16)),  //borders
+          BoxNow(false),                     //zoomEnabled
+          BoxNow(None),                     //manualBounds
+          BoxNow(GraphZoomerAxis()),        //xAxis
+          BoxNow(GraphZoomerAxis()),        //yAxis
+          BoxNow(false),                     //selectEnabled
+          BoxNow(false),                     //clickSelectEnabled
+          BoxNow(Set("Key")),               //selection
+          BoxNow(true),                     //grabEnabled
+          BoxNow(false),                     //seriesTooltipsEnabled
+          (s: String) => s,                 //seriesTooltipsPrint
+          BoxNow(false),                     //axisTooltipsEnabled
+          Nil,                              //extraMainLayers
+          Nil,                              //extraOverLayers
+          BoxNow(true),                     //highQuality
+          SwingView.background,             //border
+          Color.white)                      //background
       
       val graphBox = BoxNow(graph)
       val view = GraphSwingView(graphBox)
