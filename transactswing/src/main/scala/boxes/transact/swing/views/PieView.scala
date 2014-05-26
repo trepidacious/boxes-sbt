@@ -3,7 +3,6 @@ package boxes.transact.swing.views
 import boxes.transact._
 import boxes.swing.SwingView
 import boxes.swing.LinkingJLabel
-import boxes.transact.swing.TSwingView
 import boxes.swing.BoxesJTextArea
 import boxes.swing.LinkingJTextField
 import boxes.swing.LinkingTextEPPanel
@@ -49,7 +48,7 @@ private class PieOptionView[G, H](n:Box[G], c:GConverter[G, Double], a:Box[H], d
   var nDisplay = 0d
   var aDisplay = 0d
 
-  val view = TSwingView.swingView(implicit txn => {
+  val view = shelf.view(implicit txn => {
     //Store the values for later use on Swing Thread
     val newN = n()
     val newA = a()

@@ -3,7 +3,6 @@ package boxes.transact.swing.views
 import boxes.transact._
 import boxes.swing.SwingView
 import boxes.swing.LinkingJLabel
-import boxes.transact.swing.TSwingView
 import boxes.swing.EmbossedLabelUI
 
 //TODO use a renderer to customise display
@@ -11,7 +10,7 @@ private class LabelOptionView[G](v:Box[G], c:GConverter[G, String])(implicit she
 
   val component = new LinkingJLabel(this)
 
-  val view = TSwingView.swingView(implicit txn => {
+  val view = shelf.view(implicit txn => {
     //Store the value for later use on Swing Thread
     val newV = v()
     //This will be called from Swing Thread

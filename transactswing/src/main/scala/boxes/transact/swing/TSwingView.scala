@@ -13,8 +13,8 @@ object SwingExecutor extends Executor {
   override def execute(command: Runnable) = SwingUtilities.invokeLater(command)
 }
 
-object TSwingView {
-  def swingView(f: TxnR => Unit)(implicit shelf: Shelf) = {
-    shelf.view(f, SwingExecutor, true)
-  }
-}
+//object TSwingView {
+//  def swingView(f: TxnR => Unit)(implicit shelf: Shelf) = {
+//    shelf.view(f, SwingExecutor, true)
+//  }
+//}

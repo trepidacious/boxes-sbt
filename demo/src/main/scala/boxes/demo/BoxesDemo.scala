@@ -1100,7 +1100,8 @@ object BoxesDemo {
 
     swingRun{
       SwingView.nimbus()
-      backgroundReaction
+      ledger
+//      backgroundReaction
 //      textViews
 //    separateBIDIReactions
 //      fieldCompositeLedger

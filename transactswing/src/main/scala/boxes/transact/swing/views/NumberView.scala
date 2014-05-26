@@ -3,7 +3,6 @@ package boxes.transact.swing.views
 import boxes.transact._
 import boxes.swing.SwingView
 import boxes.swing.LinkingJLabel
-import boxes.transact.swing.TSwingView
 import boxes.swing.BoxesJTextArea
 import boxes.swing.LinkingJTextField
 import boxes.swing.LinkingTextEPPanel
@@ -80,7 +79,7 @@ private class NumberOptionView[G, N](v:Box[G], s:Sequence[N], c:GConverter[G, N]
     }
   }
 
-  val view = TSwingView.swingView(update)
+  val view = shelf.view(update)
 
   //FIXME there is an issue with JSpinner where it can end up on a value like 0.21000000000000002,
   //when we decrease this the text component first commits itself as 0.21, then we decrement and hit 0.20.

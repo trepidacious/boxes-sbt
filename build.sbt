@@ -46,5 +46,9 @@ version in ThisBuild        := "0.1"
 
 organization in ThisBuild   := "org.boxstack"
 
-scalaVersion in ThisBuild   := "2.10.2"
+scalaVersion in ThisBuild   := "2.10.4"
 
+resolvers ++= Seq(
+  "Sonatype OSS Releases"  at "http://oss.sonatype.org/content/repositories/releases/",
+  "Sonatype OSS Snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/"
+)

@@ -3,7 +3,6 @@ package boxes.transact.swing.views
 import boxes.transact._
 import boxes.swing.SwingView
 import boxes.swing.LinkingJLabel
-import boxes.transact.swing.TSwingView
 import boxes.swing.BoxesJTextArea
 import boxes.swing.LinkingJTextField
 import boxes.swing.LinkingTextEPPanel
@@ -31,7 +30,7 @@ private class RangeOptionView[G](v:Box[G], min:Int, max:Int, c:GConverter[G, Int
   private val model = new AutoBoundedRangeModel(min, max)
   val component = if (!progress) new LinkingJSlider(this, model) else new LinkingJProgressBar(this, model)
 
-  val view = TSwingView.swingView(implicit txn => {
+  val view = shelf.view(implicit txn => {
     //Store the values for later use on Swing Thread
     val newV = v()
     //This will be called from Swing Thread
