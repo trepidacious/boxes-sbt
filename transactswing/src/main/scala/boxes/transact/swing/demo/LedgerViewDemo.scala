@@ -14,6 +14,7 @@ import javax.swing.AbstractAction
 import java.awt.event.ActionEvent
 import javax.swing.JPanel
 import boxes.swing.SwingView
+import boxes.transact.swing.views.LabelView
 
 object LedgerViewDemo {
   
@@ -35,7 +36,7 @@ object LedgerViewDemo {
     val q = Person()
     q.name.now() = "q"
 
-    val list = BoxNow(List(p, q, q, p))
+    val list = BoxNow(List(p, q))
 
     val view = LensRecordView[Person](
       MBoxLens("Name", _.name),
@@ -44,36 +45,27 @@ object LedgerViewDemo {
     
     val ledger = s.transact(implicit txn => ListLedgerBox(list, view))
 
-//    s.read(implicit txn => {
-//      for (f <- 0 until ledger().fieldCount) {
-//        print(ledger().fieldName(f) + "\t")
-//      }
-//      println()
-//      for (f <- 0 until ledger().fieldCount) {
-//        print(ledger().fieldClass(f) + "\t")
-//      }
-//      println()
-//      for (r <- 0 until ledger().recordCount) {
-//        for (f <- 0 until ledger().fieldCount) {
-//          print(ledger().apply(r, f) + "\t")
-//        }
-//        println()
-//      }      
-//    })
-
-//    val ledgerView = LedgerView.singleSelection(ledger, index)
-//    val ledgerView = new LedgerView(ledger)
-    val i = BoxNow(Some(0): Option[Int])
+    val li = s.transact(implicit txn => ListIndex(list))
+    
+    val i = li.index
+    
+    val selectedName = BoxNow.calc(implicit txn => li.selected().map(_.name()).getOrElse("No selection"))
+    
+    val selectedNameView = LabelView.apply(selectedName)
+    
     val ledgerView = LedgerView.singleSelectionScroll(ledger, i, true)
     
     val indexView = NumberOptionView(i, Step(1))
 
+    val next = BoxNow(0)
+    
     val add = new JButton(new AbstractAction("Add") {
       override def actionPerformed(e:ActionEvent) = {
         val person = Person()
         s.transact(implicit txn => {
-          person.name() = "New item at " + list().size
-          list() = list() ++ List(person)
+          person.name() = "New item " + next()
+          next() =  next() + 1
+          list() = List(person) ++ list()
         })
         
       }
@@ -92,6 +84,7 @@ object LedgerViewDemo {
     panel.add(add)
     panel.add(delete)
     panel.add(indexView.component)
+    panel.add(selectedNameView.component)
     frame.add(ledgerView.component, BorderLayout.CENTER)
     frame.add(panel, BorderLayout.SOUTH)
     frame.pack
