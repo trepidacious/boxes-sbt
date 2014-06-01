@@ -15,6 +15,7 @@ import java.awt.event.ActionEvent
 import javax.swing.JPanel
 import boxes.swing.SwingView
 import boxes.transact.swing.views.LabelView
+import scala.collection.immutable._
 
 object LedgerViewDemo {
   
@@ -36,7 +37,7 @@ object LedgerViewDemo {
     val q = Person()
     q.name.now() = "q"
 
-    val list = BoxNow(List(p, q))
+    val list = BoxNow(IndexedSeq(p, q))
 
     val view = LensRecordView[Person](
       MBoxLens("Name", _.name),
@@ -65,7 +66,7 @@ object LedgerViewDemo {
         s.transact(implicit txn => {
           person.name() = "New item " + next()
           next() =  next() + 1
-          list() = List(person) ++ list()
+          list() = IndexedSeq(person) ++ list()
         })
         
       }

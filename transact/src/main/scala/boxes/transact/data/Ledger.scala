@@ -1,6 +1,6 @@
 package boxes.transact.data
 
-import scala.collection._
+import scala.collection.immutable._
 import _root_.boxes.transact._
 import _root_.boxes.list.ListUtils
 
@@ -43,7 +43,7 @@ trait RecordView[T] {
  * A Ledger that produces each record from one element of a list, using
  * a RecordView to convert that element to the fields of the record
  */
-case class ListLedger[T](val list: List[T], val rView: RecordView[T]) extends Ledger {
+case class ListLedger[T](val list: Seq[T], val rView: RecordView[T]) extends Ledger {
   def apply(record: Int, field: Int)(implicit txn: TxnR) = rView(record, field, list(record))
   def fieldName(field: Int)(implicit txn: TxnR): String = rView.fieldName(field)
   def fieldClass(field: Int)(implicit txn: TxnR) = rView.fieldClass(field)
@@ -62,7 +62,7 @@ case class ListLedger[T](val list: List[T], val rView: RecordView[T]) extends Le
  * current List and RecordView in the provided refs.
  */
 object ListLedgerBox {
-  def apply[T](list: Box[List[T]], rView: RecordView[T])(implicit txn: Txn) = {
+  def apply[T](list: Box[_ <: Seq[T]], rView: RecordView[T])(implicit txn: Txn) = {
     val v = Box(ListLedger(list(), rView): Ledger)
     val reaction = txn.createReaction(implicit rTxn => {
       //Note this will do nothing if list and view are the same, avoiding cycles
@@ -73,7 +73,7 @@ object ListLedgerBox {
   }
 }
 
-case class FieldCompositeLedger(val ledgers:List[Ledger]) extends Ledger {
+case class FieldCompositeLedger(val ledgers: Seq[Ledger]) extends Ledger {
 
   def recordCount()(implicit txn: TxnR) = ledgers.foldLeft(ledgers.head.recordCount){(min, l) => math.min(l.recordCount, min)}
   def fieldCount()(implicit txn: TxnR) = ledgers.foldLeft(0){(sum, l) => sum + l.fieldCount}
@@ -119,7 +119,7 @@ case class FieldCompositeLedger(val ledgers:List[Ledger]) extends Ledger {
     if (newLedger == l) {
       this
     } else {
-      val newList = ListUtils.replace(ledgers, li, newLedger)
+      val newList = ledgers.updated(li, newLedger)
       FieldCompositeLedger(newList)      
     }
   }

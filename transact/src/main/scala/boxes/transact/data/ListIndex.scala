@@ -3,6 +3,7 @@ package boxes.transact.data
 import boxes.transact.Shelf
 import boxes.transact.Box
 import boxes.transact.Txn
+import scala.collection.immutable.Seq
 
 trait ListIndex[T] {
   val selected: Box[Option[T]]
@@ -13,7 +14,7 @@ private class ListIndexDefault[T](val selected: Box[Option[T]], val index: Box[O
 
 object ListIndex {
   
-  def apply[T](list: Box[_ <: Seq[T]])(implicit txn: Txn) = {
+  def apply[T](list: Box[_ <: Seq[T]], selectFirstByDefault: Boolean = true)(implicit txn: Txn) = {
     val selected: Box[Option[T]] = Box(None)
     val index: Box[Option[Int]] = Box(None)
     
@@ -28,7 +29,7 @@ object ListIndex {
         i match {
           case None => {
 //            println("No index, clearing selection")
-            selected() = None
+            default()
           }
           case Some(i) if i < 0 => {
 //            println("index < 0, using 0")
@@ -53,16 +54,21 @@ object ListIndex {
         selected() = None        
       }
       
-      def consistent() = (i, s) match {
-        case (None, None) => true
-        case (Some(i), Some(s)) if i >= 0 && i < l.size => s == l(i)
+      def consistent() = (i, s, l) match {
+        case (None, None, Nil) => true                    //Must select None in empty list
+        case (None, None, _) => !selectFirstByDefault     //In non-empty list, selecting None is ok iff we are not selecting first by default
+        case (Some(i), Some(s), _) if i >= 0 && i < l.size => s == l(i)
         case _ => false
       }
       
-      //TODO support default selection other than None
       def default() = {
-        index() = None
-        selected() = None
+        if (!selectFirstByDefault || l.isEmpty) {
+          index() = None
+          selected() = None
+        } else {
+          index() = Some(0)
+          selected() = Some(l(0))
+        }
       }
       
       //If we are already consistent, nothing to do
