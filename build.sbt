@@ -8,6 +8,9 @@ lazy val transact = project.dependsOn(core)
 //Swing bindings for transact
 lazy val transactswing = project.dependsOn(transact, swing)
 
+//JavaFX 8 bindings for transact
+lazy val transactfx = project.dependsOn(transact)
+
 //Graph system for transact
 lazy val transactgraph = project.dependsOn(transact, swing, graph)
 

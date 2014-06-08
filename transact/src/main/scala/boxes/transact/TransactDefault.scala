@@ -243,7 +243,8 @@ private class ShelfDefault extends Shelf {
   
   def transactFromAuto[T](f: Txn => T): (T, TxnDefault) = {
     def tf(r: RevisionDefault) = new TxnDefault(this, r)
-    transactRepeatedTry(f, tf, retries)
+    val result = transactRepeatedTry(f, tf, retries)
+    (result._1, result._2)
   }
 
   def transact[T](f: Txn => T): T = {
@@ -251,7 +252,13 @@ private class ShelfDefault extends Shelf {
     transactRepeatedTry(f, tf, retries)._1
   }
 
-  def transactRepeatedTry[T, TT <: TxnDefault](f: Txn => T, tf: RevisionDefault => TT, retries: Int): (T, TT) = {
+  def transactToRevision[T](f: Txn => T): (T, Revision) = {
+    def tf(r: RevisionDefault) = new TxnDefault(this, r)
+    val result = transactRepeatedTry(f, tf, retries)
+    return (result._1, result._3)
+  }
+
+  def transactRepeatedTry[T, TT <: TxnDefault](f: Txn => T, tf: RevisionDefault => TT, retries: Int): (T, TT, Revision) = {
     Range(0, retries).view.map(_ => transactTry(f, tf)).find(o => o.isDefined).flatten.getOrElse(throw new RuntimeException("Transaction failed too many times"))
   }
   
@@ -266,7 +273,7 @@ private class ShelfDefault extends Shelf {
 //    println("updated at " + System.currentTimeMillis())
   }
   
-  private def transactTry[T, TT <: TxnDefault](f: Txn => T, transFactory: RevisionDefault => TT): Option[(T, TT)] = {
+  private def transactTry[T, TT <: TxnDefault](f: Txn => T, transFactory: RevisionDefault => TT): Option[(T, TT, Revision)] = {
     val t = transFactory(now)
     val tryR = Try(f(t))
     
@@ -282,8 +289,9 @@ private class ShelfDefault extends Shelf {
           watcher.watch(t.creates)
           reactionWatcher.watch(t.reactionCreates.keySet)
 //          println("Added reactions " + t.reactionCreates.keys.map(_.hashCode()) + ", now retaining " + t.boxReactions.values.map(_.map(_.hashCode)))
-          revise(current.updated(t.writes, watcher.deletes(), t.reactionCreates, reactionWatcher.deletes(), t.sources, t.targets, t.boxReactions))
-          Some((r, t))
+          val updated = current.updated(t.writes, watcher.deletes(), t.reactionCreates, reactionWatcher.deletes(), t.sources, t.targets, t.boxReactions)
+          revise(updated)
+          Some((r, t, updated))
         }
         case Failure(e: TxnEarlyFailException) => None  //Exception indicating early failure, e.g. due to conflict
         case Failure(e) => throw e                      //Exception that is not part of transaction system

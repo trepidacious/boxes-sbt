@@ -110,6 +110,8 @@ trait Shelf {
   def transact[T](f: Txn => T): T
   def read[T](f: TxnR => T): T
 
+  def transactToRevision[T](f: Txn => T): (T, Revision)
+  
   def react(f: ReactorTxn => Unit): Reaction
 
   def view(f: TxnR => Unit): View
