@@ -2,17 +2,20 @@ package boxes.transact.fx.demo
 
 import scalafx.application.JFXApp
 import scalafx.event.ActionEvent
+import boxes.transact.fx.Includes._
 import scalafx.Includes._
 import scalafx.application.JFXApp.PrimaryStage
 import scalafx.scene.Scene
 import scalafx.scene.control._
 import scalafx.scene.layout.GridPane
-import scalafx.scene.paint.Color
 import scalafx.geometry.Insets
 import boxes.transact.ShelfDefault
 import boxes.transact.BoxNow
 import boxes.transact.fx.Fox
-import boxes.transact.fx.Includes._
+import javafx.scene.paint.Color
+import javafx.scene.layout.Background
+import javafx.scene.paint.Paint
+import javafx.beans.property.ObjectProperty
 
 object FXDemo extends JFXApp {
 
@@ -51,44 +54,53 @@ object FXDemo extends JFXApp {
   val s = BoxNow("Hi!")
   
   val text = new TextField
-  text.textProperty <==> s
+  text.textProperty |==| s
 
   val text2 = new TextField
-  text2.textProperty <==> s
+  text2.textProperty |==| s
 
   val label = new Label
-  label.textProperty <==> s
+  label.textProperty |==| s
   
   val check = new CheckBox {
     text = "CheckBox"
   }
 
   val b = BoxNow(false)
-  check.selectedProperty <==> b
+  check.selectedProperty |==| b
 
   val bString = BoxNow.calc(implicit txn => if (b()) "selected" else "not selected")
   val bLabel = new Label
-  bLabel.textProperty <==> bString
+  bLabel.textProperty |==| bString
   
   val grid = new GridPane {
     padding = Insets(10)
     hgap = 5
     vgap = 5
   }
+
+  val c = BoxNow(Color.ALICEBLUE)
+  
+  val cp = new ColorPicker
+  cp.valueProperty |==| c
+  
+  val cLabel = new Label
+  val cs = BoxNow.calc(implicit txn => c().toString())
+  cLabel.textProperty |==| cs
+  
+  val swatch = new Label("COLOR!")
+  swatch.textFillProperty |== c
   
   grid.add(text, 0, 0)
   grid.add(text2, 0, 1)
   grid.add(label, 0, 2)
   grid.add(check, 0, 3)
   grid.add(bLabel, 0, 4)
+  grid.add(cp, 0, 5)
+  grid.add(cLabel, 0, 6)
+  grid.add(swatch, 0, 7)
 
   
-//  grid.add(check, 0, 0)
-//  grid.add(lblCheckState, 1, 0)
-//  grid.add(btnAllowIndeterminate, 0, 1)
-//  grid.add(lblAllowIndeterminate, 1, 1)
-//  grid.add(btnFire, 0, 2)
-//  grid.add(txfText, 1, 2)
 
   stage = new PrimaryStage {
     title = "CheckBox Test"

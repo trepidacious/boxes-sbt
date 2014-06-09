@@ -7,25 +7,27 @@ import scala.language.implicitConversions
 import javafx.beans.property._
 
 class FoxBindableProperty[T](val f: Property[T])(implicit shelf: Shelf) {
-  def <==> (b: Box[T]) = Fox.bind(b, f)
+  def |==|  (b: Box[T]) = Fox.bind(b, f)
+  def |== [S <: T] (b: Box[S]) = Fox.bindFX(b, f)
+  def ==| [S >: T] (b: Box[S]) = Fox.bindBox(b, f)
 }
 class FoxBindableStringProperty(val f: StringProperty)(implicit shelf: Shelf) {
-  def <==> (b: Box[String]) = Fox.bind(b, f)
+  def |==| (b: Box[String]) = Fox.bind(b, f)
 }
 class FoxBindableBooleanProperty(val f: BooleanProperty)(implicit shelf: Shelf) {
-  def <==> (b: Box[Boolean]) = Fox.bind(b, f)
+  def |==| (b: Box[Boolean]) = Fox.bind(b, f)
 }
 class FoxBindableIntegerProperty(val f: IntegerProperty)(implicit shelf: Shelf) {
-  def <==> (b: Box[Int]) = Fox.bind(b, f)
+  def |==| (b: Box[Int]) = Fox.bind(b, f)
 }
 class FoxBindableLongProperty(val f: LongProperty)(implicit shelf: Shelf) {
-  def <==> (b: Box[Long]) = Fox.bind(b, f)
+  def |==| (b: Box[Long]) = Fox.bind(b, f)
 }
 class FoxBindableFloatProperty(val f: FloatProperty)(implicit shelf: Shelf) {
-  def <==> (b: Box[Float]) = Fox.bind(b, f)
+  def |==| (b: Box[Float]) = Fox.bind(b, f)
 }
 class FoxBindableDoubleProperty(val f: DoubleProperty)(implicit shelf: Shelf) {
-  def <==> (b: Box[Double]) = Fox.bind(b, f)
+  def |==| (b: Box[Double]) = Fox.bind(b, f)
 }
 
 object Includes {

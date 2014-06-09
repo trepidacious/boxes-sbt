@@ -9,8 +9,6 @@ import boxes.transact.Box
 import javafx.beans.value.ObservableValue
 import boxes.transact.Shelf
 import javafx.beans.property._
-import scala.math.Numeric
-import boxes.util.NumericClass
 
 object JavaFXExecutorService extends Executor {
   override def execute(command: Runnable) = Platform.runLater(command)
@@ -28,9 +26,27 @@ object Fox {
   def bind(b: Box[Long], f: LongProperty)(implicit shelf: Shelf) = new FoxBindingLong(b, f): FoxBinding
   def bind(b: Box[Float], f: FloatProperty)(implicit shelf: Shelf) = new FoxBindingFloat(b, f): FoxBinding
   def bind(b: Box[Double], f: DoubleProperty)(implicit shelf: Shelf) = new FoxBindingDouble(b, f): FoxBinding
+  
+  def bindBox[T, P <: Property[_ <: T]](b: Box[T], f: P)(implicit shelf: Shelf) = new FoxBoxBindingGeneric[T, P](b, f): FoxBinding
+  def bindFX[T, P <: Property[_ >: T]](b: Box[T], f: P)(implicit shelf: Shelf) = new FoxFXBindingGeneric[T, P](b, f): FoxBinding
 }
 
 trait FoxBinding
+
+//TODO de-duplicate specialised versions below - tricky to do, I think due to Scala/Java wrapper mismatches in parametric types
+
+private class FoxBoxBindingGeneric[T, P <: Property[_ <: T]](val b: Box[T], val f: P)(implicit shelf: Shelf) extends ChangeListener[T] with FoxBinding {
+  f.addListener(this)  
+  def changed(observable: ObservableValue[_ <: T], oldValue: T, newValue: T) = shelf.transact(implicit txn => b() = newValue)
+}
+
+private class FoxFXBindingGeneric[T, P <: Property[_ >: T]](val b: Box[T], val f: P)(implicit shelf: Shelf) extends FoxBinding {
+  val view = Fox.view(implicit txn => {
+    //Always read b, to ensure we view it
+    val bv = b()
+    if (f.getValue() != bv) f.setValue(bv)
+  })
+}
 
 /*
  * Note that we use non-weak listeners and references to the Property and Box in each case. The only important
