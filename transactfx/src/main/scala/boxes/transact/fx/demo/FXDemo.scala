@@ -100,8 +100,6 @@ object FXDemo extends JFXApp {
   grid.add(cLabel, 0, 6)
   grid.add(swatch, 0, 7)
 
-  
-
   stage = new PrimaryStage {
     title = "CheckBox Test"
     scene = new Scene {
