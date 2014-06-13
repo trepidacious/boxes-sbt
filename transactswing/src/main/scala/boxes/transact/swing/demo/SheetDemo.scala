@@ -47,9 +47,9 @@ object SheetDemo {
       
       val amplitudeView = NumberView(s.amplitude)
       val phaseView = NumberView(s.phase)
-//      val enabledView = BooleanView(s.enabled)
+      val enabledView = BooleanView(s.enabled)
       val descriptionView = StringView(s.description, true)
-//      val pointsView = BooleanOptionView(s.points)
+      val pointsView = BooleanView(s.points)
 
       val sheet = SheetBuilder()
       val properties = sheet
@@ -57,8 +57,8 @@ object SheetDemo {
                       .view("Name", nameView)
                       .view("Amplitude", amplitudeView)
                       .view("Phase", phaseView)
-//                      .view("Enabled", enabledView)
-//                      .view("Points", pointsView)
+                      .view("Enabled", enabledView)
+                      .view("Points", pointsView)
                       .view("Description", descriptionView, true)
                      .panel
       

@@ -31,7 +31,8 @@ case object Radio extends BooleanControlType
 case object Tab extends BooleanControlType
 
 object BooleanView {
-  def apply(v:Box[Boolean], n:Box[String], controlType:BooleanControlType = SlideCheck, icon:Box[Option[Icon]], toggle:Boolean = true)(implicit shelf: Shelf) = new BooleanOptionView(v, n, new TConverter[Boolean], controlType, icon, toggle).asInstanceOf[SwingView]
+  def extended(v:Box[Boolean], n:Box[String], controlType:BooleanControlType = SlideCheck, icon:Box[Option[Icon]], toggle:Boolean = true)(implicit shelf: Shelf) = new BooleanOptionView(v, n, new TConverter[Boolean], controlType, icon, toggle).asInstanceOf[SwingView]
+  def apply(v:Box[Boolean], controlType:BooleanControlType = SlideCheck, toggle:Boolean = true)(implicit shelf: Shelf) = new BooleanOptionView(v, BoxNow(""), new TConverter[Boolean], controlType, BoxNow(None), toggle).asInstanceOf[SwingView]
 }
 
 object BooleanOptionView {

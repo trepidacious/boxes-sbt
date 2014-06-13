@@ -35,7 +35,7 @@ object TransactSwingDemo {
       val bo = BoxNow(false)
       val bString = BoxNow.calc{implicit txn => ""+bo()}
       
-      val check = BooleanView(bo, BoxNow(""), SlideCheck, BoxNow(None))
+      val check = BooleanView(bo, SlideCheck)
       
       val lb = LabelView(bString)
 
