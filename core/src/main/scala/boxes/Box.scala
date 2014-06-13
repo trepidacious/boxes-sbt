@@ -42,6 +42,8 @@ object BoxWriteUserEdit extends BoxWriteUser      //User is editing the data mod
 
 object Box {
 
+  val maximumReactionApplicationsPerCycle = 10000
+  
   //Currently active reaction - if there is one, it is responsible
   //for reads/writes, if there is none then reads/writes are external
   private var activeReaction:Option[Reaction] = None
@@ -64,9 +66,6 @@ object Box {
   //TODO Should be queue, as above
   //Reactions that are also views
   private val viewReactionsPending = mutable.ArrayBuffer[Reaction]()
-
-  //Track reactions that are newly added to the system (added AFTER the most recent full cycle), and so may need extra checks.
-  private val newReactions = new mutable.HashSet[Reaction]()
 
   //During a cycle, maps each written box to a list of changes applied to that list in the current cycle
   //Actually the values are a pair of change index and change
@@ -326,7 +325,6 @@ object Box {
     //Requires lock
     lock.lock
     try {
-      newReactions.add(r)
       pendReaction(r)
       cycle
     } finally {
@@ -344,11 +342,19 @@ object Box {
 
       val failedReactions = new mutable.HashSet[Reaction]()
 
-      //Which reaction (if any) has written each box, this cycle. Used to detect conflicts.
-      val targetsToCurrentCycleReaction = new mutable.HashMap[Box[_,_], Reaction]()
-
       val conflictReactions = new mutable.HashSet[Reaction]()
+      
+      val reactionApplications = new mutable.HashMap[Reaction, Int]().withDefaultValue(0)
 
+      def removeReaction(r: Reaction) {
+        clearReactionSourcesAndTargets(r)
+        conflictReactions.remove(r)
+        failedReactions.add(r)
+        val filtered = reactionsPending.filter(_ != r)
+        reactionsPending.clear()
+        reactionsPending ++= filtered
+      }
+      
       //Keep cycling until we clear all reactions
       while (!reactionsPending.isEmpty || !viewReactionsPending.isEmpty) {
 
@@ -377,52 +383,38 @@ object Box {
         try {
 
           reactionRespondAndApply(nextReaction)
+          val applications = reactionApplications.getOrElse(nextReaction, 0)
+          if (applications + 1 > maximumReactionApplicationsPerCycle) {
+            throw new ReactionAppliedTooManyTimesInCycle(nextReaction, applications + 1, maximumReactionApplicationsPerCycle)
+          } else {
+            reactionApplications.put(nextReaction, applications + 1)
+          }
 
           //We now have the correct targets for this reaction, so
-          //we can track them for conflicts
+          //we can track them for conflicts.
+          //Any other reactions that target the
+          //same box are potentially conflicting.
           for {
             target <- nextReaction.targets
-            conflictReaction <- targetsToCurrentCycleReaction.put(target, nextReaction)
+            conflictReaction <- target.targetingReactions if (conflictReaction != nextReaction)
           } conflictReactions.add(conflictReaction)
 
         } catch {
           case e:BoxException => {
             println("Reaction failed with: " + e)
             //Remove the reaction completely from the system, but remember that it failed
-            clearReactionSourcesAndTargets(nextReaction)
-            conflictReactions.remove(nextReaction)
-            newReactions.remove(nextReaction)
-            failedReactions.add(nextReaction)
+            removeReaction(nextReaction)
           }
           case e:Exception => {
             println("Reaction failed with: " + e)
-              //TODO need to respond better, but can't allow uncaught exception to just stop cycling
+            //TODO need to respond better, but can't allow uncaught exception to just stop cycling
             e.printStackTrace()
-            clearReactionSourcesAndTargets(nextReaction)
-            conflictReactions.remove(nextReaction)
-            newReactions.remove(nextReaction)
-            failedReactions.add(nextReaction)
+            //Remove the reaction completely from the system, but remember that it failed
+            removeReaction(nextReaction)
           }
         }
 
       }
-
-      //Now that we know the targets affected by each new reaction, we will
-      //mark any reactions targeting those same targets as conflictReactions.
-      //Consider the case where reaction r targets a box b, and so does a reaction
-      //s. In this case, if we register r, then register s, reaction r won't be
-      //applied in the cycle caused by adding s. But it may conflict with s, and so
-      //needs to be checked at the end of the cycle where s is registered (when s is a
-      //newReaction). Again note that this is different from registering a new reaction
-      //which targets the SOURCE of another reaction, which is handled in the main while
-      //loop above.
-      for {
-        newReaction <- newReactions
-        newReactionTarget <- newReaction.targets
-        targetConflictingReaction <- newReactionTarget.targetingReactions
-      } conflictReactions.add(targetConflictingReaction)
-
-      newReactions.clear
 
       //Check all reactions whose TARGETS were changed
       //by other reactions are still happy with the state of their targets,

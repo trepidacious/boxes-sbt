@@ -135,7 +135,7 @@ class BoxSpec extends WordSpec {
       assert(y() === 4d)
     }
 
-    "throw FailedReactionsException if reactions conflict" in {
+    "throw FailedReactionsException if reactions conflict within a cycle" in {
       val x = Var(2d)
       val y = Var(0d)
 
@@ -146,6 +146,42 @@ class BoxSpec extends WordSpec {
       }
 
     }
+
+    "throw FailedReactionsException if reactions conflict between cycles" in {
+      //Based on suggestion by MisterD
+      
+      val a = Var(0)
+      val b = Var(0)
+      val c = Var(0)
+      
+      val v = View{println("c now "+c())}
+      
+      //These reactions are consistent only when a() == b(). This is initially true, and so
+      //reactions are accepted
+      c << a() + 1  
+      c << b() + 1
+      
+      //This change will expose the fact that the reactions are inconsistent, by making them
+      //conflict
+      intercept[FailedReactionsException] {
+        a() = 32
+      }
+
+    }
+    
+    "throw FailedReactionsException for infinite incrementing reaction" in {
+      //Based on suggestion by MisterD
+
+      val c = Var(0)
+      
+      //This reaction would cycle endlessly, but should throw exception after 10000 applications of the same reaction in one cycle
+      intercept[FailedReactionsException] {
+        c << c() + 1
+      }
+
+    }
+    
+    
 
   }
 
