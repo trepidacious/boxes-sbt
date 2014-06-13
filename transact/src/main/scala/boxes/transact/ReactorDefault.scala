@@ -4,11 +4,8 @@ import scala.collection._
 import scala.collection.mutable.MultiMap
 import scala.collection.immutable.HashSet
 
-private class ReactorDefault(txn: TxnForReactor) extends ReactorForTxn with ReactorTxn {
+private class ReactorDefault(txn: TxnForReactor, val maximumReactionApplicationsPerCycle: Int = 10000) extends ReactorForTxn with ReactorTxn {
   
-  //Track ids of reactions that are newly added to the system (added AFTER the most recent full cycle), and so may need extra checks.
-  private val newReactions = new mutable.HashSet[Long]()
-
   //For each reaction that has had any source change, maps to the set of boxes that have changed for that reaction. Allows
   //reactions to see why they have been called in any given cycle. Empty outside cycles. Note that from one call to
   //a reaction to the next, may acquire additional entries, etc.
@@ -61,7 +58,6 @@ private class ReactorDefault(txn: TxnForReactor) extends ReactorForTxn with Reac
   }
   
   def registerReaction(r: ReactionDefault) {
-    newReactions.add(r.id)
     pendReaction(r.id)
     cycle
   }
@@ -86,14 +82,12 @@ private class ReactorDefault(txn: TxnForReactor) extends ReactorForTxn with Reac
     try {
       val failedReactions = new mutable.HashSet[Long]()
   
-      //Which reaction ids (if any) has written each box id most recently, this cycle. 
-      //Used to detect conflicts, when a box is written we make the most recent previous
-      //reaction that has written the box (if any) into a conflict reaction.
-      val targetsToCurrentCycleReaction = new mutable.HashMap[Long, Long]()
-  
       //Ids of reactions that may be in conflict with other reactions
       val conflictReactions = new mutable.HashSet[Long]()
-  
+
+      //Number of times each reaction has run in this cycle
+      val reactionApplications = new mutable.HashMap[Long, Int]().withDefaultValue(0)
+
       //Keep cycling until we clear all reactions
       while (!reactionsPending.isEmpty) {
   
@@ -108,11 +102,18 @@ private class ReactorDefault(txn: TxnForReactor) extends ReactorForTxn with Reac
   
           reactionRespondAndApply(nextReaction)
   
+          val applications = reactionApplications.getOrElse(nextReaction, 0)
+          if (applications + 1 > maximumReactionApplicationsPerCycle) {
+            throw new ReactionAppliedTooManyTimesInCycle()
+          } else {
+            reactionApplications.put(nextReaction, applications + 1)
+          }
+
           //We now have the correct targets for this reaction, so
           //we can track them for conflicts
           for {
             target <- txn.targetsOfReaction(nextReaction)
-            conflictReaction <- targetsToCurrentCycleReaction.put(target, nextReaction)
+            conflictReaction <- txn.reactionsTargettingBox(target) if (conflictReaction != nextReaction)
           } conflictReactions.add(conflictReaction)
   
         } catch {
@@ -123,29 +124,14 @@ private class ReactorDefault(txn: TxnForReactor) extends ReactorForTxn with Reac
             //Remove the reaction completely from the system, but remember that it failed
             txn.clearReactionSourcesAndTargets(nextReaction)
             conflictReactions.remove(nextReaction)
-            newReactions.remove(nextReaction)
             failedReactions.add(nextReaction)
+            val filtered = reactionsPending.filter(_ != nextReaction)
+            reactionsPending.clear()
+            reactionsPending ++= filtered
           }
         }
   
       }
-  
-      //Now that we know the targets affected by each new reaction, we will
-      //mark any reactions targeting those same targets as conflictReactions.
-      //Consider the case where reaction r targets a box b, and so does a reaction
-      //s. In this case, if we register r, then register s, reaction r won't be
-      //applied in the cycle caused by adding s. But it may conflict with s, and so
-      //needs to be checked at the end of the cycle where s is registered (when s is a
-      //newReaction). Again note that this is different from registering a new reaction
-      //which targets the SOURCE of another reaction, which is handled in the main while
-      //loop above.
-      for {
-        newReaction <- newReactions
-        newReactionTarget <- txn.targetsOfReaction(newReaction)
-        targetConflictingReaction <- txn.reactionsTargettingBox(newReactionTarget)
-      } conflictReactions.add(targetConflictingReaction)
-  
-      newReactions.clear
   
       //Check all reactions whose TARGETS were changed
       //by other reactions are still happy with the state of their targets,
@@ -173,9 +159,7 @@ private class ReactorDefault(txn: TxnForReactor) extends ReactorForTxn with Reac
       checkingConflicts = false
   
       //Only valid during cycling
-  //      boxToChanges.clear()    //TODO implement
       changedSourcesForReaction.clear()
-  //      _firstWrite = None      //TODO implement
   
       //Done for this cycle
       cycling = false
