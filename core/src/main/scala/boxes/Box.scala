@@ -543,7 +543,7 @@ trait Change[+T] {
  *
  * However it is unlikely that you will need to implement a new Box in any case.
  */
-trait Box[+T, C <: Change[T]] {
+trait Box[+T, +C <: Change[T]] {
 
   private[boxes] val sourcingReactions = new WeakHashSet[Reaction]()
   

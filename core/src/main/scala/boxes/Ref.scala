@@ -12,11 +12,11 @@ trait VarBox[T, C <: Change[T]] extends Box[T, C]{
   def <<?(c: =>Option[T]) = OptionalReaction(this, c)
 }
 
-trait Ref[T] extends Box[T, SingleChange[T]]
+trait Ref[+T] extends Box[T, SingleChange[T]]
 trait Var[T] extends VarBox[T, SingleChange[T]] with Ref[T]
 trait Val[T] extends ValBox[T, SingleChange[T]] with Ref[T]
 
-trait SingleChange[T] extends Change[T] {
+trait SingleChange[+T] extends Change[T] {
   def oldValue: T
   def newValue: T
 }
