@@ -41,9 +41,6 @@ private class ReactorDefault(txn: TxnForReactor, val maximumReactionApplications
       }
     }
 
-//    var q = boxToChanges.get(b).getOrElse(immutable.Queue[(Long,C)]()).asInstanceOf[immutable.Queue[(Long,C)]] ++ newQ
-//    boxToChanges.put(b, q)
-
     //Any reactions on this box are now pending
     for {
       reaction <- txn.reactionsSourcingBox(box.id)
