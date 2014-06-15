@@ -8,6 +8,7 @@ import com.explodingpixels.swingx.EPPanel
 import java.awt.{BorderLayout, Component}
 import boxes.swing.icons.IconFactory
 import boxes._
+import com.explodingpixels.swingx.EPButton
 
 //TODO should make an ExtendedOp that has a name:Ref[String] and icon:Ref[Icon] (not sure about
 //icon, maybe make return an image?, and an Action that is a view of these.
@@ -72,6 +73,26 @@ object SwingBarPadding {
 
 object SwingButtonBar {
   def apply() = new SwingButtonBarBuilder(List[JComponent]())
+}
+
+object SwingBarButton {
+  def apply(name:String, icon:Option[Icon] = None, op:Op):EPButton = {
+    apply(SwingOp(name, icon, op))
+  }
+  def apply(op:Op):EPButton = {
+    val s = SwingOp(op)
+    apply(s)
+  }
+
+  def apply(a:Action) = {
+    new SwingBarButtonDefault(a)
+  }
+}
+
+object SwingButton {
+  def apply(name:String, icon:Option[Icon] = None, op:Op):EPButton = new SwingButtonDefault(SwingOp(name, icon, op))
+  def apply(op:Op):EPButton = new SwingButtonDefault(SwingOp(op))
+  def apply(op:SwingOpAction):EPButton = new SwingButtonDefault(op)
 }
 
 class SwingButtonBarBuilder(val components:List[JComponent]) {

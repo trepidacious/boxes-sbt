@@ -1,6 +1,7 @@
 package boxes.transact
 
 import scala.language.implicitConversions
+import boxes.transact.reaction._
 
 object Implicits {
 //  implicit def closureToPathViaOption[T](path: Txn => Option[Box[T]])(implicit shelf: Shelf) = PathViaOption.now(path)

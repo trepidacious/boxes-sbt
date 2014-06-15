@@ -5,7 +5,7 @@ import javax.swing.border.EmptyBorder
 import java.awt.event.{FocusEvent, FocusListener}
 import java.beans.{PropertyChangeListener, PropertyChangeEvent}
 import com.explodingpixels.painter.MacWidgetsPainter
-import boxes.Op
+//import boxes.Op
 import com.explodingpixels.swingx.{EPPanel, EPToggleButton, EPButton}
 import sun.swing.SwingUtilities2
 import javax.swing.text.{JTextComponent}
@@ -385,21 +385,9 @@ class ButtonPainter(combo:Boolean = false) extends MacWidgetsPainter[AbstractBut
   }
 }
 
-object SwingBarButton {
-  def apply(name:String, icon:Option[Icon] = None, op:Op):EPButton = {
-    apply(SwingOp(name, icon, op))
-  }
-  def apply(op:Op):EPButton = {
-    val s = SwingOp(op)
-    apply(s)
-  }
 
-  def apply(a:Action) = {
-    new SwingBarButton(a)
-  }
-}
 
-class SwingBarButton(a:Action) extends EPButton(a:Action) {
+class SwingBarButtonDefault(a:Action) extends EPButton(a:Action) {
   {
     setBorder(new EmptyBorder(4,2,3,2))
     setContentAreaFilled(false)
@@ -431,13 +419,7 @@ class DropdownButton extends EPToggleButton {
   }
 }
 
-object SwingButton {
-  def apply(name:String, icon:Option[Icon] = None, op:Op):EPButton = new SwingButton(SwingOp(name, icon, op))
-  def apply(op:Op):EPButton = new SwingButton(SwingOp(op))
-  def apply(op:SwingOpAction):EPButton = new SwingButton(op)
-}
-
-class SwingButton(a:Action) extends EPButton(a) {
+class SwingButtonDefault(a:Action) extends EPButton(a) {
   {
     setBorder(new EmptyBorder(7,12,6,12))
     setContentAreaFilled(false)

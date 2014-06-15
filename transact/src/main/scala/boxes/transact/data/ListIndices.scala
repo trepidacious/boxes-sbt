@@ -7,21 +7,22 @@ import scala.collection.immutable._
 
 trait ListIndices[T] {
   val selected: Box[Set[T]]
-  val index: Box[Set[Int]]
+  val indices: Box[Set[Int]]
 }
 
-private class ListIndicesDefault[T](val selected: Box[Set[T]], val index: Box[Set[Int]]) extends ListIndices[T]
+private class ListIndicesDefault[T](val selected: Box[Set[T]], val indices: Box[Set[Int]]) extends ListIndices[T]
 
 object ListIndices {
   
+  def now[T](list: Box[_ <: Seq[T]], selectAllByDefault: Boolean = true)(implicit shelf: Shelf) = shelf.transact(implicit txn => apply(list, selectAllByDefault))
   def apply[T](list: Box[_ <: Seq[T]], selectAllByDefault: Boolean = true)(implicit txn: Txn) = {
     val selected: Box[Set[T]] = Box(Set())
-    val index: Box[Set[Int]] = Box(Set())
+    val indices: Box[Set[Int]] = Box(Set())
     
     val r = txn.createReaction(implicit rt => {
       val l = list()
       val s = selected()
-      val i = index()
+      val i = indices()
 
       val cs = rt.changedSources
 
@@ -34,17 +35,17 @@ object ListIndices {
           }
           case Some(i) if i < 0 => {
 //            println("index < 0, using 0")
-            index() = Set(0)
+            indices() = Set(0)
             selected() = Set(l(0))          
           }
           case Some(i) if i >= l.size => {
 //            println("index >= list size, using list size - 1")
-            index() = Set(l.size-1)
+            indices() = Set(l.size-1)
             selected() = Set(l(l.size-1))
           }
           case Some(i) => {
 //            println("index is in list, using it")
-            index() = Set(i)
+            indices() = Set(i)
             selected() = Set(l(i))          
           }
         }
@@ -64,7 +65,7 @@ object ListIndices {
       }
 
       def clear() = {
-        index() = Set()
+        indices() = Set()
         selected() = Set()        
       }
       
@@ -79,11 +80,11 @@ object ListIndices {
       
       def default() = {
         if (!selectAllByDefault || l.isEmpty) {
-          index() = Set()
+          indices() = Set()
           selected() = Set()
         } else {
-          index() = Range(0, l.size).toSet
-          selected() = index().map(i => l(i))
+          indices() = Range(0, l.size).toSet
+          selected() = indices().map(i => l(i))
         }
       }
       
@@ -97,7 +98,7 @@ object ListIndices {
         clear()
         
       //If just the index has changed, it is authoritative
-      } else if (cs == Set(index)) {
+      } else if (cs == Set(indices)) {
         println("Just index changed, using indices " + i)
         useIndices()
         
@@ -111,7 +112,7 @@ object ListIndices {
         //Some of selection is still in list, update index
         if (!newIndices.isEmpty) {
 //          println("Selection is still at least partially in list, using")
-          index() = newIndices
+          indices() = newIndices
           
         //Selection is completely missing from list, if just list has changed, use
         //first index to look up new selection
@@ -129,8 +130,8 @@ object ListIndices {
     })
     
     selected.retainReaction(r)
-    index.retainReaction(r)
+    indices.retainReaction(r)
     
-    new ListIndicesDefault(selected, index): ListIndices[T]
+    new ListIndicesDefault(selected, indices): ListIndices[T]
   }
 }

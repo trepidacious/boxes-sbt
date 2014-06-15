@@ -48,7 +48,7 @@ object LedgerViewIndicesDemo {
 
     val li = s.transact(implicit txn => ListIndices(list))
     
-    val i = li.index
+    val i = li.indices
     
     val selectedNames = BoxNow.calc(implicit txn => li.selected().map(_.name()).toString)
     

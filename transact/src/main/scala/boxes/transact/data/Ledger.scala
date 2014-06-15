@@ -62,6 +62,7 @@ case class ListLedger[T](val list: Seq[T], val rView: RecordView[T]) extends Led
  * current List and RecordView in the provided refs.
  */
 object ListLedgerBox {
+  def now[T](list: Box[_ <: Seq[T]], rView: RecordView[T])(implicit shelf: Shelf) = shelf.transact(implicit txn => apply(list, rView))
   def apply[T](list: Box[_ <: Seq[T]], rView: RecordView[T])(implicit txn: Txn) = {
     val v = Box(ListLedger(list(), rView): Ledger)
     val reaction = txn.createReaction(implicit rTxn => {

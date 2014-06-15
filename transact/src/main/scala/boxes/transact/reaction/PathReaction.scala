@@ -1,21 +1,9 @@
-package boxes.transact
+package boxes.transact.reaction
 
-trait GConverter[G, T] {
-  def toOption(g:G):Option[T]
-  def toG(t:T):G
-}
-
-//GConverter for where G is just T
-class TConverter[T] extends GConverter[T, T] {
-  override def toOption(g:T):Option[T] = Some(g)
-  override def toG(t:T):T = t
-}
-
-//GConverter for where G is Option T
-class OptionTConverter[T] extends GConverter[Option[T], T] {
-  override def toOption(g:Option[T]):Option[T] = g
-  override def toG(t:T):Option[T] = Some(t)
-}
+import boxes.transact._
+import boxes.transact.util.TConverter
+import boxes.transact.util.OptionTConverter
+import boxes.transact.util.GConverter
 
 //TODO Refactor this to an object that just returns the txn=>Unit directly
 class PathReaction[T, G](v:Box[G], path : Txn => Option[Box[T]], defaultValue:G, c:GConverter[G, T]) {

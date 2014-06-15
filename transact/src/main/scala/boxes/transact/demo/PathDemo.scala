@@ -1,6 +1,7 @@
 package boxes.transact
 
 import boxes.transact._
+import boxes.transact.reaction.Path
 
 object PathDemo {
 

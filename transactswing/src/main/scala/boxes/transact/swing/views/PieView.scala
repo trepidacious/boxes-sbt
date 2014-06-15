@@ -1,6 +1,7 @@
 package boxes.transact.swing.views
 
 import boxes.transact._
+import boxes.transact.util._
 import boxes.swing.SwingView
 import boxes.swing.LinkingJLabel
 import boxes.swing.BoxesJTextArea
