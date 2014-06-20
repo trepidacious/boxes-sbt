@@ -1,4 +1,4 @@
-package boxes.demo
+package boxes.transact.swing.demo
 
 import boxes.transact._
 import boxes.transact.data._
@@ -22,7 +22,7 @@ object SineDemo {
     val amplitude = Box(1d)
     val enabled = Box(true)
     val points = Box(false)
-    val description = Box("Default Description\nCan have multiple lines")
+    val description = Box("Default Description")
   }
   
   object Sine {
@@ -56,7 +56,7 @@ object SineDemo {
 
     val ledgerView = LedgerView.multiSelectionScroll(ledger, sel.indices, true)
 
-    val add = new ListMultiAddOp(list, sel.indices, List(Sine.now()))
+    val add = new ListMultiAddOp(list, sel.indices, implicit txn => List(Sine.now))
 
     val delete = new ListMultiDeleteOp[Sine](list, sel.indices, t=>Unit)
 
@@ -345,13 +345,15 @@ object SineDemo {
 //                      .view("Description", descriptionView, true)
 //                     .panel()
 
-    val tabs =
-      TabBuilder()
-//        .add(graph,       "Graph",  Some(graphIcon))
-//        .add(barchart,    "Bar Chart",  Some(graphIcon))
-        .add(table,       BoxNow("Table"),  BoxNow(Some(tableIcon)))
-//        .add(properties,  "Edit",   Some(propertiesIcon))
-      .panel()
+//    val tabs =
+//      TabBuilder()
+////        .add(graph,       "Graph",  Some(graphIcon))
+////        .add(barchart,    "Bar Chart",  Some(graphIcon))
+//        .add(table,       BoxNow("Table"),  BoxNow(Some(tableIcon)))
+////        .add(properties,  "Edit",   Some(propertiesIcon))
+//      .panel()
+
+        val tabs = TabBuilder().add(table, BoxNow("Table"),  BoxNow(Some(tableIcon))).panel()
 
     frame.add(tabs)
 

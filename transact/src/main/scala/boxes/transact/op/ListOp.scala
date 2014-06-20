@@ -6,6 +6,7 @@ import boxes.transact.Shelf
 import boxes.transact.TxnR
 import boxes.transact.BoxNow
 import scala.collection.mutable.ListBuffer
+import boxes.transact.Txn
 
 object ListOp {
 
@@ -62,24 +63,25 @@ class ListMultiMoveOp[T](l: Box[Vector[T]], i: Box[Set[Int]], val up:Boolean)(im
   
 }
 
-class ListAddOp[T](l: Box[Vector[T]], i: Box[Option[Int]], source: => Seq[T])(implicit shelf: Shelf) extends Op {
+class ListAddOp[T](l: Box[Vector[T]], i: Box[Option[Int]], source: Txn => Seq[T])(implicit shelf: Shelf) extends Op {
 
   val canApply = BoxNow(true)
 
   def apply() = shelf.transact(implicit txn => {
     val list = l()
     val insertion = i().map(_ + 1).getOrElse(list.size)
-    l() = ListOp.insert(list, insertion, source)
+    l() = ListOp.insert(list, insertion, source(txn))
   })
 }
 
-class ListMultiAddOp[T](l: Box[Vector[T]], i: Box[Set[Int]], source: => Seq[T])(implicit shelf: Shelf) extends Op {
+class ListMultiAddOp[T](l: Box[Vector[T]], i: Box[Set[Int]], source: Txn => Seq[T])(implicit shelf: Shelf) extends Op {
 
   val canApply = BoxNow(true)
 
-  def apply() = shelf.transact(implicit txn => for (someT <- source) {
+  def apply() = shelf.transact(implicit txn => {
+    val toAdd = source(txn)
     val insertion = if (i().isEmpty) l().size else i().toList.sorted.last + 1
-    l() = ListOp.insert(l(), insertion, source)
+    l() = ListOp.insert(l(), insertion, toAdd)
   })
 }
 
