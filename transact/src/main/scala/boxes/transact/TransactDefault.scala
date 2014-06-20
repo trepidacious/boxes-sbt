@@ -2,7 +2,6 @@ package boxes.transact
 
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import java.util.concurrent.atomic.AtomicInteger
-import scala.collection._
 import java.lang.ref.WeakReference
 import java.lang.ref.ReferenceQueue
 import java.lang.ref.Reference
@@ -24,6 +23,7 @@ import boxes.transact.util.BiMultiMap
 import scala.collection.mutable.MultiMap
 import java.util.concurrent.Executor
 
+import scala.collection.immutable._
 
 private class BoxDefault[T](val id: Long) extends Box[T]
 
@@ -47,6 +47,8 @@ case class ReactionFunc(f: ReactorTxn => Unit) {
 
 private class RevisionDefault(val index: Long, val map: Map[Long, State[_]], reactionMap: Map[Long, ReactionFunc], val sources: BiMultiMap[Long, Long], val targets: BiMultiMap[Long, Long], val boxReactions: Map[Long, Set[Reaction]]) extends Revision {
 
+  println("Created revision " + index)
+  
   def stateOf[T](box: Box[T]): Option[State[T]] = map.get(box.id).asInstanceOf[Option[State[T]]]
   def indexOf(box: Box[_]): Option[Long] = map.get(box.id).map(_.revision)
   def valueOf[T](box: Box[T]): Option[T] = stateOf(box).map(_.value)
@@ -85,7 +87,7 @@ private class RevisionDefault(val index: Long, val map: Map[Long, State[_]], rea
 }
 
 private class ViewDefault(val shelf: ShelfDefault, val f: TxnR => Unit, val exe: Executor, onlyMostRecent: Boolean = true) extends View {
-  private val revisionQueue = new mutable.Queue[RevisionDefault]()
+  private val revisionQueue = new scala.collection.mutable.Queue[RevisionDefault]()
   private val lock = Lock()
   private var state: Option[(Long, Set[Long])] = None
   private var pending = false;
@@ -142,7 +144,7 @@ private class ViewDefault(val shelf: ShelfDefault, val f: TxnR => Unit, val exe:
 }
 
 private class AutoDefault[T](val shelf: ShelfDefault, val f: Txn => T, val exe: Executor, target: T => Unit = (t:T) => Unit) extends Auto {
-  private val revisionQueue = new mutable.Queue[RevisionDefault]()
+  private val revisionQueue = new scala.collection.mutable.Queue[RevisionDefault]()
   private val lock = Lock()
   private var state: Option[(Long, Set[Long])] = None
   private var pending = false;
@@ -327,21 +329,21 @@ private class TxnRDefault(val shelf: ShelfDefault, val revision: RevisionDefault
 }
 
 private class TxnRLogging(val revision: RevisionDefault) extends TxnR {
-  val reads = new mutable.HashSet[Long]()
+  var reads = Set[Long]()
   def get[T](box: Box[T]): T = {
     val v = revision.valueOf(box).getOrElse(throw new RuntimeException("Missing Box"))
-    reads.add(box.id)
+    reads = reads + box.id
     return v
   }
 }
 
 private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault) extends TxnForReactor {
   
-  val writes = new mutable.HashMap[Long, Any]()
-  val reads = new mutable.HashSet[Long]()
-  val creates = new mutable.HashSet[Box[_]]()
-  val reactionCreates = new mutable.HashMap[Reaction, ReactionFunc]()
-  val reactionIdCreates = new mutable.HashMap[Long, ReactionFunc]()
+  var writes = Map[Long, Any]()
+  var reads = Set[Long]()
+  var creates = Set[Box[_]]()
+  var reactionCreates = Map[Reaction, ReactionFunc]()
+  var reactionIdCreates = Map[Long, ReactionFunc]()
   var sources = revision.sources
   var targets = revision.targets
   var boxReactions = revision.boxReactions
@@ -350,26 +352,29 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
   
   def create[T](t: T): Box[T] = {
     val box = BoxDefault[T]()
-    creates.add(box)
-    writes.put(box.id, t)
+    creates = creates + box
+    writes = writes.updated(box.id, t)
+    println("Created box id " + box.id + " = " + t + ", writes " + writes + "gives " + writes.get(box.id))
     box
   }
   
   def set[T](box: Box[T], t: T): Box[T] = {
     //If box value would not be changed, skip write
     if (_get(box) != t) {
-      writes.put(box.id, t)
+      writes = writes.updated(box.id, t)
       withReactor(_.afterSet(box, t))
     }
     box
   }
   
-  private def _get[T](box: Box[T]): T = writes.get(box.id).asInstanceOf[Option[T]].getOrElse(revision.valueOf(box).getOrElse(throw new RuntimeException("Missing Box")))
+  private def _get[T](box: Box[T]): T = writes.get(box.id).asInstanceOf[Option[T]].getOrElse(revision.valueOf(box).getOrElse({
+    println("_get box id " + box.id + " gives " + writes.get(box.id) + " on revision " + revision.index + ", writes " + writes)
+    throw new RuntimeException("Missing Box for id " + box.id)
+  }))
   
   def get[T](box: Box[T]): T = {
     val v = _get(box)
-    reads.add(box.id)
-//    currentReaction.foreach(r => sources = sources.updated(r.id, sources.valuesFor(r.id) + box.id))
+    reads = reads + box.id
     //Only need to use a reactor if one is active
     currentReactor.foreach(_.afterGet(box))
     return v
@@ -378,8 +383,8 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
   def createReaction(f: ReactorTxn => Unit): Reaction = {
     val reaction = ReactionDefault()
     val func = ReactionFunc(f)
-    reactionCreates.put(reaction, func)
-    reactionIdCreates.put(reaction.id, func)
+    reactionCreates = reactionCreates.updated(reaction, func)
+    reactionIdCreates = reactionIdCreates.updated(reaction.id, func)
     withReactor(_.registerReaction(reaction))
     reaction
   }
@@ -391,6 +396,7 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
       }
       case None => {
         val r = new ReactorDefault(this)
+        println("Created new reactor on txn on revision " + revision.index)
         currentReactor = Some(r)
         action(r)
       }
@@ -409,6 +415,7 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
   
   def reactionFinished() {
     currentReactor = None
+    println("Finished with reactor on txn on revision " + revision.index)
   }
   
   def clearReactionSourcesAndTargets(rid: Long) {

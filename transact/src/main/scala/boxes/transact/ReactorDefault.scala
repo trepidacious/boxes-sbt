@@ -1,20 +1,16 @@
 package boxes.transact
 
-import scala.collection._
-import scala.collection.mutable.MultiMap
-import scala.collection.immutable.HashSet
-
 private class ReactorDefault(txn: TxnForReactor, val maximumReactionApplicationsPerCycle: Int = 10000) extends ReactorForTxn with ReactorTxn {
   
   //For each reaction that has had any source change, maps to the set of boxes that have changed for that reaction. Allows
   //reactions to see why they have been called in any given cycle. Empty outside cycles. Note that from one call to
   //a reaction to the next, may acquire additional entries, etc.
-  private val changedSourcesForReaction = new mutable.HashMap[Long, mutable.Set[Box[_]]] with MultiMap[Long, Box[_]]
+  private val changedSourcesForReaction = new scala.collection.mutable.HashMap[Long, scala.collection.mutable.Set[Box[_]]] with scala.collection.mutable.MultiMap[Long, Box[_]]
 
   //TODO should probably use a mutable.Queue, but they have a memory leak with last0
   //https://issues.scala-lang.org/browse/SI-6452
   //Ids of reactions that WILL be processed this cycle
-  private val reactionsPending = mutable.ArrayBuffer[Long]()
+  private val reactionsPending = scala.collection.mutable.ArrayBuffer[Long]()
 
   private var cycling = false
   private var decoding = false
@@ -24,7 +20,7 @@ private class ReactorDefault(txn: TxnForReactor, val maximumReactionApplications
   //for reads/writes, if there is none then reads/writes are external
   private var activeReaction:Option[Long] = None
 
-  def changedSources = changedSourcesForReaction.get(activeReaction.getOrElse(throw new RuntimeException("No active reaction in call to changedSources - code error"))).getOrElse(immutable.HashSet.empty).toSet
+  def changedSources = changedSourcesForReaction.get(activeReaction.getOrElse(throw new RuntimeException("No active reaction in call to changedSources - code error"))).getOrElse(Set.empty).toSet
   
   def afterSet[T](box: Box[T], t: T) {
     //This box is a target of any active reaction
@@ -77,13 +73,13 @@ private class ReactorDefault(txn: TxnForReactor, val maximumReactionApplications
   private def performCycle() = {
     
     try {
-      val failedReactions = new mutable.HashSet[Long]()
+      val failedReactions = new scala.collection.mutable.HashSet[Long]()
   
       //Ids of reactions that may be in conflict with other reactions
-      val conflictReactions = new mutable.HashSet[Long]()
+      val conflictReactions = new scala.collection.mutable.HashSet[Long]()
 
       //Number of times each reaction has run in this cycle
-      val reactionApplications = new mutable.HashMap[Long, Int]().withDefaultValue(0)
+      val reactionApplications = new scala.collection.mutable.HashMap[Long, Int]().withDefaultValue(0)
 
       //Keep cycling until we clear all reactions
       while (!reactionsPending.isEmpty) {
