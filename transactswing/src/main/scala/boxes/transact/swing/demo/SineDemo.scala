@@ -1,6 +1,8 @@
 package boxes.transact.swing.demo
 
 import boxes.transact._
+import boxes.transact.Includes._
+import boxes.transact.Implicits._
 import boxes.transact.data._
 import boxes.transact.swing.views._
 import boxes.transact.op._
@@ -16,6 +18,27 @@ import boxes.swing.SwingView
 
 object SineDemo {
 
+  //This enables use of default values and allows passing the Boxes in as parameters, 
+  //at the expense of some boilerplate - there may be a nicer way to do this.
+  //
+  //Use it like this:
+  //
+  //    val s2 = transact(implicit txn => {
+  //      val b = new Sine2Builder
+  //      val s = new b.Sine2()
+  //    })
+  //
+  class Sine2Builder()(implicit txn: Txn) {
+    class Sine2(
+        val name: Box[String] = Box("Sine"), 
+        val phase: Box[Double] = Box(0d), 
+        val amplitude: Box[Double] = Box(1d), 
+        val enabled: Box[Boolean] = Box(true), 
+        val points: Box[Boolean] = Box(false), 
+        val description: Box[String] = Box("Default Description"))
+  }
+  
+  //This won't work with default values
   class Sine(implicit txn: Txn) {
     val name = Box("Sine")
     val phase = Box(0d)
@@ -27,11 +50,10 @@ object SineDemo {
   
   object Sine {
     def apply()(implicit txn: Txn) = new Sine
-    def now()(implicit shelf: Shelf) = shelf.transact(implicit txn => new Sine)
   }
 
   def buildLedgerMulti()(implicit shelf: Shelf) = {
-
+    
     val list = shelf.transact(implicit txn => {
       val sines = Range(0, 10).map(i=>{
         val s = Sine()
@@ -56,7 +78,7 @@ object SineDemo {
 
     val ledgerView = LedgerView.multiSelectionScroll(ledger, sel.indices, true)
 
-    val add = new ListMultiAddOp(list, sel.indices, implicit txn => List(Sine.now))
+    val add = new ListMultiAddOp(list, sel.indices, implicit txn => List(Sine()))
 
     val delete = new ListMultiDeleteOp[Sine](list, sel.indices, t=>Unit)
 
@@ -285,6 +307,10 @@ object SineDemo {
 //    panel
 //  }
   
+  object scala_method_overriding {
+  def forall(p: Int => Boolean): Boolean = true
+  def forall(b: Boolean, p: Int => Boolean): Boolean = false // method forall is defined twice   conflicting symbols both originated in file '\scala_method_overriding.scala'
+}
   def properties(sine: Box[Option[Sine]])(implicit shelf: Shelf) = {
     
     //TODO use implicit conversion of closure to option, to remove need for PathViaOption etc.
@@ -295,16 +321,25 @@ object SineDemo {
     val nameView = StringOptionView(name)
     val amplitudeView = NumberOptionView(amplitude)
     val phaseView = NumberOptionView(phase)
-
-    //    val amplitudeView = NumberOptionView(for (s <- sine()) yield s.amplitude)
-//    val phaseView = NumberOptionView(for (s <- sine()) yield s.phase)
-
     SheetBuilder()
       .blankTop()
       .view("Name", nameView)
       .view("Amplitude", amplitudeView)
       .view("Phase", phaseView)
     .panel
+
+//    shelf.transact(implicit txn => {
+//      val nameView = StringOptionView((txn: Txn) => sine()(txn).map(_.name))
+//      val amplitudeView = NumberOptionView((txn: Txn) => sine()(txn).map(_.amplitude))
+//      val phaseView = NumberOptionView((txn: Txn) => sine()(txn).map(_.phase))
+//      
+//      SheetBuilder()
+//        .blankTop()
+//        .view("Name", nameView)
+//        .view("Amplitude", amplitudeView)
+//        .view("Phase", phaseView)
+//      .panel
+//    })
   }
 
   def tabs() {
@@ -353,7 +388,12 @@ object SineDemo {
 ////        .add(properties,  "Edit",   Some(propertiesIcon))
 //      .panel()
 
-        val tabs = TabBuilder().add(table, BoxNow("Table"),  BoxNow(Some(tableIcon))).panel()
+    val p = properties(sine)
+    
+        val tabs = TabBuilder()
+          .add(table, BoxNow("Table"),  BoxNow(Some(tableIcon)))
+          .add(p, BoxNow("Edit"),  BoxNow(Some(propertiesIcon)))
+        .panel()
 
     frame.add(tabs)
 

@@ -68,6 +68,18 @@ trait Box[T] extends Identifiable {
 
 object Box {
   def apply[T](v: T)(implicit t: Txn): Box[T] = t.create(v)
+  
+  /**
+   * Create a Box with a value set by the given reaction
+   */
+  def calc[T](r: Txn => T)(implicit txn: Txn) = {
+    //Create a box with initial value given by running the reaction now, in a normal transaction
+    val b = txn.create(r(txn))
+    //Now add the reaction to the box
+    val reaction = txn.createReaction(implicit rtxn => b() = r(rtxn))
+    b.retainReaction(reaction)
+    b
+  }
 }
 
 object BoxNow {
