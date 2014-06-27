@@ -37,7 +37,8 @@ object BooleanView {
 }
 
 object BooleanOptionView {
-  def apply(v:Box[Option[Boolean]], n:Box[String], controlType:BooleanControlType = SlideCheck, icon:Box[Option[Icon]], toggle:Boolean = true)(implicit shelf: Shelf) = new BooleanOptionView(v, n, new OptionTConverter[Boolean], controlType, icon, toggle).asInstanceOf[SwingView]
+  def extended(v:Box[Option[Boolean]], n:Box[String], controlType:BooleanControlType = SlideCheck, icon:Box[Option[Icon]], toggle:Boolean = true)(implicit shelf: Shelf) = new BooleanOptionView(v, n, new OptionTConverter[Boolean], controlType, icon, toggle).asInstanceOf[SwingView]
+  def apply(v:Box[Option[Boolean]], controlType:BooleanControlType = SlideCheck, toggle:Boolean = true)(implicit shelf: Shelf) = new BooleanOptionView(v, BoxNow(""), new OptionTConverter[Boolean], controlType, BoxNow(None), toggle).asInstanceOf[SwingView]
 }
 
 private class BooleanOptionView[G](v:Box[G], n:Box[String], c:GConverter[G, Boolean], controlType:BooleanControlType, icon:Box[Option[Icon]], toggle:Boolean = true)(implicit shelf: Shelf) extends SwingView {

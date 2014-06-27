@@ -40,16 +40,38 @@ class PathReaction[T, G](v:Box[G], path : Txn => Option[Box[T]], defaultValue:G,
   }
 }
 
+class PathFunc[T](val f: Txn => Box[T])
+class PathToOptionFunc[T](val f: Txn => Option[Box[Option[T]]])
+class PathViaOptionFunc[T](val f: Txn => Option[Box[T]])
+
 object Path {
+
+  def now[T](path : Txn => Box[T])(implicit s: Shelf) = PathToBox.now(path)
+  def apply[T](path : Txn => Box[T])(implicit txn: Txn) = PathToBox.apply(path)
+
+//  def now[T](path : Txn => Option[Box[T]])(implicit s: Shelf, d: DummyImplicit) = PathViaOption.now(path)
+
+  def now[T](pf: PathFunc[T])(implicit s: Shelf) = PathToBox.now(pf.f)
+  def apply[T](pf: PathFunc[T])(implicit txn: Txn) = PathToBox.apply(pf.f)
+  
+  def now[T](pf: PathToOptionFunc[T])(implicit s: Shelf) = PathToOption.now(pf.f)
+  def apply[T](pf: PathToOptionFunc[T])(implicit txn: Txn) = PathToOption.apply(pf.f)
+
+  def now[T](pf: PathViaOptionFunc[T])(implicit s: Shelf) = PathViaOption.now(pf.f)
+  def apply[T](pf: PathViaOptionFunc[T])(implicit txn: Txn) = PathViaOption.apply(pf.f)
+
+}
+
+object PathToBox {
   def now[T](path : Txn => Box[T])(implicit s: Shelf) = s.transact(implicit txn => boxAndReaction(path)._1)
   def apply[T](path : Txn => Box[T])(implicit txn: Txn) = boxAndReaction(path)._1
-  
+
   def boxAndReaction[T](path : Txn => Box[T])(implicit txn: Txn) = {    
     val e = path(txn)
     val eVal = e()
     val v = Box(eVal)
     //Here we have both v and endpoint as parametric type T, so no need for
-    //any converstion - use a TConverter. We do raise the path to an Option, but
+    //any conversion - use a TConverter. We do raise the path to an Option, but
     //since it always works we just use Some(path). Default value doesn't matter since
     //it is never used. Apologies for the null, but it really is NEVER used. Could
     //use eVal instead, but this potentially creates a memory leak.

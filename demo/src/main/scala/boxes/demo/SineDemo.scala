@@ -293,9 +293,9 @@ object SineDemo {
   }
   
   def properties(sine:Ref[Option[Sine]]) = {
-    val nameView = StringOptionView(for (s <- sine()) yield s.name)
-    val amplitudeView = NumberOptionView(for (s <- sine()) yield s.amplitude)
-    val phaseView = NumberOptionView(for (s <- sine()) yield s.phase)
+    val nameView = StringOptionView(sine().map(_.name))
+    val amplitudeView = NumberOptionView(sine().map(_.amplitude))
+    val phaseView = NumberOptionView(sine().map(_.phase))
 
     SheetBuilder()
       .blankTop()

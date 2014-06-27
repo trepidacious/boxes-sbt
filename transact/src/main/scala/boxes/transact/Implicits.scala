@@ -8,11 +8,15 @@ object Implicits {
 //  implicit def closureToPathViaOption[T](path: Txn => Option[Box[T]])(implicit shelf: Shelf) = PathViaOption.now(path)
 //  implicit def closureToPath[T](path: Txn => Box[T])(implicit shelf: Shelf) = Path.now(path)
 //  implicit def closureToPathToOption[T](path: Txn => Option[Box[Option[T]]])(implicit shelf: Shelf) = PathToOption.now(path)
-  
-  implicit def closureToPathViaOption[T](path: Txn => Option[Box[T]])(implicit txn: Txn) = PathViaOption(path)
-  implicit def closureToPath[T](path: Txn => Box[T])(implicit txn: Txn) = Path(path)
-  implicit def closureToPathToOption[T](path: Txn => Option[Box[Option[T]]])(implicit txn: Txn) = PathToOption(path)
-  
+//  
+//  implicit def closureToPathViaOption[T](path: Txn => Option[Box[T]])(implicit txn: Txn) = PathViaOption(path)
+//  implicit def closureToPath[T](path: Txn => Box[T])(implicit txn: Txn) = Path(path)
+//  implicit def closureToPathToOption[T](path: Txn => Option[Box[Option[T]]])(implicit txn: Txn) = PathToOption(path)
+//
+//  implicit def closureToPathViaOptionFunc[T](path: Txn => Option[Box[T]]) = new PathViaOptionFunc(path)
+//  implicit def closureToPathFunc[T](path: Txn => Box[T]) = new PathFunc(path)
+//  implicit def closureToPathToOptionFunc[T](path: Txn => Option[Box[Option[T]]]) = new PathToOptionFunc(path)
+
 //  implicit def valueToBox[T](t:T)(implicit shelf: Shelf) = BoxNow(t)
 }
 

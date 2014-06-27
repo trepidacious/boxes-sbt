@@ -98,15 +98,15 @@ object SineDemo {
 
     (mainPanel, list, sel, firstSelected)
   }
-
-//  def buildGraphPanel(sines: ListVar[Sine], indices:Var[Set[Int]]) = {
 //
-//    val selectEnabled = Var(false)
-//    val zoomEnabled = Var(true)
-//    val grabEnabled = Var(false)
-//    val axisTooltipsEnabled = Var(true)
-//    val seriesTooltipsEnabled = Var(true)
-//    val manualBounds = Var(None:Option[Area])
+//  def buildGraphPanel(sines: Box[Vector[Sine]], indices: ListIndices[Sine])(implicit shelf: Shelf) = {
+//
+//    val selectEnabled = BoxNow(false)
+//    val zoomEnabled = BoxNow(true)
+//    val grabEnabled = BoxNow(false)
+//    val axisTooltipsEnabled = BoxNow(true)
+//    val seriesTooltipsEnabled = BoxNow(true)
+//    val manualBounds = BoxNow(None:Option[Area])
 //    RadioReaction(selectEnabled, zoomEnabled, grabEnabled)
 //
 //    val series = Cal{
@@ -179,7 +179,9 @@ object SineDemo {
 //
 //    panel
 //  }
-//
+  
+  
+  
 //  def buildBarChartPanel(sines: ListVar[Sine], indices:Var[Set[Int]]) = {
 //
 //    val selectEnabled = Var(false)
@@ -307,39 +309,38 @@ object SineDemo {
 //    panel
 //  }
   
-  object scala_method_overriding {
-  def forall(p: Int => Boolean): Boolean = true
-  def forall(b: Boolean, p: Int => Boolean): Boolean = false // method forall is defined twice   conflicting symbols both originated in file '\scala_method_overriding.scala'
-}
   def properties(sine: Box[Option[Sine]])(implicit shelf: Shelf) = {
-    
+
     //TODO use implicit conversion of closure to option, to remove need for PathViaOption etc.
+    //The following works, but is probably worse than just having to work out and type the "ViaOption" bit
+//    val f = (txn: Txn) => {implicit val t = txn; sine().map(_.name)}
+//    val name = Path.now(f)
+
+    
     val name = PathViaOption.now(implicit txn => sine().map(_.name))
     val amplitude = PathViaOption.now(implicit txn => sine().map(_.amplitude))
     val phase = PathViaOption.now(implicit txn => sine().map(_.phase))
+    val enabled = PathViaOption.now(implicit txn => sine().map(_.enabled))
+    val description= PathViaOption.now(implicit txn => sine().map(_.description))
+    val points = PathViaOption.now(implicit txn => sine().map(_.points))
     
     val nameView = StringOptionView(name)
     val amplitudeView = NumberOptionView(amplitude)
     val phaseView = NumberOptionView(phase)
+    val enabledView = BooleanOptionView(enabled)
+    val descriptionView = StringOptionView(description, true)
+    val pointsView = BooleanOptionView(points)
+    
     SheetBuilder()
       .blankTop()
       .view("Name", nameView)
       .view("Amplitude", amplitudeView)
       .view("Phase", phaseView)
+      .view("Enabled", enabledView)
+      .view("Points", pointsView)
+      .view("Description", descriptionView, true)
     .panel
 
-//    shelf.transact(implicit txn => {
-//      val nameView = StringOptionView((txn: Txn) => sine()(txn).map(_.name))
-//      val amplitudeView = NumberOptionView((txn: Txn) => sine()(txn).map(_.amplitude))
-//      val phaseView = NumberOptionView((txn: Txn) => sine()(txn).map(_.phase))
-//      
-//      SheetBuilder()
-//        .blankTop()
-//        .view("Name", nameView)
-//        .view("Amplitude", amplitudeView)
-//        .view("Phase", phaseView)
-//      .panel
-//    })
   }
 
   def tabs() {
@@ -362,35 +363,11 @@ object SineDemo {
 
     val sine = stuff._4
 
-//    val nameView = StringOptionView(for (s <- sine()) yield s.name)
-//    val amplitudeView = NumberOptionView(for (s <- sine()) yield s.amplitude)
-//    val phaseView = NumberOptionView(for (s <- sine()) yield s.phase)
-//    val enabledView = BooleanOptionView(for (s <- sine()) yield s.enabled)
-//    val descriptionView = StringOptionView(for (s <- sine()) yield s.description, true)
-//    val pointsView = BooleanOptionView(for (s <- sine()) yield s.points)
-//
-//    val sheet = SheetBuilder()
-//    val properties = sheet
-//                      .separator("Edit Sine")
-//                      .view("Name", nameView)
-//                      .view("Amplitude", amplitudeView)
-//                      .view("Phase", phaseView)
-//                      .view("Enabled", enabledView)
-//                      .view("Points", pointsView)
-//                      .view("Description", descriptionView, true)
-//                     .panel()
-
-//    val tabs =
-//      TabBuilder()
-////        .add(graph,       "Graph",  Some(graphIcon))
-////        .add(barchart,    "Bar Chart",  Some(graphIcon))
-//        .add(table,       BoxNow("Table"),  BoxNow(Some(tableIcon)))
-////        .add(properties,  "Edit",   Some(propertiesIcon))
-//      .panel()
-
     val p = properties(sine)
     
         val tabs = TabBuilder()
+////        .add(graph,       "Graph",  Some(graphIcon))
+////        .add(barchart,    "Bar Chart",  Some(graphIcon))
           .add(table, BoxNow("Table"),  BoxNow(Some(tableIcon)))
           .add(p, BoxNow("Edit"),  BoxNow(Some(propertiesIcon)))
         .panel()
