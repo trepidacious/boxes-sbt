@@ -28,6 +28,7 @@ import boxes.transact.swing.views.BooleanView
 import boxes.transact.swing.views.PopupView
 import scala.math.Ordering
 import boxes.transact.graph.ColorSeriesBySelection
+import boxes.transact.graph.StringTooltipPrinter
 
 object SineDemo {
 
@@ -156,34 +157,21 @@ object SineDemo {
           BoxNow(GraphZoomerAxis()),        //xAxis
           BoxNow(GraphZoomerAxis()),        //yAxis
           selectEnabled,                    //selectEnabled
-          BoxNow(true),                    //clickSelectEnabled
+          BoxNow(true),                     //clickSelectEnabled
           indices.indices,                  //selection
           grabEnabled,                      //grabEnabled
           seriesTooltipsEnabled,            //seriesTooltipsEnabled
           //TODO add implicit to txn - should be possible?
-          (i: Int, txn: TxnR) => sines()(txn).apply(i).toString(),  //seriesTooltipsPrint
+          new StringTooltipPrinter(),       //seriesTooltipsPrint
           axisTooltipsEnabled,              //axisTooltipsEnabled
           Nil,                              //extraMainLayers
           Nil,                              //extraOverLayers
           BoxNow(true),                     //highQuality
           SwingView.background,             //border
           Color.white)                      //background
-//      GraphBasic.withSeries (
-//        ColorSeriesBySelection(series, indices),
-//        xName = "X (Time)",
-//        yName = "Y (Intensity)",
-//        zoomEnabled = zoomEnabled,
-//        manualBounds = manualBounds,
-//        selectEnabled = selectEnabled,
-//        selection = indices,
-//        grabEnabled = grabEnabled,
-//        seriesTooltipsEnabled = seriesTooltipsEnabled,
-//        seriesTooltipsPrint = (i:Int) => sines(i).toString(),
-//        axisTooltipsEnabled = axisTooltipsEnabled,
-//        extraOverLayers = List(xThreshold, yThreshold)
-//      )
     )
 
+    //TODO BG view?
     val v = GraphSwingView(graph)
 
     //Zoom out by clearing manual bounds to None

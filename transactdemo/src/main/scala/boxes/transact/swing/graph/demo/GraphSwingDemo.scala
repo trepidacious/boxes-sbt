@@ -13,6 +13,7 @@ import javax.swing.JFrame
 import java.awt.Dimension
 import boxes.transact.swing.graph.GraphSwingView
 import boxes.transact.TxnR
+import boxes.transact.graph.StringTooltipPrinter
 
 object GraphSwingDemo {
 
@@ -28,17 +29,17 @@ object GraphSwingDemo {
           BoxNow("x"),                      //xName
           BoxNow("y"),                      //yName
           BoxNow(Borders(16, 74, 53, 16)),  //borders
-          BoxNow(false),                     //zoomEnabled
+          BoxNow(false),                    //zoomEnabled
           BoxNow(None),                     //manualBounds
           BoxNow(GraphZoomerAxis()),        //xAxis
           BoxNow(GraphZoomerAxis()),        //yAxis
-          BoxNow(false),                     //selectEnabled
-          BoxNow(false),                     //clickSelectEnabled
+          BoxNow(false),                    //selectEnabled
+          BoxNow(false),                    //clickSelectEnabled
           BoxNow(Set("Key")),               //selection
           BoxNow(true),                     //grabEnabled
-          BoxNow(false),                     //seriesTooltipsEnabled
-          (s: String, txn: TxnR) => s,                 //seriesTooltipsPrint
-          BoxNow(false),                     //axisTooltipsEnabled
+          BoxNow(false),                    //seriesTooltipsEnabled
+          new StringTooltipPrinter(),       //seriesTooltipsPrint
+          BoxNow(false),                    //axisTooltipsEnabled
           Nil,                              //extraMainLayers
           Nil,                              //extraOverLayers
           BoxNow(true),                     //highQuality

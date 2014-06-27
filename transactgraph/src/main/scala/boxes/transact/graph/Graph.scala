@@ -694,7 +694,7 @@ object GraphBasic {
       selection: Box[Set[K]],
       grabEnabled: Box[Boolean],
       seriesTooltipsEnabled: Box[Boolean],
-      seriesTooltipsPrint: ((K, TxnR)=>String),
+      seriesTooltipsPrinter: TooltipPrinter[K],
       axisTooltipsEnabled: Box[Boolean],
       extraMainLayers: List[GraphLayer],
       extraOverLayers: List[GraphLayer],
@@ -735,14 +735,14 @@ object GraphBasic {
 
     val overlayers = BoxNow(
         //FIXME reinstate series tooltips
-        /*SeriesTooltips.highlight(series, seriesTooltipsEnabled)) ::: */extraOverLayers ::: List(
+        List(SeriesTooltips.highlight(series, seriesTooltipsEnabled)) ::: extraOverLayers ::: List(
         GraphZoomBox(BoxNow(new Color(0, 0, 200, 50)), BoxNow(new Color(100, 100, 200)), manualBounds, zoomEnabled),
         GraphSelectBox(series, BoxNow(new Color(0, 200, 0, 50)), BoxNow(new Color(100, 200, 100)), selection, selectEnabled),
         GraphGrab(grabEnabled, manualBounds, zoomer.dataArea),
         GraphClickToSelectSeries(series, selection, clickSelectEnabled),
         AxisTooltip(X, axisTooltipsEnabled),
-        AxisTooltip(Y, axisTooltipsEnabled)//,
-        //SeriesTooltips.string(series, seriesTooltipsEnabled, seriesTooltipsPrint)
+        AxisTooltip(Y, axisTooltipsEnabled),
+        SeriesTooltips.string(series, seriesTooltipsEnabled, seriesTooltipsPrinter)
       )
     )
 
