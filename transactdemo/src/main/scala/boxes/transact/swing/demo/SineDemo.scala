@@ -15,6 +15,19 @@ import javax.swing.JPanel
 import javax.swing.JFrame
 import boxes.swing.EmbossedLabel
 import boxes.swing.SwingView
+import boxes.graph.Area
+import boxes.transact.reaction.RadioReaction
+import boxes.graph.Series
+import boxes.graph.Vec2
+import boxes.graph.SeriesStyles
+import boxes.transact.graph.GraphBasic
+import boxes.graph.Borders
+import boxes.graph.GraphZoomerAxis
+import boxes.transact.swing.graph.GraphSwingView
+import boxes.transact.swing.views.BooleanView
+import boxes.transact.swing.views.PopupView
+import scala.math.Ordering
+import boxes.transact.graph.ColorSeriesBySelection
 
 object SineDemo {
 
@@ -86,7 +99,8 @@ object SineDemo {
 
     val down = new ListMultiMoveOp[Sine](list, sel.indices, false)
 
-    val firstSelected = BoxNow.calc(implicit txn => if (sel.selected().size == 1) sel.selected().headOption else None)
+//    val firstSelected = BoxNow.calc(implicit txn => if (sel.selected().size == 1) sel.selected().headOption else None)
+    val firstSelected = BoxNow.calc(implicit txn => if (sel.selected().size > 0) Some(list().apply(sel.indices().min(Ordering.Int))) else None)
 
     val popup = PopupView(icon = Some(IconFactory.icon("zoom")), popupContents = properties(firstSelected))
 
@@ -98,38 +112,62 @@ object SineDemo {
 
     (mainPanel, list, sel, firstSelected)
   }
-//
-//  def buildGraphPanel(sines: Box[Vector[Sine]], indices: ListIndices[Sine])(implicit shelf: Shelf) = {
-//
-//    val selectEnabled = BoxNow(false)
-//    val zoomEnabled = BoxNow(true)
-//    val grabEnabled = BoxNow(false)
-//    val axisTooltipsEnabled = BoxNow(true)
-//    val seriesTooltipsEnabled = BoxNow(true)
-//    val manualBounds = BoxNow(None:Option[Area])
-//    RadioReaction(selectEnabled, zoomEnabled, grabEnabled)
-//
-//    val series = Cal{
-//      sines().zipWithIndex.map{case (s, i) => 
-//        Series(i,
-//          if (s.enabled()) Range(0, 100).map(x => x/100d).map(x => Vec2(x, math.sin((x + s.phase()) * 2 * 3.1415) * s.amplitude())).toList else List[Vec2](),
-//          Color.getHSBColor((9-i)/14f, 1f, 1f),
-//          2,
-//          true,
-//          if (s.points()) SeriesStyles.cross else SeriesStyles.line
-//        )
-//      }
-//    }
-//
-//    import boxes.graph.Axis._
-//
-//    val x = Var(0.5d)
+
+  def buildGraphPanel(sines: Box[Vector[Sine]], indices: ListIndices[Sine])(implicit shelf: Shelf) = {
+
+    val selectEnabled = BoxNow(false)
+    val zoomEnabled = BoxNow(true)
+    val grabEnabled = BoxNow(false)
+    val axisTooltipsEnabled = BoxNow(true)
+    val seriesTooltipsEnabled = BoxNow(true)
+    val manualBounds = BoxNow(None:Option[Area])
+    RadioReaction.now(selectEnabled, zoomEnabled, grabEnabled)
+
+    val series = BoxNow.calc(implicit txn => {
+      sines().zipWithIndex.map{case (s, i) => 
+        Series(i,
+          if (s.enabled()) Range(0, 100).map(x => x/100d).map(x => Vec2(x, math.sin((x + s.phase()) * 2 * 3.1415) * s.amplitude())).toList else List[Vec2](),
+          Color.getHSBColor((9-i)/14f, 1f, 1f),
+          2,
+          true,
+          if (s.points()) SeriesStyles.cross else SeriesStyles.line
+        )
+      }.toList
+    })
+
+    import boxes.graph.Axis._
+
+    //TODO port GraphThreshold to transact
+//    val x = BoxNow(0.5d)
 //    val xThreshold = GraphThreshold(X, x, Color.blue, "X Threshold", true)
 //
-//    val y = Var(0.5d)
+//    val y = BoxNow(0.5d)
 //    val yThreshold = GraphThreshold(Y, y, Color.red, "Y Threshold", true)
-//
-//    val graph = Var (
+
+    val graph = BoxNow (
+        GraphBasic.withSeries[Int](
+//          series,             //series
+          ColorSeriesBySelection(series, indices.indices),             //series
+          BoxNow("x"),                      //xName
+          BoxNow("y"),                      //yName
+          BoxNow(Borders(16, 74, 53, 16)),  //borders
+          zoomEnabled,                      //zoomEnabled
+          manualBounds,                     //manualBounds
+          BoxNow(GraphZoomerAxis()),        //xAxis
+          BoxNow(GraphZoomerAxis()),        //yAxis
+          selectEnabled,                    //selectEnabled
+          BoxNow(true),                    //clickSelectEnabled
+          indices.indices,                  //selection
+          grabEnabled,                      //grabEnabled
+          seriesTooltipsEnabled,            //seriesTooltipsEnabled
+          //TODO add implicit to txn - should be possible?
+          (i: Int, txn: TxnR) => sines()(txn).apply(i).toString(),  //seriesTooltipsPrint
+          axisTooltipsEnabled,              //axisTooltipsEnabled
+          Nil,                              //extraMainLayers
+          Nil,                              //extraOverLayers
+          BoxNow(true),                     //highQuality
+          SwingView.background,             //border
+          Color.white)                      //background
 //      GraphBasic.withSeries (
 //        ColorSeriesBySelection(series, indices),
 //        xName = "X (Time)",
@@ -144,41 +182,40 @@ object SineDemo {
 //        axisTooltipsEnabled = axisTooltipsEnabled,
 //        extraOverLayers = List(xThreshold, yThreshold)
 //      )
-//    )
-//
-//    val v = GraphSwingBGView(graph)
-//
-//    //Zoom out by clearing manual bounds to None
-//    val zoomOutButton = SwingBarButton(SwingOp("", Some(GraphSwingView.zoomOut), SetOp(manualBounds, None:Option[Area])))
-//
-//    val zoomEnabledView = BooleanView(zoomEnabled, "", BooleanControlType.TOOLBARBUTTON, Some(GraphSwingView.zoomSelect), false)
-//    val selectEnabledView = BooleanView(selectEnabled, "", BooleanControlType.TOOLBARBUTTON, Some(GraphSwingView.boxSelect), false)
-//
-//    val grabEnabledView = BooleanView(grabEnabled, "", BooleanControlType.TOOLBARBUTTON, Some(GraphSwingView.move), false)
-//
-//    val graphProperties = SheetBuilder()
-//      .blankTop()
-//      .view("Axis Tooltips", BooleanView(axisTooltipsEnabled))
-//      .view("Series Tooltips", BooleanView(seriesTooltipsEnabled))
-//    .panel()
-//
-//    val settingsPopup = BoxesPopupView(icon = Some(SwingView.wrench), popupContents = graphProperties)
-//
-//    val buttons = SwingButtonBar()
-//                    .add(selectEnabledView)
-//                    .add(grabEnabledView)
-//                    .add(zoomEnabledView)
-//                    .add(zoomOutButton)
-//                    .add(settingsPopup)
-//                  .buildWithListStyleComponent(EmbossedLabel("Demo Graph"))
-//
-//    val panel = new JPanel(new BorderLayout())
-//    panel.add(v.component, BorderLayout.CENTER)
-//
-//    panel.add(buttons, BorderLayout.SOUTH)
-//
-//    panel
-//  }
+    )
+
+    val v = GraphSwingView(graph)
+
+    //Zoom out by clearing manual bounds to None
+    val zoomOutButton = SwingBarButton(SwingOpAction("", Some(GraphSwingView.zoomOut), SetOp(manualBounds, BoxNow(None:Option[Area]))))
+
+    val zoomEnabledView = BooleanView.toolbar(zoomEnabled, BoxNow(Some(GraphSwingView.zoomSelect)), false)
+    val selectEnabledView = BooleanView.toolbar(selectEnabled, BoxNow(Some(GraphSwingView.boxSelect)), false)
+    val grabEnabledView = BooleanView.toolbar(grabEnabled, BoxNow(Some(GraphSwingView.move)), false)
+
+    val graphProperties = SheetBuilder()
+      .blankTop()
+      .view("Axis Tooltips", BooleanView(axisTooltipsEnabled))
+      .view("Series Tooltips", BooleanView(seriesTooltipsEnabled))
+    .panel
+
+    val settingsPopup = PopupView(icon = Some(SwingView.wrench), popupContents = graphProperties)
+
+    val buttons = SwingButtonBar()
+                    .add(selectEnabledView)
+                    .add(grabEnabledView)
+                    .add(zoomEnabledView)
+                    .add(zoomOutButton)
+                    .add(settingsPopup)
+                  .buildWithListStyleComponent(EmbossedLabel("Demo Graph"))
+
+    val panel = new JPanel(new BorderLayout())
+    panel.add(v.component, BorderLayout.CENTER)
+
+    panel.add(buttons, BorderLayout.SOUTH)
+
+    panel
+  }
   
   
   
@@ -358,7 +395,7 @@ object SineDemo {
 
     
     val table = stuff._1
-//    val graph = buildGraphPanel(stuff._2, stuff._3)
+    val graph = buildGraphPanel(stuff._2, stuff._3)
 //    val barchart = buildBarChartPanel(stuff._2, stuff._3)
 
     val sine = stuff._4
@@ -366,7 +403,7 @@ object SineDemo {
     val p = properties(sine)
     
         val tabs = TabBuilder()
-////        .add(graph,       "Graph",  Some(graphIcon))
+        .add(graph,       BoxNow("Graph"),  BoxNow(Some(graphIcon)))
 ////        .add(barchart,    "Bar Chart",  Some(graphIcon))
           .add(table, BoxNow("Table"),  BoxNow(Some(tableIcon)))
           .add(p, BoxNow("Edit"),  BoxNow(Some(propertiesIcon)))

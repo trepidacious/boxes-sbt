@@ -1,4 +1,4 @@
-package boxes.transact.swing.graph
+package boxes.transact.swing.graph.demo
 
 import boxes.swing.SwingView
 import boxes.transact.ShelfDefault
@@ -11,6 +11,8 @@ import boxes.graph.GraphZoomerAxis
 import java.awt.Color
 import javax.swing.JFrame
 import java.awt.Dimension
+import boxes.transact.swing.graph.GraphSwingView
+import boxes.transact.TxnR
 
 object GraphSwingDemo {
 
@@ -35,7 +37,7 @@ object GraphSwingDemo {
           BoxNow(Set("Key")),               //selection
           BoxNow(true),                     //grabEnabled
           BoxNow(false),                     //seriesTooltipsEnabled
-          (s: String) => s,                 //seriesTooltipsPrint
+          (s: String, txn: TxnR) => s,                 //seriesTooltipsPrint
           BoxNow(false),                     //axisTooltipsEnabled
           Nil,                              //extraMainLayers
           Nil,                              //extraOverLayers
