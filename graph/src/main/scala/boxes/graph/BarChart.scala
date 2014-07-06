@@ -86,7 +86,15 @@ case class GraphBarLayout[C1, C2](positions: List[GraphBarPosition[C1, C2]], cat
 //  
 //}
 
-object GraphBars {
+
+object BarChart {
+  def integerTicks(range:(Double,Double)) = {
+    val firstTick = math.floor(range._1).asInstanceOf[Int]
+    val lastTick = math.ceil(range._2).asInstanceOf[Int]
+
+    Range.inclusive(firstTick, lastTick).filter(x => x >= range._1 && x <= range._2)
+  }
+  
   def layout[C1, C2](d: Map[(C1, C2), Bar[_]], barWidth: Double, catPadding: Double, ord1: Ordering[C1], ord2: Ordering[C2]) = {
     val cat1s = SortedSet(d.keySet.map(_._1).toSeq:_*)(ord1)
     val cat2s = SortedSet(d.keySet.map(_._2).toSeq:_*)(ord2)
@@ -109,14 +117,6 @@ object GraphBars {
     
     GraphBarLayout(List(xs: _*), cat1Positions.toMap)
   }
-  
-  def integerTicks(range:(Double,Double)) = {
-    val firstTick = math.floor(range._1).asInstanceOf[Int]
-    val lastTick = math.ceil(range._2).asInstanceOf[Int]
-
-    Range.inclusive(firstTick, lastTick).filter(x => x >= range._1 && x <= range._2)
-  }
-
 }
 
 
@@ -135,9 +135,9 @@ class GraphBarAxis[C1, C2](data: Box[Map[(C1, C2), Bar[_]], _], barWidth: Box[Do
     (canvas:GraphCanvas) => {
       val dataArea = canvas.spaces.dataArea
       
-      val ticks = GraphBars.integerTicks(dataArea.axisBounds(axis))
+      val ticks = BarChart.integerTicks(dataArea.axisBounds(axis))
 
-      val layout = GraphBars.layout(d, bw, cp, ord1, ord2)
+      val layout = BarChart.layout(d, bw, cp, ord1, ord2)
       
       //Secondary category labels
       for (pos <- layout.positions; bar <- d.get(pos.cat1, pos.cat2)) {
@@ -206,7 +206,7 @@ class GraphBars[C1, C2, K](
     (canvas:GraphCanvas) => {
       canvas.clipToData
 
-      for (pos <- GraphBars.layout(d, bw, cp, ord1, ord2).positions; bar <- d.get(pos.cat1, pos.cat2)) {
+      for (pos <- BarChart.layout(d, bw, cp, ord1, ord2).positions; bar <- d.get(pos.cat1, pos.cat2)) {
         bar.painter.paint(canvas, pos.x + bp/2, bw-bp, bar, shadow)
       }
       

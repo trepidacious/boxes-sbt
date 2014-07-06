@@ -39,6 +39,15 @@ abstract class UnboundedGraphDisplayLayer(implicit shelf: Shelf) extends GraphDi
   val dataBounds = BoxNow(None:Option[Area])
 }
 
+abstract class UnboundedGraphLayer(implicit shelf: Shelf) extends GraphLayer {
+  val dataBounds = BoxNow(None:Option[Area])
+}
+
+abstract class UnboundedInputGraphLayer(implicit shelf: Shelf) extends UnboundedGraphLayer {
+    def paint(implicit txn: TxnR):(GraphCanvas => Unit) = (canvas: GraphCanvas) => {}
+}
+
+
 object GraphSeries {
   val shadowColor = new Color(220, 220, 220)
   val shadowOffset = Vec2(1, 1)
@@ -321,7 +330,7 @@ trait GraphBoxAction {
   def apply(area: Area, spaces: GraphSpaces)(implicit txn: Txn): Unit
 }
 
-class GraphBox(fill:Box[Color], outline:Box[Color], enabled:Box[Boolean], action: GraphBoxAction, val minSize:Int = 5, val axis: Option[Axis] = None)(implicit shelf: Shelf) extends GraphLayer {
+class GraphBox(fill: Box[Color], outline: Box[Color], enabled: Box[Boolean], action: GraphBoxAction, val minSize:Int = 5, val axis: Option[Axis] = None)(implicit shelf: Shelf) extends GraphLayer {
   private val area: Box[Option[Area]] = BoxNow(None)
 
   def bigEnough(a:Area) = (math.abs(a.size.x) > minSize || math.abs(a.size.y) > minSize)

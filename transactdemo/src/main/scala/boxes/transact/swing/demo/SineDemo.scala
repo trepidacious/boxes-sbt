@@ -29,6 +29,7 @@ import boxes.transact.swing.views.PopupView
 import scala.math.Ordering
 import boxes.transact.graph.ColorSeriesBySelection
 import boxes.transact.graph.StringTooltipPrinter
+import boxes.graph.Bar
 
 object SineDemo {
 
@@ -205,17 +206,15 @@ object SineDemo {
     panel
   }
   
-  
-  
-//  def buildBarChartPanel(sines: ListVar[Sine], indices:Var[Set[Int]]) = {
+//  def buildBarChartPanel(sines: Box[Vector[Sine]], indices: ListIndices[Sine])(implicit shelf: Shelf) = {
 //
-//    val selectEnabled = Var(false)
-//    val zoomEnabled = Var(true)
-//    val grabEnabled = Var(false)
-//    val axisTooltipsEnabled = Var(true)
-//    val seriesTooltipsEnabled = Var(true)
-//    val manualBounds = Var(None:Option[Area])
-//    RadioReaction(selectEnabled, zoomEnabled, grabEnabled)
+//    val selectEnabled = BoxNow(false)
+//    val zoomEnabled = BoxNow(true)
+//    val grabEnabled = BoxNow(false)
+//    val axisTooltipsEnabled = BoxNow(true)
+//    val seriesTooltipsEnabled = BoxNow(true)
+//    val manualBounds = BoxNow(None:Option[Area])
+//    RadioReaction.now(selectEnabled, zoomEnabled, grabEnabled)
 //    
 //    //Normally we would have some intrinsic property of the displayed values that would form natural categories.
 //    //In this case we really don't - it's just a list of things. Therefore we assign a single primary category "Sines"
@@ -223,60 +222,18 @@ object SineDemo {
 //    //Sine. Since this may not be unique, we make a tuple of the index in the list plus the name, which we know will be
 //    //unique. By providing custom print functions for the axis and tooltips, we can display just the name, ignoring the
 //    //index (see withBarsSelectByKey call below)
-//    val data = Cal {
+//    val data = BoxNow.calc(implicit txn => {
 //      val bars = sines().zipWithIndex.map{case (s, i) => 
 ////        (("Group " + i/3, s.name()), Bar(i, s.phase(), Some(s.phase()*0.9), Some(s.phase()*1.1), Some(Color.getHSBColor((9-i)/14f, 1f, 1f))))
 //        (("Sines", (i, s.name())), Bar(i, s.phase(), Some(s.phase()*0.9), Some(s.phase()*1.1), Some(Color.getHSBColor((9-i)/14f, 1f, 1f))))
 //      }
 //      Map(bars:_*)
-//    }
+//    })
 //    
 //    import boxes.graph.Axis._
 //
-//    val y = Var(0.5d)
-//    val yThreshold = GraphThreshold(Y, y, Color.red, "Y Threshold", true)
-//
-//    /*
-//    //Just for demonstration purposes we set up a truly terrifying (but working) bidirectional reaction.
-//    //This is NOT meant to be a robust means of mapping - in a genuine example, the barchart
-//    //categories would have genuine meaning and so translating between categories and selected
-//    //indices would be easier.
-//    //The interesting thing here is that selection still works when more than one Sine has the same
-//    //name - it just causes the same-named Sines to be selected together.
-//    //The simple bit is that when indices() changes, we change selection to contain the
-//    //categories we generate for the selected sines.
-//    val selection = Var(Set[(String, String)]())
-//    selection << {
-//      val s = sines()
-//      indices().map(i => ("Group " + i/3, s(i).name()))
-//    }
-//    //The terrifying bit is that when selection (or names of sines) change, we
-//    //update the selected indices to select the indices of those sines with
-//    //names matching any selected secondary categories.
-//    indices << {
-//      val selNames = selection().map(_._2)
-//      Set(sines().zipWithIndex.flatMap{
-//        case (s, i) if selNames.contains(s.name()) => Some(i)
-//        case _ => None
-//      }: _*)
-//    }
-//    
-//    val graph = Var (
-//      GraphBasic.withBarsSelectByCat (
-//        ColorBarByCatSelection(data, selection),
-//        yName = "Phase",
-//        zoomEnabled = zoomEnabled,
-//        manualBounds = manualBounds,
-//        selectEnabled = selectEnabled,
-//        selection = selection,
-//        grabEnabled = grabEnabled,
-//        yAxis = Val(GraphZoomerAxis(paddingBefore = 0.0, paddingAfter = 0.05)),
-//        barTooltipsEnabled = seriesTooltipsEnabled,
-//        axisTooltipsEnabled = axisTooltipsEnabled,
-//        extraOverLayers = List(yThreshold)
-//      )
-//    )
-//    */
+//    val y = BoxNow(0.5d)
+////    val yThreshold = GraphThreshold(Y, y, Color.red, "Y Threshold", true)
 //
 //    //Special print code for tooltips, see data definition above
 //    def tooltipsPrint(c1: String, c2: (Int, String), bar: Bar[Int]) = c2._2 + " = " + BarTooltips.printValueAndRange(bar)
@@ -333,7 +290,7 @@ object SineDemo {
 //
 //    panel
 //  }
-  
+//  
   def properties(sine: Box[Option[Sine]])(implicit shelf: Shelf) = {
 
     //TODO use implicit conversion of closure to option, to remove need for PathViaOption etc.

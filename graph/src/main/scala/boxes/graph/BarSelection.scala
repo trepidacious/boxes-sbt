@@ -22,7 +22,7 @@ object BarSelection {
     val bp = barPadding
 
     //Look for any bar containing the data point
-    val layout = GraphBars.layout(d, bw, cp, ord1, ord2)
+    val layout = BarChart.layout(d, bw, cp, ord1, ord2)
     
     def contained(x: Double, bar: Bar[_]) = {
       dataPoint.x >= x + bp/2 && dataPoint.x < x + bw - bp/2 && (Vec2(bar.min, bar.max).intervalContains(dataPoint.y))
@@ -42,7 +42,7 @@ object BarSelection {
     val bp = barPadding
 
     //Look for any bar containing the data point
-    val layout = GraphBars.layout(d, bw, cp, ord1, ord2)
+    val layout = BarChart.layout(d, bw, cp, ord1, ord2)
     
     def contained(x: Double, bar: Bar[_]) = {
       val barArea = Area(Vec2(x + bp/2, bar.min), Vec2(bw - bp, bar.max))
