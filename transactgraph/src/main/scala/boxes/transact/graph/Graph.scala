@@ -907,7 +907,7 @@ object GraphBasic {
 
     val overlayers = BoxNow(
 //      List(SeriesTooltips.highlight(series, seriesTooltipsEnabled)) ::: 
-        extraOverLayers ::: List(
+      extraOverLayers ::: List(
         GraphZoomBox(BoxNow(new Color(0, 0, 200, 50)), BoxNow(new Color(100, 100, 200)), manualBounds, zoomEnabled),
         GraphSelectBarsByKeyWithBox(data, selection, barWidth, catPadding, barPadding, selectEnabled, BoxNow(new Color(0, 200, 0, 50)), BoxNow(new Color(100, 200, 100))),
         GraphGrab(grabEnabled, manualBounds, zoomer.dataArea),
