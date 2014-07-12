@@ -18,7 +18,6 @@ import boxes.graph.BarSelection
 import boxes.graph.Area
 import boxes.graph.GraphSpaces
 
-
 object ColorBarByCatSelection {
   def apply[C1, C2, K](
       data: Box[Map[(C1, C2), Bar[K]]], 

@@ -30,6 +30,9 @@ import scala.math.Ordering
 import boxes.transact.graph.ColorSeriesBySelection
 import boxes.transact.graph.StringTooltipPrinter
 import boxes.graph.Bar
+import boxes.transact.graph.BarTooltips
+import boxes.transact.graph.ColorBarByKeySelection
+import boxes.transact.graph.GraphDefaults
 
 object SineDemo {
 
@@ -155,8 +158,8 @@ object SineDemo {
           BoxNow(Borders(16, 74, 53, 16)),  //borders
           zoomEnabled,                      //zoomEnabled
           manualBounds,                     //manualBounds
-          BoxNow(GraphZoomerAxis()),        //xAxis
-          BoxNow(GraphZoomerAxis()),        //yAxis
+          BoxNow(GraphDefaults.axis),       //xAxis
+          BoxNow(GraphDefaults.axis),       //yAxis
           selectEnabled,                    //selectEnabled
           BoxNow(true),                     //clickSelectEnabled
           indices.indices,                  //selection
@@ -206,91 +209,97 @@ object SineDemo {
     panel
   }
   
-//  def buildBarChartPanel(sines: Box[Vector[Sine]], indices: ListIndices[Sine])(implicit shelf: Shelf) = {
-//
-//    val selectEnabled = BoxNow(false)
-//    val zoomEnabled = BoxNow(true)
-//    val grabEnabled = BoxNow(false)
-//    val axisTooltipsEnabled = BoxNow(true)
-//    val seriesTooltipsEnabled = BoxNow(true)
-//    val manualBounds = BoxNow(None:Option[Area])
-//    RadioReaction.now(selectEnabled, zoomEnabled, grabEnabled)
-//    
-//    //Normally we would have some intrinsic property of the displayed values that would form natural categories.
-//    //In this case we really don't - it's just a list of things. Therefore we assign a single primary category "Sines"
-//    //which acts as an axis title, with all bars in one group. Then we use a secondary category based on the name of the
-//    //Sine. Since this may not be unique, we make a tuple of the index in the list plus the name, which we know will be
-//    //unique. By providing custom print functions for the axis and tooltips, we can display just the name, ignoring the
-//    //index (see withBarsSelectByKey call below)
-//    val data = BoxNow.calc(implicit txn => {
-//      val bars = sines().zipWithIndex.map{case (s, i) => 
-////        (("Group " + i/3, s.name()), Bar(i, s.phase(), Some(s.phase()*0.9), Some(s.phase()*1.1), Some(Color.getHSBColor((9-i)/14f, 1f, 1f))))
-//        (("Sines", (i, s.name())), Bar(i, s.phase(), Some(s.phase()*0.9), Some(s.phase()*1.1), Some(Color.getHSBColor((9-i)/14f, 1f, 1f))))
-//      }
-//      Map(bars:_*)
-//    })
-//    
-//    import boxes.graph.Axis._
-//
-//    val y = BoxNow(0.5d)
-////    val yThreshold = GraphThreshold(Y, y, Color.red, "Y Threshold", true)
-//
-//    //Special print code for tooltips, see data definition above
-//    def tooltipsPrint(c1: String, c2: (Int, String), bar: Bar[Int]) = c2._2 + " = " + BarTooltips.printValueAndRange(bar)
-//    
-//    val graph = Var (
-//      GraphBasic.withBarsSelectByKey (
-//        ColorBarByKeySelection(data, indices),
-//        cat2Print = (c2: (Int, String)) => c2._2, //Special print code for category 2 axis labels, see data definition above
-//        barTooltipsPrint = tooltipsPrint, 
-//        yName = "Phase",
-//        zoomEnabled = zoomEnabled,
-//        manualBounds = manualBounds,
-//        selectEnabled = selectEnabled,
-//        selection = indices,
-//        grabEnabled = grabEnabled,
-//        yAxis = Val(GraphZoomerAxis(paddingBefore = 0.0, paddingAfter = 0.05)),
-//        barTooltipsEnabled = seriesTooltipsEnabled,
-//        axisTooltipsEnabled = axisTooltipsEnabled,
-//        extraOverLayers = List(yThreshold)
-//      )
-//    )
-//
-//    val v = GraphSwingBGView(graph)
-//
-//    //Zoom out by clearing manual bounds to None
-//    val zoomOutButton = SwingBarButton(SwingOp("", Some(GraphSwingView.zoomOut), SetOp(manualBounds, None:Option[Area])))
-//
-//    val selectEnabledView = BooleanView(selectEnabled, "", BooleanControlType.TOOLBARBUTTON, Some(GraphSwingView.boxSelect), false)
-//
-//    val zoomEnabledView = BooleanView(zoomEnabled, "", BooleanControlType.TOOLBARBUTTON, Some(GraphSwingView.zoomSelect), false)
-//
-//    val grabEnabledView = BooleanView(grabEnabled, "", BooleanControlType.TOOLBARBUTTON, Some(GraphSwingView.move), false)
-//
-//    val graphProperties = SheetBuilder()
-//      .blankTop()
-//      .view("Axis Tooltips", BooleanView(axisTooltipsEnabled))
-//      .view("Series Tooltips", BooleanView(seriesTooltipsEnabled))
-//    .panel()
-//
-//    val settingsPopup = BoxesPopupView(icon = Some(SwingView.wrench), popupContents = graphProperties)
-//
-//    val buttons = SwingButtonBar()
-//                    .add(selectEnabledView)
-//                    .add(grabEnabledView)
-//                    .add(zoomEnabledView)
-//                    .add(zoomOutButton)
-//                    .add(settingsPopup)
-//                  .buildWithListStyleComponent(EmbossedLabel("Demo Graph"))
-//
-//    val panel = new JPanel(new BorderLayout())
-//    panel.add(v.component, BorderLayout.CENTER)
-//
-//    panel.add(buttons, BorderLayout.SOUTH)
-//
-//    panel
-//  }
-//  
+  def buildBarChartPanel(sines: Box[Vector[Sine]], indices: ListIndices[Sine])(implicit shelf: Shelf) = {
+
+    val selectEnabled = BoxNow(false)
+    val zoomEnabled = BoxNow(true)
+    val grabEnabled = BoxNow(false)
+    val axisTooltipsEnabled = BoxNow(true)
+    val seriesTooltipsEnabled = BoxNow(true)
+    val manualBounds = BoxNow(None:Option[Area])
+    RadioReaction.now(selectEnabled, zoomEnabled, grabEnabled)
+    
+    //Normally we would have some intrinsic property of the displayed values that would form natural categories.
+    //In this case we really don't - it's just a list of things. Therefore we assign a single primary category "Sines"
+    //which acts as an axis title, with all bars in one group. Then we use a secondary category based on the name of the
+    //Sine. Since this may not be unique, we make a tuple of the index in the list plus the name, which we know will be
+    //unique. By providing custom print functions for the axis and tooltips, we can display just the name, ignoring the
+    //index (see withBarsSelectByKey call below)
+    val data = BoxNow.calc(implicit txn => {
+      val bars = sines().zipWithIndex.map{case (s, i) => 
+//        (("Group " + i/3, s.name()), Bar(i, s.phase(), Some(s.phase()*0.9), Some(s.phase()*1.1), Some(Color.getHSBColor((9-i)/14f, 1f, 1f))))
+        (("Sines", (i, s.name())), Bar(i, s.phase(), Some(s.phase()*0.9), Some(s.phase()*1.1), Some(Color.getHSBColor((9-i)/14f, 1f, 1f))))
+      }
+      Map(bars:_*)
+    })
+    
+    import boxes.graph.Axis._
+
+    val y = BoxNow(0.5d)
+//    val yThreshold = GraphThreshold(Y, y, Color.red, "Y Threshold", true)
+
+    //Special print code for tooltips, see data definition above
+    def tooltipsPrint(c1: String, c2: (Int, String), bar: Bar[Int]) = c2._2 + " = " + BarTooltips.printValueAndRange(bar)
+    
+    
+    val graph = BoxNow(GraphBasic.withBarsSelectByKey(
+      ColorBarByKeySelection(data, indices.indices),      //data
+      (c1: String) => c1,                         //cat1Print
+      (c2: (Int, String)) => c2._2,               //cat2Print
+      BoxNow(1.0),                                //barWidth 
+      BoxNow(1.0),                                //catPadding 
+      BoxNow(0.4),                                //barPadding
+      BoxNow("Phase"),                            //yName
+      BoxNow(Borders(16, 74, 53, 16)),            //borders
+      zoomEnabled,
+      manualBounds,
+      BoxNow(GraphDefaults.axis),                 //xAxis
+      BoxNow(GraphDefaults.axis(0, 0.05)),        //yAxis
+      selectEnabled,
+      BoxNow(true),                               //clickSelectEnabled
+      indices.indices,                            //selection
+      grabEnabled,
+      BoxNow(true),                               //barTooltipsEnabled
+      BarTooltips.defaultPrint,                   //barTooltipsPrint
+      axisTooltipsEnabled,
+      Nil,
+      Nil,                                        //TODO add y threshold
+      BoxNow(true)                                //highQuality
+      ));
+
+    val v = GraphSwingView(graph)
+
+    //Zoom out by clearing manual bounds to None
+    val zoomOutButton = SwingBarButton(SwingOpAction("", Some(GraphSwingView.zoomOut), SetOp(manualBounds, BoxNow(None:Option[Area]))))
+
+    val zoomEnabledView = BooleanView.toolbar(zoomEnabled, BoxNow(Some(GraphSwingView.zoomSelect)), false)
+    val selectEnabledView = BooleanView.toolbar(selectEnabled, BoxNow(Some(GraphSwingView.boxSelect)), false)
+    val grabEnabledView = BooleanView.toolbar(grabEnabled, BoxNow(Some(GraphSwingView.move)), false)
+
+    val graphProperties = SheetBuilder()
+      .blankTop()
+      .view("Axis Tooltips", BooleanView(axisTooltipsEnabled))
+      .view("Series Tooltips", BooleanView(seriesTooltipsEnabled))
+    .panel
+
+    val settingsPopup = PopupView(icon = Some(SwingView.wrench), popupContents = graphProperties)
+
+    val buttons = SwingButtonBar()
+                    .add(selectEnabledView)
+                    .add(grabEnabledView)
+                    .add(zoomEnabledView)
+                    .add(zoomOutButton)
+                    .add(settingsPopup)
+                  .buildWithListStyleComponent(EmbossedLabel("Demo Graph"))
+
+    val panel = new JPanel(new BorderLayout())
+    panel.add(v.component, BorderLayout.CENTER)
+
+    panel.add(buttons, BorderLayout.SOUTH)
+
+    panel
+  }
+  
   def properties(sine: Box[Option[Sine]])(implicit shelf: Shelf) = {
 
     //TODO use implicit conversion of closure to option, to remove need for PathViaOption etc.
@@ -341,18 +350,18 @@ object SineDemo {
     
     val table = stuff._1
     val graph = buildGraphPanel(stuff._2, stuff._3)
-//    val barchart = buildBarChartPanel(stuff._2, stuff._3)
+    val barchart = buildBarChartPanel(stuff._2, stuff._3)
 
     val sine = stuff._4
 
     val p = properties(sine)
     
-        val tabs = TabBuilder()
-        .add(graph,       BoxNow("Graph"),  BoxNow(Some(graphIcon)))
-////        .add(barchart,    "Bar Chart",  Some(graphIcon))
-          .add(table, BoxNow("Table"),  BoxNow(Some(tableIcon)))
-          .add(p, BoxNow("Edit"),  BoxNow(Some(propertiesIcon)))
-        .panel()
+    val tabs = TabBuilder()
+      .add(graph,       BoxNow("Graph"),  BoxNow(Some(graphIcon)))
+      .add(barchart,    BoxNow("Bar Chart"),  BoxNow(Some(graphIcon)))
+      .add(table, BoxNow("Table"),  BoxNow(Some(tableIcon)))
+      .add(p, BoxNow("Edit"),  BoxNow(Some(propertiesIcon)))
+      .panel()
 
     frame.add(tabs)
 

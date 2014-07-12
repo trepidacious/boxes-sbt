@@ -14,6 +14,7 @@ import java.awt.Dimension
 import boxes.transact.swing.graph.GraphSwingView
 import boxes.transact.TxnR
 import boxes.transact.graph.StringTooltipPrinter
+import boxes.transact.graph.GraphDefaults
 
 object GraphSwingDemo {
 
@@ -31,8 +32,8 @@ object GraphSwingDemo {
           BoxNow(Borders(16, 74, 53, 16)),  //borders
           BoxNow(false),                    //zoomEnabled
           BoxNow(None),                     //manualBounds
-          BoxNow(GraphZoomerAxis()),        //xAxis
-          BoxNow(GraphZoomerAxis()),        //yAxis
+          BoxNow(GraphDefaults.axis),       //xAxis
+          BoxNow(GraphDefaults.axis),       //yAxis
           BoxNow(false),                    //selectEnabled
           BoxNow(false),                    //clickSelectEnabled
           BoxNow(Set("Key")),               //selection

@@ -3,7 +3,6 @@ package boxes.transact.graph
 import java.awt.Color
 import java.text.DecimalFormat
 import scala.collection.immutable.SortedSet
-import scala.collection._
 import boxes.transact.Box
 import boxes.graph.Bar
 import boxes.graph.Axis
@@ -18,7 +17,7 @@ import boxes.graph.Area
 import boxes.graph.GraphMouseEvent
 import boxes.transact.Txn
 
-class GraphBarAxis[C1, C2](data: Box[Map[(C1, C2), Bar[_]]], barWidth: Box[Double], catPadding: Box[Double], 
+class GraphBarAxis[C1, C2, K](data: Box[Map[(C1, C2), Bar[K]]], barWidth: Box[Double], catPadding: Box[Double], 
     barPadding: Box[Double], val axis:Axis, 
     cat1Print: (C1 => String) = (c: C1)=>c.toString, 
     cat2Print: (C2 => String) = (c: C2)=>c.toString)
