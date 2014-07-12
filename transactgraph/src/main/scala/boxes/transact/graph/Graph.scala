@@ -776,80 +776,81 @@ object GraphBasic {
     )
   }
   
-//  
-//  def withBarsSelectByCat[C1, C2, K](
-//      data: Ref[Map[(C1, C2), Bar[K]]],
-//      cat1Print: (C1 => String) = (c: C1)=>c.toString, 
-//      cat2Print: (C2 => String) = (c: C2)=>c.toString,
-//      barWidth: Ref[Double] = Val(1.0), catPadding: Ref[Double] = Val(1.0), barPadding: Ref[Double] = Val(0.4),
-//      yName:Ref[String] = Val("y"),
-//      borders:Ref[Borders] = Val(Borders(16, 74, 53, 16)),
-//      zoomEnabled:Ref[Boolean] = Val(true),
-//      manualBounds:Var[Option[Area]] = Var(None),
-//      xAxis:Ref[GraphZoomerAxis] = Val(GraphZoomerAxis()),
-//      yAxis:Ref[GraphZoomerAxis] = Val(GraphZoomerAxis()),
-//      selectEnabled:Ref[Boolean] = Val(false),
-//      clickSelectEnabled:Ref[Boolean] = Val(true),
-//      selection:Var[Set[(C1, C2)]] = Var(Set[(C1, C2)]()),
-//      grabEnabled:Ref[Boolean] = Val(false),
-//      barTooltipsEnabled:Ref[Boolean] = Val(true),
-//      barTooltipsPrint:((C1, C2, Bar[K]) => String) = BarTooltips.defaultPrint[C1, C2, K],
-//      axisTooltipsEnabled:Ref[Boolean] = Val(true),
-//      extraMainLayers:List[GraphLayer] = List[GraphLayer](),
-//      extraOverLayers:List[GraphLayer] = List[GraphLayer](),
-//      highQuality: Ref[Boolean] = Val(true)
-//      )(implicit ord1: Ordering[C1], ord2: Ordering[C2]) = {
-//
-//    val layers = ListVal[GraphLayer](
-//      extraMainLayers ::: List(
-//        new GraphBG(SwingView.background, Color.white),
-//        new GraphHighlight(),
-//        new GraphBars(data, barWidth, catPadding, barPadding, true)(ord1, ord2),  //Shadows
-//        new GraphAxis(Y, 50),
-//        new GraphBarAxis(data, barWidth, catPadding, barPadding, X, cat1Print, cat2Print)(ord1, ord2),
-//        new GraphShadow(),
-//        new GraphBars(data, barWidth, catPadding, barPadding, false)(ord1, ord2), //Data
-//        new GraphOutline(),
-//        new GraphAxisTitle(Y, yName)
-//      )
-//    )
-//
-//    val dataBounds = Cal{
-//      layers().foldLeft(None:Option[Area]){
-//        (areaOption, layer) => areaOption match {
-//          case None => layer.dataBounds()
-//
-//          case Some(area) => layer.dataBounds() match {
-//            case None => Some(area)
-//            case Some(layerArea) => Some(area.extendToContain(layerArea))
-//          }
-//        }
-//      }
-//    }
-//
-//    val zoomer = new GraphZoomer(dataBounds, manualBounds, xAxis, yAxis)
-//
-//    val overlayers = ListVal[GraphLayer](
-////      List(SeriesTooltips.highlight(series, seriesTooltipsEnabled)) ::: 
-//        extraOverLayers ::: List(
-//        GraphZoomBox(Val(new Color(0, 0, 200, 50)), Val(new Color(100, 100, 200)), manualBounds, zoomEnabled),
-//        GraphSelectBarsByCatWithBox(data, selection, barWidth, catPadding, barPadding, selectEnabled, Val(new Color(0, 200, 0, 50)), Val(new Color(100, 200, 100))),
-//        GraphGrab(grabEnabled, manualBounds, zoomer.dataArea),
-//        GraphClickToSelectBarByCat(data, selection, barWidth, catPadding, barPadding, clickSelectEnabled),
-//        AxisTooltip(Y, axisTooltipsEnabled),
-//        BarTooltips.string(barTooltipsEnabled, data, barWidth, catPadding, barPadding, barTooltipsPrint)(ord1, ord2)
-//      )
-//    )
-//
-//    new GraphBasic(
-//      layers,
-//      overlayers,
-//      zoomer.dataArea,
-//      borders,
-//      highQuality
-//    )
-//  }
-// 
+    def withBarsSelectByCat[C1, C2, K](
+      data: Box[Map[(C1, C2), Bar[K]]],
+      cat1Print: (C1 => String) = (c: C1)=>c.toString, 
+      cat2Print: (C2 => String) = (c: C2)=>c.toString,
+      barWidth: Box[Double], 
+      catPadding: Box[Double], 
+      barPadding: Box[Double],
+      yName: Box[String],
+      borders: Box[Borders],
+      zoomEnabled: Box[Boolean],
+      manualBounds: Box[Option[Area]],
+      xAxis: Box[GraphZoomerAxis],
+      yAxis: Box[GraphZoomerAxis],
+      selectEnabled: Box[Boolean],
+      clickSelectEnabled: Box[Boolean],
+      selection:Box[Set[(C1, C2)]],
+      grabEnabled: Box[Boolean],
+      barTooltipsEnabled: Box[Boolean],
+      barTooltipsPrint: ((C1, C2, Bar[K]) => String) = BarTooltips.defaultPrint[C1, C2, K],
+      axisTooltipsEnabled: Box[Boolean],
+      extraMainLayers:List[GraphLayer] = List[GraphLayer](),
+      extraOverLayers:List[GraphLayer] = List[GraphLayer](),
+      highQuality: Box[Boolean]
+      )(implicit shelf: Shelf, ord1: Ordering[C1], ord2: Ordering[C2]) = {
+
+    val layers = BoxNow(
+      extraMainLayers ::: List(
+        new GraphBG(SwingView.background, Color.white),
+        new GraphHighlight(),
+        new GraphBars(data, barWidth, catPadding, barPadding, true),  //Shadows
+        new GraphAxis(Y, 50),
+        new GraphBarAxis(data, barWidth, catPadding, barPadding, X, cat1Print, cat2Print),
+        new GraphShadow(),
+        new GraphBars(data, barWidth, catPadding, barPadding, false), //Data
+        new GraphOutline(),
+        new GraphAxisTitle(Y, yName)
+      )
+    )
+
+    val dataBounds = BoxNow.calc(implicit TxnR => {
+      layers().foldLeft(None:Option[Area]){
+        (areaOption, layer) => areaOption match {
+          case None => layer.dataBounds()
+
+          case Some(area) => layer.dataBounds() match {
+            case None => Some(area)
+            case Some(layerArea) => Some(area.extendToContain(layerArea))
+          }
+        }
+      }
+    })
+
+    val zoomer = new GraphZoomer(dataBounds, manualBounds, xAxis, yAxis)
+
+    val overlayers = BoxNow(
+//      List(SeriesTooltips.highlight(series, seriesTooltipsEnabled)) ::: 
+      extraOverLayers ::: List(
+        GraphZoomBox(BoxNow(new Color(0, 0, 200, 50)), BoxNow(new Color(100, 100, 200)), manualBounds, zoomEnabled),
+        GraphSelectBarsByCatWithBox(data, selection, barWidth, catPadding, barPadding, selectEnabled, BoxNow(new Color(0, 200, 0, 50)), BoxNow(new Color(100, 200, 100))),
+        GraphGrab(grabEnabled, manualBounds, zoomer.dataArea),
+        GraphClickToSelectBarByCat(data, selection, barWidth, catPadding, barPadding, clickSelectEnabled),
+        AxisTooltip(Y, axisTooltipsEnabled),
+        BarTooltips.string(barTooltipsEnabled, data, barWidth, catPadding, barPadding, barTooltipsPrint)
+      )
+    )
+
+    new GraphBasic(
+      layers,
+      overlayers,
+      zoomer.dataArea,
+      borders,
+      highQuality
+    )
+  }
+ 
   def withBarsSelectByKey[C1, C2, K](
       data: Box[Map[(C1, C2), Bar[K]]],
       cat1Print: (C1 => String) = (c: C1)=>c.toString, 
