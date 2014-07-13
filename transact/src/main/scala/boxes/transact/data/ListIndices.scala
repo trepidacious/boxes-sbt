@@ -90,7 +90,7 @@ object ListIndices {
       
       //If we are already consistent, nothing to do
       if (consistent) {
-        println("Already consistent")
+//        println("Already consistent")
         
       //If list is empty, no selection
       } else if (l.isEmpty) {
@@ -99,7 +99,7 @@ object ListIndices {
         
       //If just the index has changed, it is authoritative
       } else if (cs == Set(indices)) {
-        println("Just index changed, using indices " + i)
+//        println("Just index changed, using indices " + i)
         useIndices()
         
       //Otherwise try to use the selection

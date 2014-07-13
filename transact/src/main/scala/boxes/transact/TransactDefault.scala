@@ -47,7 +47,7 @@ case class ReactionFunc(f: ReactorTxn => Unit) {
 
 private class RevisionDefault(val index: Long, val map: Map[Long, State[_]], reactionMap: Map[Long, ReactionFunc], val sources: BiMultiMap[Long, Long], val targets: BiMultiMap[Long, Long], val boxReactions: Map[Long, Set[Reaction]]) extends Revision {
 
-  println("Created revision " + index)
+//  println("Created revision " + index)
   
   def stateOf[T](box: BoxR[T]): Option[State[T]] = map.get(box.id).asInstanceOf[Option[State[T]]]
   def indexOf(box: BoxR[_]): Option[Long] = map.get(box.id).map(_.revision)
@@ -354,7 +354,7 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
     val box = BoxDefault[T]()
     creates = creates + box
     writes = writes.updated(box.id, t)
-    println("Created box id " + box.id + " = " + t + ", writes " + writes + "gives " + writes.get(box.id))
+//    println("Created box id " + box.id + " = " + t + ", writes " + writes + "gives " + writes.get(box.id))
     box
   }
   
@@ -368,7 +368,7 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
   }
   
   private def _get[T](box: BoxR[T]): T = writes.get(box.id).asInstanceOf[Option[T]].getOrElse(revision.valueOf(box).getOrElse({
-    println("_get box id " + box.id + " gives " + writes.get(box.id) + " on revision " + revision.index + ", writes " + writes)
+//    println("_get box id " + box.id + " gives " + writes.get(box.id) + " on revision " + revision.index + ", writes " + writes)
     throw new RuntimeException("Missing Box for id " + box.id)
   }))
   
@@ -396,7 +396,7 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
       }
       case None => {
         val r = new ReactorDefault(this)
-        println("Created new reactor on txn on revision " + revision.index)
+//        println("Created new reactor on txn on revision " + revision.index)
         currentReactor = Some(r)
         action(r)
       }
@@ -415,7 +415,7 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
   
   def reactionFinished() {
     currentReactor = None
-    println("Finished with reactor on txn on revision " + revision.index)
+//    println("Finished with reactor on txn on revision " + revision.index)
   }
   
   def clearReactionSourcesAndTargets(rid: Long) {
