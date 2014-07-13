@@ -15,6 +15,7 @@ import boxes.transact.swing.graph.GraphSwingView
 import boxes.transact.TxnR
 import boxes.transact.graph.StringTooltipPrinter
 import boxes.transact.graph.GraphDefaults
+import boxes.transact.graph.Charts
 
 object GraphSwingDemo {
 
@@ -25,27 +26,13 @@ object GraphSwingDemo {
 
       val series = new Series("Key", List(Vec2(0,0), Vec2(1,1)))
       
-      val graph = GraphBasic.withSeries[String](
-          BoxNow(List(series)),             //series
-          BoxNow("x"),                      //xName
-          BoxNow("y"),                      //yName
-          BoxNow(Borders(16, 74, 53, 16)),  //borders
-          BoxNow(false),                    //zoomEnabled
-          BoxNow(None),                     //manualBounds
-          BoxNow(GraphDefaults.axis),       //xAxis
-          BoxNow(GraphDefaults.axis),       //yAxis
-          BoxNow(false),                    //selectEnabled
-          BoxNow(false),                    //clickSelectEnabled
-          BoxNow(Set("Key")),               //selection
-          BoxNow(true),                     //grabEnabled
-          BoxNow(false),                    //seriesTooltipsEnabled
-          new StringTooltipPrinter(),       //seriesTooltipsPrint
-          BoxNow(false),                    //axisTooltipsEnabled
-          Nil,                              //extraMainLayers
-          Nil,                              //extraOverLayers
-          BoxNow(true),                     //highQuality
-          SwingView.background,             //border
-          Color.white)                      //background
+      val charts = Charts()
+      val graph = charts.withSeries(
+          series = BoxNow(List(series)),
+          zoomEnabled = BoxNow(false),
+          selection = BoxNow(Set("Key")),
+          grabEnabled = BoxNow(true)
+      )
       
       val graphBox = BoxNow(graph)
       val view = GraphSwingView(graphBox)

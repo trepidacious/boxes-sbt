@@ -231,30 +231,18 @@ object SineDemo {
     //Special print code for tooltips, see data definition above
     def tooltipsPrint(c1: String, c2: (Int, String), bar: Bar[Int]) = c2._2 + " = " + BarTooltips.printValueAndRange(bar)
     
-    
-    val graph = BoxNow(GraphBasic.withBarsSelectByKey(
-      ColorBarByKeySelection(data, indices.indices),      //data
-      (c1: String) => c1,                         //cat1Print
-      (c2: (Int, String)) => c2._2,               //cat2Print
-      BoxNow(1.0),                                //barWidth 
-      BoxNow(1.0),                                //catPadding 
-      BoxNow(0.4),                                //barPadding
-      BoxNow("Phase"),                            //yName
-      BoxNow(Borders(16, 74, 53, 16)),            //borders
-      zoomEnabled,
-      manualBounds,
-      BoxNow(GraphDefaults.axis),                 //xAxis
-      BoxNow(GraphDefaults.axis(0, 0.05)),        //yAxis
-      selectEnabled,
-      BoxNow(true),                               //clickSelectEnabled
-      indices.indices,                            //selection
-      grabEnabled,
-      BoxNow(true),                               //barTooltipsEnabled
-      BarTooltips.defaultPrint,                   //barTooltipsPrint
-      axisTooltipsEnabled,
-      Nil,
-      Nil,                                        //TODO add y threshold
-      BoxNow(true)                                //highQuality
+    val charts = Charts()
+    val graph = BoxNow(charts.withBarsSelectByKey(
+      ColorBarByKeySelection(data, indices.indices),
+      cat1Print = (c1: String) => c1,
+      cat2Print = (c2: (Int, String)) => c2._2,
+      yName = BoxNow("Phase"),
+      zoomEnabled = zoomEnabled,
+      manualBounds = manualBounds,
+      selectEnabled = selectEnabled,
+      selection = indices.indices,
+      grabEnabled = grabEnabled,
+      axisTooltipsEnabled = axisTooltipsEnabled
       ));
 
     val v = GraphSwingView(graph)
