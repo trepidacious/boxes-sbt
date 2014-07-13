@@ -357,10 +357,10 @@ object SineDemo {
     val p = properties(sine)
     
     val tabs = TabBuilder()
-      .add(graph,       BoxNow("Graph"),  BoxNow(Some(graphIcon)))
+      .add(graph,       BoxNow("Graph"),      BoxNow(Some(graphIcon)))
       .add(barchart,    BoxNow("Bar Chart"),  BoxNow(Some(graphIcon)))
-      .add(table, BoxNow("Table"),  BoxNow(Some(tableIcon)))
-      .add(p, BoxNow("Edit"),  BoxNow(Some(propertiesIcon)))
+      .add(table,       BoxNow("Table"),      BoxNow(Some(tableIcon)))
+      .add(p,           BoxNow("Edit"),       BoxNow(Some(propertiesIcon)))
       .panel()
 
     frame.add(tabs)
@@ -373,6 +373,7 @@ object SineDemo {
   }
 
   def main(args: Array[String]) {
+    println(System.getProperty("java.version"))
     SwingView.later{
       SwingView.nimbus()
       tabs

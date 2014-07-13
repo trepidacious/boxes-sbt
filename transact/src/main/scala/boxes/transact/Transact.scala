@@ -45,15 +45,18 @@ class BoxNow[T](box: Box[T]) {
   }
 }
 
-trait Box[T] extends Identifiable {
+trait BoxR[+T] extends Identifiable {
   def apply()(implicit t: TxnR): T = t.get(this)
-  def update(v: T)(implicit t: Txn) = t.set(this, v)
-
   def get()(implicit t: TxnR): T = apply()(t)
-  def set(v: T)(implicit t: Txn) = update(v)(t)
   
   def retainReaction(r: Reaction)(implicit t: Txn) = t.boxRetainsReaction(this, r)
   def releaseReaction(r: Reaction)(implicit t: Txn) = t.boxReleasesReaction(this, r)
+}
+
+trait Box[T] extends BoxR[T] {
+  def update(v: T)(implicit t: Txn) = t.set(this, v)
+
+  def set(v: T)(implicit t: Txn) = update(v)(t)
   
   def << (r: ReactorTxn => T)(implicit t: Txn) = {
     val reaction = t.createReaction(implicit rtxn=>{
@@ -107,11 +110,11 @@ case class State[T](revision: Long, value: T)
 trait Revision {
   val index: Long
   
-  def stateOf[T](box: Box[T]): Option[State[T]]
-  def indexOf(box: Box[_]): Option[Long]
-  def valueOf[T](box: Box[T]): Option[T]
+  def stateOf[T](box: BoxR[T]): Option[State[T]]
+  def indexOf(box: BoxR[_]): Option[Long]
+  def valueOf[T](box: BoxR[T]): Option[T]
   
-  def apply[T](box: Box[T]) = stateOf[T](box)
+  def apply[T](box: BoxR[T]) = stateOf[T](box)
 }
 
 trait Shelf {
@@ -134,7 +137,7 @@ trait Shelf {
 }
 
 trait TxnR {
-  def get[T](box: Box[T]): T
+  def get[T](box: BoxR[T]): T
   def revision(): Revision  
 }
 
@@ -144,8 +147,8 @@ trait Txn extends TxnR {
   
   def createReaction(f: ReactorTxn => Unit): Reaction
   
-  def boxRetainsReaction(box: Box[_], r: Reaction)
-  def boxReleasesReaction(box: Box[_], r: Reaction)
+  def boxRetainsReaction(box: BoxR[_], r: Reaction)
+  def boxReleasesReaction(box: BoxR[_], r: Reaction)
   
   def failEarly(): Unit
 }
@@ -162,10 +165,10 @@ private class TxnMulti(txn: Txn) extends Txn{
   override def set[T](box: Box[T], t: T): Box[T] = lock.write{txn.set(box, t)}
   override def createReaction(f: ReactorTxn => Unit) = lock.write{txn.createReaction(f)}
 
-  override def boxRetainsReaction(box: Box[_], r: Reaction) = lock.write{txn.boxRetainsReaction(box, r)}
-  override def boxReleasesReaction(box: Box[_], r: Reaction) = lock.write{txn.boxReleasesReaction(box, r)}
+  override def boxRetainsReaction(box: BoxR[_], r: Reaction) = lock.write{txn.boxRetainsReaction(box, r)}
+  override def boxReleasesReaction(box: BoxR[_], r: Reaction) = lock.write{txn.boxReleasesReaction(box, r)}
 
-  override def get[T](box: Box[T]): T = lock.read{txn.get(box)}
+  override def get[T](box: BoxR[T]): T = lock.read{txn.get(box)}
   override def revision() = txn.revision()
   override def failEarly() = txn.failEarly()
 }

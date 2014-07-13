@@ -49,9 +49,9 @@ private class RevisionDefault(val index: Long, val map: Map[Long, State[_]], rea
 
   println("Created revision " + index)
   
-  def stateOf[T](box: Box[T]): Option[State[T]] = map.get(box.id).asInstanceOf[Option[State[T]]]
-  def indexOf(box: Box[_]): Option[Long] = map.get(box.id).map(_.revision)
-  def valueOf[T](box: Box[T]): Option[T] = stateOf(box).map(_.value)
+  def stateOf[T](box: BoxR[T]): Option[State[T]] = map.get(box.id).asInstanceOf[Option[State[T]]]
+  def indexOf(box: BoxR[_]): Option[Long] = map.get(box.id).map(_.revision)
+  def valueOf[T](box: BoxR[T]): Option[T] = stateOf(box).map(_.value)
 
   def indexOfId(id: Long): Option[Long] = map.get(id).map(_.revision)
 
@@ -325,12 +325,12 @@ object ShelfDefault {
 
 
 private class TxnRDefault(val shelf: ShelfDefault, val revision: RevisionDefault) extends TxnR {
-  def get[T](box: Box[T]): T = revision.valueOf(box).getOrElse(throw new RuntimeException("Missing Box"))
+  def get[T](box: BoxR[T]): T = revision.valueOf(box).getOrElse(throw new RuntimeException("Missing Box"))
 }
 
 private class TxnRLogging(val revision: RevisionDefault) extends TxnR {
   var reads = Set[Long]()
-  def get[T](box: Box[T]): T = {
+  def get[T](box: BoxR[T]): T = {
     val v = revision.valueOf(box).getOrElse(throw new RuntimeException("Missing Box"))
     reads = reads + box.id
     return v
@@ -367,12 +367,12 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
     box
   }
   
-  private def _get[T](box: Box[T]): T = writes.get(box.id).asInstanceOf[Option[T]].getOrElse(revision.valueOf(box).getOrElse({
+  private def _get[T](box: BoxR[T]): T = writes.get(box.id).asInstanceOf[Option[T]].getOrElse(revision.valueOf(box).getOrElse({
     println("_get box id " + box.id + " gives " + writes.get(box.id) + " on revision " + revision.index + ", writes " + writes)
     throw new RuntimeException("Missing Box for id " + box.id)
   }))
   
-  def get[T](box: Box[T]): T = {
+  def get[T](box: BoxR[T]): T = {
     val v = _get(box)
     reads = reads + box.id
     //Only need to use a reactor if one is active
@@ -405,11 +405,11 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
   
   def failEarly() = if (shelf.now.conflictsWith(this)) throw new TxnEarlyFailException
   
-  override def boxRetainsReaction(box: Box[_], r: Reaction) {
+  override def boxRetainsReaction(box: BoxR[_], r: Reaction) {
     boxReactions = boxReactions.updated(box.id, boxReactions.get(box.id).getOrElse(Set.empty) + r)
   }
 
-  override def boxReleasesReaction(box: Box[_], r: Reaction) {
+  override def boxReleasesReaction(box: BoxR[_], r: Reaction) {
     boxReactions = boxReactions.updated(box.id, boxReactions.get(box.id).getOrElse(Set.empty) - r)
   }
   

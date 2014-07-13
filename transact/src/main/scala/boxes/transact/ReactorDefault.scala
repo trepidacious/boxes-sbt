@@ -45,7 +45,7 @@ private class ReactorDefault(txn: TxnForReactor, val maximumReactionApplications
     cycle
   }
   
-  def afterGet[T](box: Box[T]) {
+  def afterGet[T](box: BoxR[T]) {
     //This box is a source of any active reaction
     activeReaction.foreach(txn.addSourceForReaction(_, box.id))
   }
@@ -180,9 +180,9 @@ private class ReactorDefault(txn: TxnForReactor, val maximumReactionApplications
   def createReaction(f: boxes.transact.ReactorTxn => Unit) = txn.createReaction(f)
   def failEarly() = txn.failEarly()
   def set[T](box: boxes.transact.Box[T], t: T) = txn.set(box, t)
-  def get[T](box: boxes.transact.Box[T]) = txn.get(box)
+  def get[T](box: boxes.transact.BoxR[T]) = txn.get(box)
   def revision() = txn.revision
-  def boxReleasesReaction(box: boxes.transact.Box[_],r: boxes.transact.Reaction) = txn.boxReleasesReaction(box, r)
-  def boxRetainsReaction(box: boxes.transact.Box[_],r: boxes.transact.Reaction) = txn.boxRetainsReaction(box, r)
+  def boxReleasesReaction(box: boxes.transact.BoxR[_],r: boxes.transact.Reaction) = txn.boxReleasesReaction(box, r)
+  def boxRetainsReaction(box: boxes.transact.BoxR[_],r: boxes.transact.Reaction) = txn.boxRetainsReaction(box, r)
   
 }

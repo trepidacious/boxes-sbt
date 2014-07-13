@@ -12,7 +12,7 @@ trait ReactorTxn extends Txn {
    * Get the set of Boxes that are sources of the Reaction, and have changed
    * during this Reactor's execution
    */
-  def changedSources: Set[Box[_]]
+  def changedSources: Set[BoxR[_]]
 }
 
 /**
@@ -22,7 +22,7 @@ trait ReactorTxn extends Txn {
  */
 trait ReactorForTxn {
   def afterSet[T](box: Box[T], t: T): Unit  
-  def afterGet[T](box: Box[T]): Unit
+  def afterGet[T](box: BoxR[T]): Unit
   def registerReaction(r: ReactionDefault): Unit
 }
 
