@@ -6,6 +6,7 @@ import boxes.graph.GraphMouseEvent
 import boxes.graph.GraphMouseEventType
 import boxes.graph.Area
 import boxes.graph.Axis
+import Axis._
 import boxes.graph.Ticks
 import boxes.graph.Series
 import boxes.graph.Vec2
@@ -16,7 +17,6 @@ import boxes.swing.icons.IconFactory
 import java.awt.Color
 import java.awt.geom.Rectangle2D
 import java.text.DecimalFormat
-import Axis._
 import GraphMouseEventType._
 import boxes.graph.GraphThreePartPainter
 import boxes.graph.GraphThreePartPainterVertical

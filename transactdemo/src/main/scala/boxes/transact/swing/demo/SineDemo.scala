@@ -33,6 +33,7 @@ import boxes.graph.Bar
 import boxes.transact.graph.BarTooltips
 import boxes.transact.graph.ColorBarByKeySelection
 import boxes.transact.graph.GraphDefaults
+import boxes.transact.graph.Charts
 
 object SineDemo {
 
@@ -149,30 +150,19 @@ object SineDemo {
 //    val y = BoxNow(0.5d)
 //    val yThreshold = GraphThreshold(Y, y, Color.red, "Y Threshold", true)
 
+    val charts = Charts()
+    
     val graph = BoxNow (
-        GraphBasic.withSeries[Int](
-//          series,             //series
-          ColorSeriesBySelection(series, indices.indices),             //series
-          BoxNow("x"),                      //xName
-          BoxNow("y"),                      //yName
-          BoxNow(Borders(16, 74, 53, 16)),  //borders
-          zoomEnabled,                      //zoomEnabled
-          manualBounds,                     //manualBounds
-          BoxNow(GraphDefaults.axis),       //xAxis
-          BoxNow(GraphDefaults.axis),       //yAxis
-          selectEnabled,                    //selectEnabled
-          BoxNow(true),                     //clickSelectEnabled
-          indices.indices,                  //selection
-          grabEnabled,                      //grabEnabled
-          seriesTooltipsEnabled,            //seriesTooltipsEnabled
-          //TODO add implicit to txn - should be possible?
-          new StringTooltipPrinter(),       //seriesTooltipsPrint
-          axisTooltipsEnabled,              //axisTooltipsEnabled
-          Nil,                              //extraMainLayers
-          Nil,                              //extraOverLayers
-          BoxNow(true),                     //highQuality
-          SwingView.background,             //border
-          Color.white)                      //background
+        charts.withSeries[Int](
+          ColorSeriesBySelection(series, indices.indices),
+          zoomEnabled = zoomEnabled,
+          manualBounds = manualBounds,
+          selectEnabled = selectEnabled,
+          selection = indices.indices,
+          grabEnabled = grabEnabled,
+          seriesTooltipsEnabled = seriesTooltipsEnabled,
+          axisTooltipsEnabled = axisTooltipsEnabled
+        )
     )
 
     //TODO BG view?
