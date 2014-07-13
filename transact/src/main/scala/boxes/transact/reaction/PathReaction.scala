@@ -40,26 +40,14 @@ class PathReaction[T, G](v:Box[G], path : Txn => Option[Box[T]], defaultValue:G,
   }
 }
 
-class PathFunc[T](val f: Txn => Box[T])
-class PathToOptionFunc[T](val f: Txn => Option[Box[Option[T]]])
-class PathViaOptionFunc[T](val f: Txn => Option[Box[T]])
-
 object Path {
+  def now[T](path : Txn => Option[Box[T]])(implicit s: Shelf) = PathViaOption.now(path)
+  def now[T](path : Txn => Box[T])(implicit s: Shelf, d: DummyImplicit) = PathToBox.now(path)
+  def now[T](path : Txn => Option[Box[Option[T]]])(implicit s: Shelf, d1: DummyImplicit, d2: DummyImplicit) = PathToOption.now(path)
 
-  def now[T](path : Txn => Box[T])(implicit s: Shelf) = PathToBox.now(path)
-  def apply[T](path : Txn => Box[T])(implicit txn: Txn) = PathToBox.apply(path)
-
-//  def now[T](path : Txn => Option[Box[T]])(implicit s: Shelf, d: DummyImplicit) = PathViaOption.now(path)
-
-  def now[T](pf: PathFunc[T])(implicit s: Shelf) = PathToBox.now(pf.f)
-  def apply[T](pf: PathFunc[T])(implicit txn: Txn) = PathToBox.apply(pf.f)
-  
-  def now[T](pf: PathToOptionFunc[T])(implicit s: Shelf) = PathToOption.now(pf.f)
-  def apply[T](pf: PathToOptionFunc[T])(implicit txn: Txn) = PathToOption.apply(pf.f)
-
-  def now[T](pf: PathViaOptionFunc[T])(implicit s: Shelf) = PathViaOption.now(pf.f)
-  def apply[T](pf: PathViaOptionFunc[T])(implicit txn: Txn) = PathViaOption.apply(pf.f)
-
+  def apply[T](path : Txn => Option[Box[T]])(implicit txn: Txn) = PathViaOption.apply(path)
+  def apply[T](path : Txn => Box[T])(implicit txn: Txn, d: DummyImplicit) = PathToBox.apply(path)
+  def apply[T](path : Txn => Option[Box[Option[T]]])(implicit txn: Txn, d1: DummyImplicit, d2: DummyImplicit) = PathToOption.apply(path)
 }
 
 object PathToBox {

@@ -1,23 +1,15 @@
-package boxes.transact
-
-import scala.language.implicitConversions
+package boxes.transact.implicits
 import boxes.transact.reaction._
 import java.util.concurrent.Executor
+import boxes.transact._
+import scala.language.implicitConversions
 
 object Implicits {
-//  implicit def closureToPathViaOption[T](path: Txn => Option[Box[T]])(implicit shelf: Shelf) = PathViaOption.now(path)
-//  implicit def closureToPath[T](path: Txn => Box[T])(implicit shelf: Shelf) = Path.now(path)
-//  implicit def closureToPathToOption[T](path: Txn => Option[Box[Option[T]]])(implicit shelf: Shelf) = PathToOption.now(path)
-//  
-//  implicit def closureToPathViaOption[T](path: Txn => Option[Box[T]])(implicit txn: Txn) = PathViaOption(path)
-//  implicit def closureToPath[T](path: Txn => Box[T])(implicit txn: Txn) = Path(path)
-//  implicit def closureToPathToOption[T](path: Txn => Option[Box[Option[T]]])(implicit txn: Txn) = PathToOption(path)
-//
-//  implicit def closureToPathViaOptionFunc[T](path: Txn => Option[Box[T]]) = new PathViaOptionFunc(path)
-//  implicit def closureToPathFunc[T](path: Txn => Box[T]) = new PathFunc(path)
-//  implicit def closureToPathToOptionFunc[T](path: Txn => Option[Box[Option[T]]]) = new PathToOptionFunc(path)
-
 //  implicit def valueToBox[T](t:T)(implicit shelf: Shelf) = BoxNow(t)
+  
+  implicit def closureToPathViaOption[T](path : Txn => Option[Box[T]])(implicit s: Shelf) = PathViaOption.now(path)
+  implicit def closureToPathToOption[T](path : Txn => Option[Box[Option[T]]])(implicit s: Shelf) = PathToOption.now(path)
+  implicit def closureToPathToBox[T](path : Txn => Box[T])(implicit s: Shelf) = PathToBox.now(path)
 }
 
 object Includes {
@@ -33,8 +25,6 @@ object Includes {
   def auto[T](f: Txn => T)(implicit shelf: Shelf): Auto = shelf.auto(f)
   def auto[T](f: Txn => T, exe: Executor, target: T => Unit)(implicit shelf: Shelf): Auto = shelf.auto(f, exe, target)
 }
-
-//  def to(max: N) = {v << n.min(max, v()); v}
 //  def from(min: Box[N, _]) = {v << n.max(min(), v()); v}
 //  def to(max: Box[N, _]) = {v << n.min(max(), v()); v}
 //  

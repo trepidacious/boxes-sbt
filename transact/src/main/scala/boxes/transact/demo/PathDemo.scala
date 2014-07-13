@@ -18,7 +18,7 @@ object PathDemo {
     val c = Person()
 
     
-    val aFriend = Path.now(implicit txn => a.friend)
+    val aFriend = Path.now{implicit txn: Txn => a.friend}
 
 //    val aFriendAndReaction = Path.boxAndReaction(implicit txn => a.friend)
 //    val aFriend = aFriendAndReaction._1

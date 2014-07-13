@@ -17,6 +17,10 @@ import java.awt.event.FocusEvent
 
 object StringView {
   def apply(v:Box[String], multiline:Boolean = false)(implicit shelf: Shelf) = new StringOptionView(v, new TConverter[String], multiline).asInstanceOf[SwingView]
+//  def apply(v:Box[String], multiline:Boolean)(implicit shelf: Shelf) = new StringOptionView(v, new TConverter[String], multiline).asInstanceOf[SwingView]
+//  def apply(v:Box[Option[String]], multiline:Boolean)(implicit shelf: Shelf, d: DummyImplicit) = new StringOptionView(v, new OptionTConverter[String], multiline).asInstanceOf[SwingView]
+//  def apply(v:Box[String])(implicit shelf: Shelf) = new StringOptionView(v, new TConverter[String], false).asInstanceOf[SwingView]
+//  def apply(v:Box[Option[String]])(implicit shelf: Shelf, d: DummyImplicit) = new StringOptionView(v, new OptionTConverter[String], false).asInstanceOf[SwingView]
 }
 
 object StringOptionView {

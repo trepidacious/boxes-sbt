@@ -1,8 +1,6 @@
 package boxes.transact.swing.demo
 
 import boxes.transact._
-import boxes.transact.Includes._
-import boxes.transact.Implicits._
 import boxes.transact.data._
 import boxes.transact.swing.views._
 import boxes.transact.op._
@@ -35,6 +33,8 @@ import boxes.transact.graph.ColorBarByKeySelection
 import boxes.transact.graph.GraphDefaults
 import boxes.transact.graph.Charts
 import boxes.transact.graph.GraphThreshold
+import boxes.transact.implicits.Implicits._
+import boxes.transact.swing.implicits.Implicits._
 
 object SineDemo {
 
@@ -225,9 +225,6 @@ object SineDemo {
     
     import boxes.graph.Axis._
 
-//    val x = BoxNow(0.2d)
-//    val xThreshold = GraphThreshold(BoxNow(X), x, BoxNow(Color.blue), BoxNow("X Threshold"), BoxNow(true))
-
     val y = BoxNow(0.2d)
     val yThreshold = GraphThreshold(BoxNow(Y), y, BoxNow(Color.red), BoxNow("Y Threshold"), BoxNow(true))
     
@@ -286,34 +283,35 @@ object SineDemo {
   
   def properties(sine: Box[Option[Sine]])(implicit shelf: Shelf) = {
 
-    //TODO use implicit conversion of closure to option, to remove need for PathViaOption etc.
-    //The following works, but is probably worse than just having to work out and type the "ViaOption" bit
-//    val f = (txn: Txn) => {implicit val t = txn; sine().map(_.name)}
-//    val name = Path.now(f)
-
+    // Note in all the examples here, the syntax used for the closures
+    // is fairly picky - e.g. this will not work:
+    //
+    // (implicit txn: Txn) => sine().map(_.name)
+    //
+    // We need to use the curly brackets:
+    //
+    // {implicit txn: Txn => sine().map(_.name)}
+    //
+    // If you don't want to use the implicits, just use the explicit
+    // Path and view objects, e.g.
+    //
+    val viewAndPathWithoutImplicits = StringOptionView(PathViaOption.now{implicit t => sine().map(_.name)})
+        
+    //Paths can be produced from closures
+    val name = Path.now{implicit txn: Txn => sine().map(_.name)}
     
-    val name = PathViaOption.now(implicit txn => sine().map(_.name))
-    val amplitude = PathViaOption.now(implicit txn => sine().map(_.amplitude))
-    val phase = PathViaOption.now(implicit txn => sine().map(_.phase))
-    val enabled = PathViaOption.now(implicit txn => sine().map(_.enabled))
-    val description= PathViaOption.now(implicit txn => sine().map(_.description))
-    val points = PathViaOption.now(implicit txn => sine().map(_.points))
-    
-    val nameView = StringOptionView(name)
-    val amplitudeView = NumberOptionView(amplitude)
-    val phaseView = NumberOptionView(phase)
-    val enabledView = BooleanOptionView(enabled)
-    val descriptionView = StringOptionView(description, true)
-    val pointsView = BooleanOptionView(points)
-    
+    //We can also go straight to a view, using boxes.transact.implicits.Implicits import to convert closure to a Path
+    val nameView = StringOptionView{implicit txn: Txn => sine().map(_.name)}
+  
+    //But most concise is going straight to the sheet builder
     SheetBuilder()
       .blankTop()
-      .view("Name", nameView)
-      .view("Amplitude", amplitudeView)
-      .view("Phase", phaseView)
-      .view("Enabled", enabledView)
-      .view("Points", pointsView)
-      .view("Description", descriptionView, true)
+      .view("Name",         StringOptionView{implicit txn: Txn => sine().map(_.name)})  //We can specify the type of view we want, for example if there are multiple possible views (e.g. label and string)
+      .view("Amplitude",    {implicit txn: Txn => sine().map(_.amplitude)})             //Normally for number, boolean and string views we can even omit the view, using boxes.transact.swing.Implicits to convert.
+      .view("Phase",        {implicit txn: Txn => sine().map(_.phase)})
+      .view("Enabled",      {implicit txn: Txn => sine().map(_.enabled)})
+      .view("Points",       {implicit txn: Txn => sine().map(_.description)})
+      .view("Description",  {implicit txn: Txn => sine().map(_.points)},      true)
     .panel
 
   }
