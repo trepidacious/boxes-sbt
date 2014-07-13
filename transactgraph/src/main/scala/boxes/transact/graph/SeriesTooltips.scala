@@ -62,7 +62,7 @@ class SeriesTooltips[K](enabled:Box[Boolean], series:Box[List[Series[K]]], rende
     (canvas:GraphCanvas) => if (e) tp.foreach(pair => renderer.paint(canvas, pair._1, pair._2))
   }
 
-  def onMouse(e:GraphMouseEvent)(implicit txn: Txn) = {
+  def onMouse(e: GraphMouseEvent)(implicit txn: Txn) = {
 
     if (enabled()) {
       //If the mouse position is near enough to a series to "select" it, show tooltip with that series, at current mouse pixel point

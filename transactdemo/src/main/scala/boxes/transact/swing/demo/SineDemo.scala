@@ -34,6 +34,7 @@ import boxes.transact.graph.BarTooltips
 import boxes.transact.graph.ColorBarByKeySelection
 import boxes.transact.graph.GraphDefaults
 import boxes.transact.graph.Charts
+import boxes.transact.graph.GraphThreshold
 
 object SineDemo {
 
@@ -105,7 +106,6 @@ object SineDemo {
 
     val down = new ListMultiMoveOp[Sine](list, sel.indices, false)
 
-//    val firstSelected = BoxNow.calc(implicit txn => if (sel.selected().size == 1) sel.selected().headOption else None)
     val firstSelected = BoxNow.calc(implicit txn => if (sel.selected().size > 0) Some(list().apply(sel.indices().min(Ordering.Int))) else None)
 
     val popup = PopupView(icon = Some(IconFactory.icon("zoom")), popupContents = properties(firstSelected))
@@ -143,12 +143,11 @@ object SineDemo {
 
     import boxes.graph.Axis._
 
-    //TODO port GraphThreshold to transact
-//    val x = BoxNow(0.5d)
-//    val xThreshold = GraphThreshold(X, x, Color.blue, "X Threshold", true)
-//
-//    val y = BoxNow(0.5d)
-//    val yThreshold = GraphThreshold(Y, y, Color.red, "Y Threshold", true)
+    val x = BoxNow(0.5d)
+    val xThreshold = GraphThreshold(BoxNow(X), x, BoxNow(Color.blue), BoxNow("X Threshold"), BoxNow(true))
+
+    val y = BoxNow(0.5d)
+    val yThreshold = GraphThreshold(BoxNow(Y), y, BoxNow(Color.red), BoxNow("Y Threshold"), BoxNow(true))
 
     val charts = Charts()
     
@@ -161,7 +160,8 @@ object SineDemo {
           selection = indices.indices,
           grabEnabled = grabEnabled,
           seriesTooltipsEnabled = seriesTooltipsEnabled,
-          axisTooltipsEnabled = axisTooltipsEnabled
+          axisTooltipsEnabled = axisTooltipsEnabled,
+          extraOverLayers = List(xThreshold, yThreshold)
         )
     )
 
@@ -225,25 +225,31 @@ object SineDemo {
     
     import boxes.graph.Axis._
 
-    val y = BoxNow(0.5d)
-//    val yThreshold = GraphThreshold(Y, y, Color.red, "Y Threshold", true)
+//    val x = BoxNow(0.2d)
+//    val xThreshold = GraphThreshold(BoxNow(X), x, BoxNow(Color.blue), BoxNow("X Threshold"), BoxNow(true))
 
+    val y = BoxNow(0.2d)
+    val yThreshold = GraphThreshold(BoxNow(Y), y, BoxNow(Color.red), BoxNow("Y Threshold"), BoxNow(true))
+    
     //Special print code for tooltips, see data definition above
     def tooltipsPrint(c1: String, c2: (Int, String), bar: Bar[Int]) = c2._2 + " = " + BarTooltips.printValueAndRange(bar)
     
     val charts = Charts()
-    val graph = BoxNow(charts.withBarsSelectByKey(
-      ColorBarByKeySelection(data, indices.indices),
-      cat1Print = (c1: String) => c1,
-      cat2Print = (c2: (Int, String)) => c2._2,
-      yName = BoxNow("Phase"),
-      zoomEnabled = zoomEnabled,
-      manualBounds = manualBounds,
-      selectEnabled = selectEnabled,
-      selection = indices.indices,
-      grabEnabled = grabEnabled,
-      axisTooltipsEnabled = axisTooltipsEnabled
-      ));
+    val graph = BoxNow(
+      charts.withBarsSelectByKey(
+        ColorBarByKeySelection(data, indices.indices),
+        cat1Print = (c1: String) => c1,
+        cat2Print = (c2: (Int, String)) => c2._2,
+        yName = BoxNow("Phase"),
+        zoomEnabled = zoomEnabled,
+        manualBounds = manualBounds,
+        selectEnabled = selectEnabled,
+        selection = indices.indices,
+        grabEnabled = grabEnabled,
+        axisTooltipsEnabled = axisTooltipsEnabled,
+        extraOverLayers = List(yThreshold)
+      )
+    );
 
     val v = GraphSwingView(graph)
 
