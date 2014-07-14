@@ -25,15 +25,36 @@ object Includes {
   def auto[T](f: Txn => T)(implicit shelf: Shelf): Auto = shelf.auto(f)
   def auto[T](f: Txn => T, exe: Executor, target: T => Unit)(implicit shelf: Shelf): Auto = shelf.auto(f, exe, target)
 }
-//  def from(min: Box[N, _]) = {v << n.max(min(), v()); v}
-//  def to(max: Box[N, _]) = {v << n.min(max(), v()); v}
-//  
-//  def clip(min: N, max: N) {
-//    val value = v()
-//    if (n.compare(value, min) < 0) v() = min else if (n.compare(value, max) > 0) v() = max
-//  }
-//}
-//
-//object NumericVarImplicits {
-//  implicit def var2NumericVar[N: Numeric](v: Var[N]): NumericVar[N] = new NumericVar[N](v)
-//}
+
+class NumericBox[N](v: Box[N])(implicit n: Numeric[N]) {
+  
+  def from(min: N)(implicit txn: Txn) = {v << (implicit txn => n.max(min, v())); v}
+  def to(max: N)(implicit txn: Txn) = {v << (implicit txn => n.min(max, v())); v}
+  def from(min: Box[N])(implicit txn: Txn) = {v << (implicit txn => n.max(min(), v())); v}
+  def to(max: Box[N])(implicit txn: Txn) = {v << (implicit txn => n.min(max(), v())); v}
+  
+  def clip(min: N, max: N)(implicit txn: Txn) {
+    val value = v()
+    if (n.compare(value, min) < 0) v() = min else if (n.compare(value, max) > 0) v() = max
+  }
+}
+
+class NumericBoxNow[N](v: BoxNow[N])(implicit n: Numeric[N]) {
+  
+  def from(min: N)(implicit shelf: Shelf) = {v << (implicit txn => n.max(min, v())); v}
+  def to(max: N)(implicit shelf: Shelf) = {v << (implicit txn => n.min(max, v())); v}
+  def from(min: Box[N])(implicit shelf: Shelf) = {v << (implicit txn => n.max(min(), v())); v}
+  def to(max: Box[N])(implicit shelf: Shelf) = {v << (implicit txn => n.min(max(), v())); v}
+  
+  def clip(min: N, max: N)(implicit shelf: Shelf) {
+    shelf.transact(implicit txn => {
+      val value = v.box()
+      if (n.compare(value, min) < 0) v.box() = min else if (n.compare(value, max) > 0) v.box() = max
+    })
+  }
+}
+
+object NumericBoxImplicits {
+  implicit def box2NumericBox[N: Numeric](v: Box[N]): NumericBox[N] = new NumericBox[N](v)
+  implicit def boxNow2NumericBoxNow[N: Numeric](v: BoxNow[N]): NumericBoxNow[N] = new NumericBoxNow[N](v)
+}

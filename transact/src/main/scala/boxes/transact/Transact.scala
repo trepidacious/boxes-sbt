@@ -24,7 +24,7 @@ trait Identifiable {
  * Box method call.
  * Each Box provides a BoxNow wrapping it, in "now" val.
  */
-class BoxNow[T](box: Box[T]) {
+class BoxNow[T](val box: Box[T]) {
   def apply()(implicit s: Shelf): T = s.read(implicit txn => txn.get(box))
   def update(v: T)(implicit s: Shelf) = s.transact(implicit txn => txn.set(box, v))
 
