@@ -35,67 +35,28 @@ import boxes.swing.GraphCanvasFromGraphics2D
 import boxes.transact.graph.GraphBusy
 import boxes.swing.LinkingJPanel
 import boxes.transact.TxnR
+import boxes.transact.Txn
 
-object GraphSwingView {
-
-  def icon(name:String) = IconFactory.icon(name)
-
-  val zoom = icon("Zoom")
-  val zoomIn = icon("ZoomIn")
-  val zoomOut = icon("ZoomOut")
-  val zoomSelect = icon("ZoomSelect")
-  val boxSelect = icon("BoxSelect")
-  val grabHand = icon("GrabHand")
-  val move = icon("Move")
-
-  def apply(graph:Box[_ <: Graph])(implicit shelf: Shelf) = new GraphSwingView(graph)
-
-//  //TODO can this be done with currying?
-//  //Make a panel with series, using normal view
-//  def panelWithSeries[K](
-//    series: Box[List[Series[K]]],
-//    selection: Box[Set[K]],
-//
-//    xName: Box[String],
-//    yName: Box[String],
-//    
-//    xAxis: Box[GraphZoomerAxis],
-//    yAxis: Box[GraphZoomerAxis],
-//
-//    graphName: Box[String],
-//    
-//    zoom: Boolean = true,
-//    select: Boolean = false,
-//    grab: Boolean = false,
-//    
-//    seriesTooltips: Boolean = false,
-//    axisTooltips: Boolean = true,
-//    
-//    borders: Box[Borders],
-//    extraMainLayers: List[GraphLayer] = List[GraphLayer](),
-//    extraOverLayers: List[GraphLayer] = List[GraphLayer]()
-//  )(implicit shelf: Shelf) = GraphSwing.panelWithSeries(g => GraphSwingView(g))(series, selection, xName, yName, xAxis, yAxis, graphName, zoom, select, grab, seriesTooltips, axisTooltips, borders, extraMainLayers, extraOverLayers)
-
+object GraphSwingBGView {
+  def apply(graph:Box[_ <: Graph])(implicit shelf: Shelf) = new GraphSwingBGView(graph)
 }
 
-
 //TODO remove shared code from GraphSwingView and GraphSwingBGView
-class GraphSwingView(graph: Box[_ <: Graph])(implicit shelf: Shelf) extends SwingView {
+class GraphSwingBGView(graph: Box[_ <: Graph])(implicit shelf: Shelf) extends SwingView {
 
   val componentSize = BoxNow(Vec2(400, 400))
 
-  val mainBuffer = new GraphBuffer()
   val overBuffer = new GraphBuffer()
 
   val concBuffer = new GraphBuffer()
   val concBackBuffer = new GraphBuffer()
 
+  val busyAlpha = BoxNow(0.0)
+  val busyLayer = new GraphBusy(busyAlpha)
+
   val component = new LinkingJPanel(this, new BorderLayout()) {
 
     override def paintComponent(gr: Graphics) {
-      mainBuffer.lock.synchronized{
-        gr.drawImage(mainBuffer.image, 0, 0, null)
-      }
       concBuffer.lock.synchronized{
         gr.drawImage(concBuffer.image, 0, 0, null)
       }
@@ -181,15 +142,46 @@ class GraphSwingView(graph: Box[_ <: Graph])(implicit shelf: Shelf) extends Swin
     })
   }
 
-  val mainView = shelf.view(implicit txn => {
-    drawBuffer(mainBuffer, graph().layers())
-    replaceUpdate {
-      component.repaint()
+  val bg = shelf.auto(implicit txn => {
+
+    val paints = graph().layers().map(layer => layer.paint)
+    val spaces = buildSpaces
+    val highQuality = graph().highQuality()
+
+    //TODO Would be nice to fade the busy icon in after a short delay, to avoid flickering the icon, or flashing it
+    //for trivial redraws, then (perhaps) fade out later. This could then allow for an animated progress indicator.
+    //Requires a Timer or similar, so a little fiddly
+    
+    //Note we use "now" to perform an immediate transaction, otherwise the alpha would not
+    //change until after the whole redraw is complete - we really should be the 
+    //only ones changing the busy alpha, so we expect this to succeed immediately
+    busyAlpha.now() = 1.0
+    
+    concBackBuffer.ensureSize(spaces.componentArea.size)
+    val g = concBackBuffer.image.getGraphics.asInstanceOf[Graphics2D]
+    concBackBuffer.clear()
+    //TODO progress indicator, would need to pass a Var[Double] to each paint method, then estimate proportion
+    //of total time taken by each layer, or perhaps have a two-level progress indicator to show layers complete out
+    //of total, and progress on current layer, might look quite cool.
+    paints.foreach(paint => paint.apply(new GraphCanvasFromGraphics2D(g.create().asInstanceOf[Graphics2D], spaces, highQuality)))
+    g.dispose
+
+    concBuffer.lock.synchronized{
+      concBuffer.ensureSize(spaces.componentArea.size)
+      concBuffer.clear()
+      concBuffer.image.getGraphics.asInstanceOf[Graphics2D].drawImage(concBackBuffer.image, 0, 0, null)
+    }
+    
+    //Use "now" as above.
+    busyAlpha.now() = 0.0
+
+    replaceUpdate{
+      component.repaint();
     }
   })
 
   val overView = shelf.view(implicit txn => {
-    drawBuffer(overBuffer, graph().overlayers())
+    drawBuffer(overBuffer, graph().overlayers() ::: List(busyLayer))
     replaceUpdate {
       component.repaint()
     }
@@ -217,18 +209,10 @@ class GraphSwingView(graph: Box[_ <: Graph])(implicit shelf: Shelf) extends Swin
     buffer.lock.synchronized{
       val spaces = buildSpaces
 
-      val w = spaces.componentArea.size.x.asInstanceOf[Int]
-      val h = spaces.componentArea.size.y.asInstanceOf[Int]
-
       buffer.ensureSize(spaces.componentArea.size)
+      buffer.clear()
 
       val g = buffer.image.getGraphics.asInstanceOf[Graphics2D]
-      g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-
-      val oldComposite = g.getComposite
-      g.setComposite(AlphaComposite.getInstance(AlphaComposite.CLEAR, 0.0f))
-      g.fill(new Rectangle2D.Double(0,0,w,h))
-      g.setComposite(oldComposite)
 
       //Each layer paints on a fresh canvas, to avoid side effects from one affecting the next
       layers.foreach(layer => {
@@ -242,33 +226,4 @@ class GraphSwingView(graph: Box[_ <: Graph])(implicit shelf: Shelf) extends Swin
   }
 }
 
-
-//object GraphSwingBGView {
-////  def apply(graph: Box[_ <: Graph])(implicit shelf: Shelf) = new GraphSwingBGView(graph)
-//  
-////  //Make a panel with series, using bg view
-////  def panelWithSeries[K](
-////    series: Box[List[Series[K]]],
-////    selection: Box[Set[K]],
-////
-////    xName: Box[String],
-////    yName: Box[String],
-////    
-////    xAxis: Box[GraphZoomerAxis],
-////    yAxis: Box[GraphZoomerAxis],
-////
-////    graphName: Box[String],
-////    
-////    zoom: Boolean = true,
-////    select: Boolean = false,
-////    grab: Boolean = false,
-////    
-////    seriesTooltips: Boolean = false,
-////    axisTooltips: Boolean = true,
-////    
-////    borders: Box[Borders],
-////    extraMainLayers: List[GraphLayer] = List[GraphLayer](),
-////    extraOverLayers: List[GraphLayer] = List[GraphLayer]()
-////  )(implicit shelf: Shelf) = GraphSwing.panelWithSeries(g => GraphSwingBGView(g))(series, selection, xName, yName, xAxis, yAxis, graphName, zoom, select, grab, seriesTooltips, axisTooltips, borders, extraMainLayers, extraOverLayers)
-//}
 

@@ -226,10 +226,9 @@ class GraphBusy(val alpha: Box[Double])(implicit shelf: Shelf) extends Unbounded
   def paint(implicit txn: TxnR) = {
     val a = alpha()
     (canvas:GraphCanvas) => {
-      canvas.color = SwingView.transparentColor(SwingView.selectionColor, a)
-      val pa = canvas.spaces.pixelArea
-      if (a > 0.5) {
-        canvas.image(GraphBusy.pencil, pa.origin + pa.size + Vec2(-43, 10))
+      if (a > 0) {
+        val pa = canvas.spaces.pixelArea
+        canvas.image(GraphBusy.pencil, pa.origin + pa.size + Vec2(-43, 10), a * 0.5)
       }
     }
   }

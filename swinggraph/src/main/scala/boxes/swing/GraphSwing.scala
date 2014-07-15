@@ -192,6 +192,19 @@ class GraphCanvasFromGraphics2D(g:Graphics2D, val spaces:GraphSpaces, val highQu
     g.setClip(defaultClip)
   }
 
+  def image(i:Image, origin:Vec2, size:Vec2, alpha: Double) {
+    // TODO should we use dumb format, or leave potentially mirrored image? Check whether mirrored image actually draws.
+//    val df = toDumbFormat(origin, size)
+    val oc = g.getComposite()
+    g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha.floatValue))
+    g.drawImage(i, origin.x.asInstanceOf[Int], origin.y.asInstanceOf[Int], size.x.asInstanceOf[Int], size.y.asInstanceOf[Int], null)
+    g.setComposite(oc)
+  }
+
+  def image(i:Image, origin:Vec2, alpha: Double) {
+    image(i, origin, Vec2(i.getWidth(null), i.getHeight(null)), alpha)
+  }
+
   def image(i:Image, origin:Vec2, size:Vec2) {
     // TODO should we use dumb format, or leave potentially mirrored image? Check whether mirrored image actually draws.
 //    val df = toDumbFormat(origin, size)

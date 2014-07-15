@@ -1337,8 +1337,10 @@ trait GraphCanvas {
 
   def clipToData()
   def clipToAll()
-  def image(i:Image, origin:Vec2, size:Vec2)
-  def image(i:Image, origin:Vec2)
+  def image(i: Image, origin: Vec2, size: Vec2)
+  def image(i: Image, origin: Vec2)
+  def image(i: Image, origin: Vec2, alpha: Double)
+  def image(i: Image, origin: Vec2, size: Vec2, alpha: Double)
   def path(path:List[Vec2])
   def dataPath(path:List[Vec2])
 
