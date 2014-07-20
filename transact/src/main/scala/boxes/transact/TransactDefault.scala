@@ -22,10 +22,30 @@ import scala.collection.immutable.HashSet
 import boxes.transact.util.BiMultiMap
 import scala.collection.mutable.MultiMap
 import java.util.concurrent.Executor
-
 import scala.collection.immutable._
+import scala.collection.mutable.WeakHashMap
 
-private class BoxDefault[T](val id: Long) extends Box[T]
+private class BoxDefault[T](val id: Long) extends Box[T] {
+  /**
+   * Store changes to this box, as a map from the Change to the State that was
+   * set by that Change. Changes that form a revision are retained by RevisionDefault 
+   * and used to look up States in refs.
+   * Since this is a weak map, it does not retain Changes, they are retained only
+   * by the revisions they are in.
+   * When a BoxDefault is GCed, the changes are also GCed, allowing the States
+   * of the Box (instances of T) to be removed.
+   */
+  private val changes = new WeakHashMap[Change, T]()
+  
+  private[transact] def addChange(c: Change, t: T) = changes.put(c, t)
+  private[transact] def getValue(c: Change) = changes.get(c)
+}
+
+private class Change(val revision: Long)
+
+private object Change {
+  def apply(revision: Long) = new Change(revision)
+}
 
 private object BoxDefault {
   private val nextId = new AtomicInteger(0)
@@ -45,24 +65,41 @@ case class ReactionFunc(f: ReactorTxn => Unit) {
   }
 }
 
-private class RevisionDefault(val index: Long, val map: Map[Long, State[_]], reactionMap: Map[Long, ReactionFunc], val sources: BiMultiMap[Long, Long], val targets: BiMultiMap[Long, Long], val boxReactions: Map[Long, Set[Reaction]]) extends Revision {
+private class RevisionDefault(val index: Long, val map: Map[Long, Change], reactionMap: Map[Long, ReactionFunc], val sources: BiMultiMap[Long, Long], val targets: BiMultiMap[Long, Long], val boxReactions: Map[Long, Set[Reaction]]) extends Revision {
 
 //  println("Created revision " + index)
   
-  def stateOf[T](box: BoxR[T]): Option[State[T]] = map.get(box.id).asInstanceOf[Option[State[T]]]
+  def stateOf[T](box: BoxR[T]): Option[State[T]] = for {
+    change <- map.get(box.id); 
+    value <- box.asInstanceOf[BoxDefault[T]].getValue(change)
+  } yield State(change.revision, value)
+  
   def indexOf(box: BoxR[_]): Option[Long] = map.get(box.id).map(_.revision)
-  def valueOf[T](box: BoxR[T]): Option[T] = stateOf(box).map(_.value)
+  
+  def valueOf[T](box: BoxR[T]): Option[T] = {
+    val change = map.get(box.id)
+    change.flatMap(c => box.asInstanceOf[BoxDefault[T]].getValue(c))
+  }
 
   def indexOfId(id: Long): Option[Long] = map.get(id).map(_.revision)
 
   def reactionOfId(id: Long): Option[ReactionFunc] = reactionMap.get(id)
   
-  def updated(writes: Map[Long, _], deletes: List[Long], newReactions: Map[Reaction, ReactionFunc], reactionDeletes: List[Long], sources: BiMultiMap[Long, Long], targets: BiMultiMap[Long, Long], boxReactions: Map[Long, Set[Reaction]]) = {
+  def updated(writes: Map[Box[_], _], deletes: List[Long], newReactions: Map[Reaction, ReactionFunc], reactionDeletes: List[Long], sources: BiMultiMap[Long, Long], targets: BiMultiMap[Long, Long], boxReactions: Map[Long, Set[Reaction]]) = {
     val newIndex = index + 1
+    
+    if (deletes.size > 0) {
+      println("Deleted " + deletes)
+    }
     
     //Remove boxes that have been GCed, then add new ones
     val prunedMap = deletes.foldLeft(map){case (map, id) => map - id}
-    val newMap = writes.foldLeft(prunedMap){case (map, (id, value)) => map.updated(id, State(newIndex, value))}
+    
+    val newMap = writes.foldLeft(prunedMap){case (map, (box, value)) => {
+      val newChange = Change(newIndex)
+      box.asInstanceOf[BoxDefault[Any]].addChange(newChange, value)
+      map.updated(box.id, newChange)       
+    }}
     
     //Remove reactions that have been GCed, then add new ones
     val prunedReactionMap = reactionDeletes.foldLeft(reactionMap){case (map, id) => map - id}
@@ -82,122 +119,10 @@ private class RevisionDefault(val index: Long, val map: Map[Long, State[_]], rea
   def conflictsWith(t: TxnDefault) = {
     val start = t.revision.index
     (t.reads.iterator.flatMap(indexOfId(_)).exists(_>start)) || 
-    (t.writes.keysIterator.flatMap(indexOfId(_)).exists(_>start))
+    (t.writes.keysIterator.flatMap(indexOf(_)).exists(_>start))
   }
 }
 
-private class ViewDefault(val shelf: ShelfDefault, val f: TxnR => Unit, val exe: Executor, onlyMostRecent: Boolean = true) extends View {
-  private val revisionQueue = new scala.collection.mutable.Queue[RevisionDefault]()
-  private val lock = Lock()
-  private var state: Option[(Long, Set[Long])] = None
-  private var pending = false;
-
-  private def relevant(r: RevisionDefault) = {
-    state match {
-      case None => true
-      case Some((index, reads)) => reads.iterator.flatMap(r.indexOfId(_)).exists(_>index)
-    }
-  }
-  
-  private def go() {
-    
-    //If we have more revisions pending, try to run the next
-    if (!revisionQueue.isEmpty) {
-      val r = revisionQueue.dequeue
-      
-      //If this revision is relevant (i.e. it has changes the view will read)
-      //then run the transaction on it
-      if (relevant(r)) {
-        pending = true
-        val t = new TxnRLogging(r)
-
-        exe.execute(new Runnable() {
-          def run = {
-            f(t)
-            lock.run{
-              state = Some((r.index, t.reads))
-              go()
-            }
-          }
-        })
-
-      //If this revision is NOT relevant, try the next revision
-      } else {
-        go()
-      }
-      
-    //If we have no more revisions, then stop for now
-    } else {
-      pending = false
-    }
-  }
-  
-  def add(r: RevisionDefault) {
-    lock.run {
-      if (onlyMostRecent) revisionQueue.clear
-      revisionQueue.enqueue(r)
-      if (!pending) {
-        go()
-      }
-    }
-  }
-}
-
-private class AutoDefault[T](val shelf: ShelfDefault, val f: Txn => T, val exe: Executor, target: T => Unit = (t:T) => Unit) extends Auto {
-  private val revisionQueue = new scala.collection.mutable.Queue[RevisionDefault]()
-  private val lock = Lock()
-  private var state: Option[(Long, Set[Long])] = None
-  private var pending = false;
-
-  private def relevant(r: RevisionDefault) = {
-    state match {
-      case None => true
-      case Some((index, reads)) => reads.iterator.flatMap(r.indexOfId(_)).exists(_>index)
-    }
-  }
-  
-  private def go() {
-    
-    //If we have more revisions pending, try to run the next
-    if (!revisionQueue.isEmpty) {
-      val r = revisionQueue.dequeue
-      
-      //If this revision is relevant (i.e. it has changes the transaction will read)
-      //then run the transaction on it
-      if (relevant(r)) {
-        pending = true
-        exe.execute(new Runnable() {
-          def run = {
-            val (result, t) = shelf.transactFromAuto(f)
-            lock.run{
-              state = Some((r.index, t.reads))
-              go()
-            }
-            target(result)
-          }
-        })
-
-      //If this revision is NOT relevant, try the next revision
-      } else {
-        go()
-      }
-      
-    //If we have no more revisions, then stop for now
-    } else {
-      pending = false
-    }
-  }
-  
-  def add(r: RevisionDefault) {
-    lock.run {
-      revisionQueue.clear
-      revisionQueue.enqueue(r)
-      if (!pending) {
-        go()
-      }
-    }
-  }
-}
 
 private class ShelfDefault extends Shelf {
   private val lock = RWLock()
@@ -339,7 +264,7 @@ private class TxnRLogging(val revision: RevisionDefault) extends TxnR {
 
 private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault) extends TxnForReactor {
   
-  var writes = Map[Long, Any]()
+  var writes = Map[Box[_], Any]()
   var reads = Set[Long]()
   var creates = Set[Box[_]]()
   var reactionCreates = Map[Reaction, ReactionFunc]()
@@ -353,7 +278,7 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
   def create[T](t: T): Box[T] = {
     val box = BoxDefault[T]()
     creates = creates + box
-    writes = writes.updated(box.id, t)
+    writes = writes.updated(box, t)
 //    println("Created box id " + box.id + " = " + t + ", writes " + writes + "gives " + writes.get(box.id))
     box
   }
@@ -361,13 +286,13 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
   def set[T](box: Box[T], t: T): Box[T] = {
     //If box value would not be changed, skip write
     if (_get(box) != t) {
-      writes = writes.updated(box.id, t)
+      writes = writes.updated(box, t)
       withReactor(_.afterSet(box, t))
     }
     box
   }
   
-  private def _get[T](box: BoxR[T]): T = writes.get(box.id).asInstanceOf[Option[T]].getOrElse(revision.valueOf(box).getOrElse({
+  private def _get[T](box: BoxR[T]): T = writes.get(box.asInstanceOf[Box[_]]).asInstanceOf[Option[T]].getOrElse(revision.valueOf(box).getOrElse({
 //    println("_get box id " + box.id + " gives " + writes.get(box.id) + " on revision " + revision.index + ", writes " + writes)
     throw new RuntimeException("Missing Box for id " + box.id)
   }))
@@ -447,3 +372,115 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
 }
 
 
+private class ViewDefault(val shelf: ShelfDefault, val f: TxnR => Unit, val exe: Executor, onlyMostRecent: Boolean = true) extends View {
+  private val revisionQueue = new scala.collection.mutable.Queue[RevisionDefault]()
+  private val lock = Lock()
+  private var state: Option[(Long, Set[Long])] = None
+  private var pending = false;
+
+  private def relevant(r: RevisionDefault) = {
+    state match {
+      case None => true
+      case Some((index, reads)) => reads.iterator.flatMap(r.indexOfId(_)).exists(_>index)
+    }
+  }
+  
+  private def go() {
+    
+    //If we have more revisions pending, try to run the next
+    if (!revisionQueue.isEmpty) {
+      val r = revisionQueue.dequeue
+      
+      //If this revision is relevant (i.e. it has changes the view will read)
+      //then run the transaction on it
+      if (relevant(r)) {
+        pending = true
+        val t = new TxnRLogging(r)
+
+        exe.execute(new Runnable() {
+          def run = {
+            f(t)
+            lock.run{
+              state = Some((r.index, t.reads))
+              go()
+            }
+          }
+        })
+
+      //If this revision is NOT relevant, try the next revision
+      } else {
+        go()
+      }
+      
+    //If we have no more revisions, then stop for now
+    } else {
+      pending = false
+    }
+  }
+  
+  def add(r: RevisionDefault) {
+    lock.run {
+      if (onlyMostRecent) revisionQueue.clear
+      revisionQueue.enqueue(r)
+      if (!pending) {
+        go()
+      }
+    }
+  }
+}
+
+private class AutoDefault[T](val shelf: ShelfDefault, val f: Txn => T, val exe: Executor, target: T => Unit = (t:T) => Unit) extends Auto {
+  private val revisionQueue = new scala.collection.mutable.Queue[RevisionDefault]()
+  private val lock = Lock()
+  private var state: Option[(Long, Set[Long])] = None
+  private var pending = false;
+
+  private def relevant(r: RevisionDefault) = {
+    state match {
+      case None => true
+      case Some((index, reads)) => reads.iterator.flatMap(r.indexOfId(_)).exists(_>index)
+    }
+  }
+  
+  private def go() {
+    
+    //If we have more revisions pending, try to run the next
+    if (!revisionQueue.isEmpty) {
+      val r = revisionQueue.dequeue
+      
+      //If this revision is relevant (i.e. it has changes the transaction will read)
+      //then run the transaction on it
+      if (relevant(r)) {
+        pending = true
+        exe.execute(new Runnable() {
+          def run = {
+            val (result, t) = shelf.transactFromAuto(f)
+            lock.run{
+              state = Some((r.index, t.reads))
+              go()
+            }
+            target(result)
+          }
+        })
+
+      //If this revision is NOT relevant, try the next revision
+      } else {
+        go()
+      }
+      
+    //If we have no more revisions, then stop for now
+    } else {
+      pending = false
+    }
+  }
+  
+  def add(r: RevisionDefault) {
+    lock.run {
+      revisionQueue.clear
+      revisionQueue.enqueue(r)
+      if (!pending) {
+        go()
+      }
+    }
+  }
+}
