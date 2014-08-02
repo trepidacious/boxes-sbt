@@ -88,9 +88,9 @@ private class RevisionDefault(val index: Long, val map: Map[Long, Change], react
   def updated(writes: Map[Box[_], _], deletes: List[Long], newReactions: Map[Reaction, ReactionFunc], reactionDeletes: List[Long], sources: BiMultiMap[Long, Long], targets: BiMultiMap[Long, Long], boxReactions: Map[Long, Set[Reaction]]) = {
     val newIndex = index + 1
     
-    if (deletes.size > 0) {
-      println("Deleted " + deletes)
-    }
+//    if (deletes.size > 0) {
+//      println("Deleted " + deletes)
+//    }
     
     //Remove boxes that have been GCed, then add new ones
     val prunedMap = deletes.foldLeft(map){case (map, id) => map - id}
@@ -157,6 +157,13 @@ private class ShelfDefault extends Shelf {
     }
   }
 
+  def unview(v: View) = lock.write{
+    v match {
+      case vd: ViewDefault => views.remove(vd)
+      case _ => false
+    }
+  }
+  
   def auto[T](f: Txn => T) = auto(f, ShelfDefault.defaultExecutor, (t:T) => Unit)
   
   def auto[T](f: Txn => T, exe: Executor = ShelfDefault.defaultExecutor, target: T => Unit = (t: T) => Unit): Auto = {
@@ -167,6 +174,14 @@ private class ShelfDefault extends Shelf {
       auto
     }
   }
+  
+  def unauto(a: Auto) = lock.write{
+    a match {
+      case ad: AutoDefault[_] => autos.remove(ad)
+      case _ => false
+    }
+  }
+
   
   def transactFromAuto[T](f: Txn => T): (T, TxnDefault) = {
     def tf(r: RevisionDefault) = new TxnDefault(this, r)

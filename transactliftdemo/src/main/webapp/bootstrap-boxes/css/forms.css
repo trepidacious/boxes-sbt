@@ -1,0 +1,65 @@
+/* 
+ * Static content in forms is left aligned with text in input fields,
+ * and is at least as high as the standard input fields (and stars view)
+ */
+.form-control-static {
+  /*padding-left: 13px;*/
+  min-height: 34px;
+}
+
+.form-inline .form-group input {
+ width: auto; 
+}
+
+/**
+ * Like label, but using standard text, for just adding a rounded coloured background to text
+ */
+.label-text {
+	padding: .2em .6em .3em;
+	color: #ffffff;
+	border-radius: .25em;
+  white-space:nowrap;
+}
+
+.fixed-button {
+	width: 10%
+}
+
+.timestamp-in {
+  background-color: #5cb85c;
+}
+.timestamp-out {
+  background-color: #999999;
+}
+
+.timestamp {
+	display: inline;
+	padding: .2em .6em .3em;
+	font-size: 75%;
+	font-weight: bold;
+	line-height: 1;
+	color: #ffffff;
+	text-align: center;
+	white-space: nowrap;
+	vertical-align: baseline;
+/* 	border-radius: .25em;
+ */	
+  min-width: 10px;
+  border-radius: 10px;
+  margin-right: 5px;
+}
+
+.timestamp-large {
+  display: inline;
+  padding: .2em .6em .3em;
+  font-weight: bold;
+  line-height: 1;
+  color: #ffffff;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+/*  border-radius: .25em;
+ */ 
+  min-width: 20px;
+  border-radius: 20px;
+}

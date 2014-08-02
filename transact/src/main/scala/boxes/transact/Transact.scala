@@ -132,8 +132,12 @@ trait Shelf {
   def view(f: TxnR => Unit): View
   def view(f: TxnR => Unit, exe: Executor, onlyMostRecent: Boolean): View
   
+  def unview(v: View): Boolean
+  
   def auto[T](f: Txn => T): Auto  
   def auto[T](f: Txn => T, exe: Executor, target: T => Unit): Auto
+  
+  def unauto(a: Auto): Boolean
 }
 
 trait TxnR {

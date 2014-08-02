@@ -1,0 +1,19 @@
+<lift:surround with="default" at="content"> 
+  <lift:with-param name="page-header">
+    <h2><i class="fa fa-wrench"></i> Angular Test</h2>
+  </lift:with-param> 
+  
+  <div ng-app="demoApp">
+    <div id="DemoCtrl" ng-controller="DemoCtrl">
+  
+    <div class="lift:AjaxViewDemo"></div>
+
+    {{"$" + time + "$"}}
+
+		<lift:with-param name="angular-scripts">
+		  <!-- Angular controller -->
+      <script src="/angular-boxes/js/angular-boxes.js"></script>
+      <script src="/angular-demo/js/controllers.js"></script>
+		</lift:with-param> 
+  
+</lift:surround>

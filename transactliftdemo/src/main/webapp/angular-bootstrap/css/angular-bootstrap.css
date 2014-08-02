@@ -1,0 +1,9 @@
+.nav, .pagination, .carousel, .panel-title a { 
+	cursor: pointer; 
+}
+
+/* Get rid of the massive number of button borders in datepicker, makes it look much neater */
+[datepicker] button{
+	outline: 0;
+	border: 0;
+}

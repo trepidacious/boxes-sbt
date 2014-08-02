@@ -1,0 +1,96 @@
+<div>
+  <wizard:screen_info>
+    <div>
+      Page
+      <wizard:screen_number></wizard:screen_number>
+      of
+      <wizard:total_screens></wizard:total_screens>
+    </div>
+  </wizard:screen_info>
+  <wizard:wizard_top>
+    <div>
+      <wizard:bind></wizard:bind>
+    </div>
+  </wizard:wizard_top>
+  <wizard:screen_top>
+    <div>
+      <wizard:bind></wizard:bind>
+    </div>
+  </wizard:screen_top>
+  <wizard:errors>
+    <div>
+      <ul>
+        <wizard:item>
+          <li><wizard:bind></wizard:bind></li>
+        </wizard:item>
+      </ul>
+    </div>
+  </wizard:errors>
+    <wizard:fields>
+
+      <div lift:bind="wizard:line" class="row wizard-line">
+        <div class="span4">
+          <wizard:label>
+            <label wizard:for=""> <wizard:bind></wizard:bind>
+            </label>
+          </wizard:label>
+          <wizard:help>
+            <span> <wizard:bind></wizard:bind>
+            </span>
+          </wizard:help>
+        </div>
+
+
+        <div class="span4">
+          <wizard:form></wizard:form>
+        </div>
+
+        <div class="span4">
+          <wizard:field_errors>
+            <div class="alert-message warning">
+              <div>
+                <strong>Input Errors</strong>
+              </div>
+              <wizard:error>
+                <div>
+                  <wizard:bind></wizard:bind>
+                </div>
+              </wizard:error>
+            </div>
+          </wizard:field_errors>
+        </div>
+
+      </div>
+
+    </wizard:fields>
+    
+  <div>
+    <!-- 		<table>
+			<tr>
+				<td><wizard:prev></wizard:prev></td>
+				<td><wizard:cancel></wizard:cancel></td>
+				<td><wizard:next></wizard:next></td>
+			</tr>
+		</table>
+ -->
+
+    <div class="well buttonbar">
+      <wizard:prev></wizard:prev>
+      &nbsp;
+      <wizard:next></wizard:next>
+      &nbsp;
+      <wizard:cancel></wizard:cancel>
+    </div>
+
+  </div>
+  <wizard:screen_bottom>
+    <div>
+      <wizard:bind></wizard:bind>
+    </div>
+  </wizard:screen_bottom>
+  <wizard:wizard_bottom>
+    <div>
+      <wizard:bind></wizard:bind>
+    </div>
+  </wizard:wizard_bottom>
+</div>

@@ -1,0 +1,25 @@
+/* Star icons 
+---------------------------------------------------*/
+
+.star {
+  background-image: url(/bootstrap-boxes/svg/star_selected.svg);
+  background-repeat: no-repeat; 
+  height: 34px; width: 34px;
+  background-size: 100% 100%;
+  float:left;
+}
+.star_selected {
+  background-image: url(/bootstrap-boxes/svg/star_selected.svg);
+}
+.star_unselected {
+  background-image: url(/bootstrap-boxes/svg/star_unselected.svg);
+}
+.star_clear {
+  background-image: url(/bootstrap-boxes/svg/star_clear.svg);
+}
+.star_unselected:hover {
+  background-image: url(/bootstrap-boxes/svg/star_unselected_hover.svg);
+}
+.star_clear:hover {
+  background-image: url(/bootstrap-boxes/svg/star_clear_hover.svg);
+}
