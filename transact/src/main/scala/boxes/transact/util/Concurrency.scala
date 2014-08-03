@@ -34,6 +34,7 @@ object RWLock {
 
 class Lock {
   private val lock: ReentrantLock = new ReentrantLock()
+  def apply[T](w: =>T): T = run(w)
   def run[T](w: =>T): T = {
     lock.lock()
     try {
