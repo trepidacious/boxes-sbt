@@ -9,6 +9,16 @@
     <div class="lift:AjaxViewDemo"></div>
 
     {{"$" + time + "$"}}
+    {{"$" + text.value + "$"}}
+
+    <form class="form-horizontal">
+      <div class="form-group">
+        <label class="col-sm-2 control-label">Text</label>
+        <div class="col-sm-6">
+          <input class="form-control" ng-model="text.value">
+        </div>
+      </div>
+    </form>
 
 		<lift:with-param name="angular-scripts">
 		  <!-- Angular controller -->

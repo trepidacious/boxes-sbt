@@ -29,8 +29,9 @@ import org.joda.time.format.ISODateTimeFormat
 import scala.util.Try
 import boxes.transact._
 
-case object BoxesDateFormat{
+case object BoxesFormats{
    val formatter = ISODateTimeFormat.dateTime()  
+   val formats = DefaultFormats + BoxesJodaDateTimeSerializer
 }
 
 //Parse any date string that can be handled by DateTime, and format DateTimes as ISO8601 date and time with millis
@@ -40,7 +41,7 @@ case object BoxesJodaDateTimeSerializer extends CustomSerializer[DateTime](forma
     case JNull => null
   },
   {
-    case d: DateTime => JString(BoxesDateFormat.formatter.print(d))
+    case d: DateTime => JString(BoxesFormats.formatter.print(d))
   }
 ))
 
@@ -56,7 +57,7 @@ object AjaxDataSourceView {
 }
 
 class AjaxDataSourceView[T<:AnyRef](elementId: String, v: String, data: BoxR[T]) extends AjaxView with Loggable {
-  implicit val formats = DefaultFormats + BoxesJodaDateTimeSerializer
+  implicit val formats = BoxesFormats.formats
 
   def render = NodeSeq.Empty
   
@@ -94,17 +95,32 @@ class AjaxListOfViews(views: List[AjaxView]) extends AjaxView {
   override val partialUpdates = views.flatMap(_.partialUpdates)
 }
 
-/*
-object AjaxListDataSourceView {
-  def apply[T](elementId: String, v: String, list: Ref[List[T]], renderElement: (T)=>Map[String, String], deleteElement: (T)=>Unit) = new AjaxListDataSourceView(elementId, v, list, renderElement, deleteElement)
+object AjaxStaticView {
+  def apply(content: NodeSeq): AjaxStaticView = new AjaxStaticView(content)
 }
 
-class AjaxListDataSourceView[T](elementId: String, v: String, list: Ref[List[T]], renderElement: (T)=>Map[String, String], deleteElement: (T)=>Unit) extends AjaxView with Loggable {
-  lazy val id = net.liftweb.util.Helpers.nextFuncName
+class AjaxStaticView(content: NodeSeq) extends AjaxView {
+  override def render = content
+  override def partialUpdates = List.empty 
+}
 
-  def render = AjaxView.form(<span id={"list_data_source_" + id}></span>)
+class AjaxRedirectView(url: BoxR[Option[String]]) extends AjaxView {
+  def render = NodeSeq.Empty 
+  override def partialUpdates = List({implicit txn: TxnR => url().map(JsCmds.RedirectTo(_)).getOrElse(Noop)})
+}
+
+object AjaxRedirectView{
+  def apply(url: BoxR[Option[String]]) = new AjaxRedirectView(url)
+}
+
+object AjaxListDataSourceView {
+  def apply[T](elementId: String, v: String, list: BoxR[List[T]], renderElement: (T)=>Map[String, String], deleteElement: (T)=>Unit) = new AjaxListDataSourceView(elementId, v, list, renderElement, deleteElement)
+}
+
+class AjaxListDataSourceView[T](elementId: String, v: String, list: BoxR[List[T]], renderElement: (T)=>Map[String, String], deleteElement: (T)=>Unit) extends AjaxView with Loggable {
+  def render = NodeSeq.Empty
   
-  def data() = {
+  def data(implicit txn: TxnR) = {
     val l = list()
     val lines = l.map(t =>{
       val deleteAC = SHtml.ajaxCall(JE.JsRaw("1"), (s:String)=>{
@@ -119,13 +135,15 @@ class AjaxListDataSourceView[T](elementId: String, v: String, list: Ref[List[T]]
   
   override def partialUpdates = List(
 //      () => JE.JsRaw("angular.element('#" + elementId + "').scope().$apply(function () {angular.element('#" + elementId + "').scope()." + v + " = " + data() + ";});")
-      () => {
-        logger.info("Sending " + data())
-        JE.JsRaw("angular.element('#" + elementId + "').scope().$apply(function ($scope) {$scope." + v + " = " + data() + ";});")
-      }
+      {implicit txn: TxnR => {
+        val d = data(txn)
+        logger.info("Sending " + d)
+        JE.JsRaw("angular.element('#" + elementId + "').scope().$apply(function ($scope) {$scope." + v + " = " + d + ";});")
+      }}
 //      ,() => JE.JsRaw("alert(\"" + data() + "\")")
   )}
 
+/*
 
 object AjaxNodeSeqView {
   def apply(label: Ref[NodeSeq] = Val(Text("")), control: Ref[NodeSeq] = Val(Text("")), error: Ref[NodeSeq] = Val(Text("")), addP: Boolean = true): AjaxNodeSeqView = 
@@ -242,15 +260,6 @@ class AjaxLabelledView(labelView: AjaxView, mainView: AjaxView) extends AjaxView
                  {AjaxView.formRow(labelView.render, mainView.render)}
                </div>
   override val partialUpdates = List(labelView, mainView).flatMap(_.partialUpdates)
-}
-
-object AjaxStaticView {
-  def apply(contents: NodeSeq) = new AjaxStaticView(contents)
-}
-
-class AjaxStaticView(contents: NodeSeq) extends AjaxView {
-  def render = contents
-  override val partialUpdates = Nil
 }
 
 object AjaxOffsetView {

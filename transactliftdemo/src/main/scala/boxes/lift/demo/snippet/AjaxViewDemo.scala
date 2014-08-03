@@ -1,20 +1,20 @@
 package boxes.lift.demo.snippet
 
-import boxes.transact.lift.comet.InsertCometView
 import net.liftweb.common.Loggable
 import boxes.transact.ShelfDefault
 import boxes.transact.BoxNow
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import boxes.transact.lift.comet.AjaxDirectView
 import boxes.transact.lift.LiftShelf
-import boxes.transact.lift.comet.AjaxDataSourceView
-import boxes.transact.lift.comet.AjaxListOfViews
+import boxes.transact.lift.comet._
+import boxes.lift.comet.AjaxDataLinkView
 
 object Stuff {
   implicit val shelf = LiftShelf.shelf
   val time = BoxNow(System.currentTimeMillis().toString)
   private val executor = Executors.newScheduledThreadPool(1)
+  
+  val text = BoxNow("Text")
   
   executor.scheduleAtFixedRate(new Runnable(){
     override def run() = time.now() = System.currentTimeMillis().toString
@@ -25,6 +25,8 @@ object Stuff {
 class AjaxViewDemo() extends InsertCometView[String]("") with Loggable {
   
   val time = Stuff.time
+  val text = Stuff.text
+  implicit val shelf = LiftShelf.shelf
   
 //  def mv(t: Timesheet) = {
 //  
@@ -63,8 +65,9 @@ class AjaxViewDemo() extends InsertCometView[String]("") with Loggable {
   
   def makeView(s: String) = {  
     AjaxListOfViews(
-      AjaxDirectView(<span>HI HI HI</span>),
-      AjaxDataSourceView("DemoCtrl", "time", time)
+      AjaxStaticView(<span>HI HI HI</span>),
+//      AjaxDataSourceView("DemoCtrl", "time", time),
+      AjaxDataLinkView("DemoCtrl", "text", text)
     )
   }
 }
