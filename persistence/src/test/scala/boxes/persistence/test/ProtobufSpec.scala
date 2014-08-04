@@ -71,17 +71,6 @@ class ProtobufSpec extends WordSpec {
       val l = List(bos.toByteArray():_*)
       l.foreach(b => print((b&0xFF) + " "))
       println("\n")
-
-      val cbos = new ByteArrayOutputStream
-      val dos = new DeflaterOutputStream(cbos, true)
-      dos.write(bos.toByteArray())
-      dos.flush()
-      dos.close()
-      
-      println()
-      println(cbos.toByteArray.length + " bytes:")
-      List(cbos.toByteArray():_*).foreach(b => print((b&0xFF) + " "))
-      println("\n")
       
       
       val bis = new ByteArrayInputStream(bos.toByteArray())
