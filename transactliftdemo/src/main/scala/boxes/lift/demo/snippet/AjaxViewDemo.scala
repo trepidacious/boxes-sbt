@@ -7,19 +7,17 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import boxes.transact.lift.LiftShelf
 import boxes.transact.lift.comet._
-import boxes.lift.comet.AjaxDataLinkView
 
 object Stuff {
   implicit val shelf = LiftShelf.shelf
+  
   val time = BoxNow(System.currentTimeMillis().toString)
   private val executor = Executors.newScheduledThreadPool(1)
-  
-  val text = BoxNow("Text")
-  
   executor.scheduleAtFixedRate(new Runnable(){
     override def run() = time.now() = System.currentTimeMillis().toString
   }, 1, 1, TimeUnit.SECONDS)   //FIXME make longer - e.g. 1 minute, also would be nice to synchronise to exact minutes (e.g. run every second but only update to whole minute when it changes)
 
+  val text = BoxNow("Text")
 }
 
 class AjaxViewDemo() extends InsertCometView[String]("") with Loggable {
@@ -65,8 +63,8 @@ class AjaxViewDemo() extends InsertCometView[String]("") with Loggable {
   
   def makeView(s: String) = {  
     AjaxListOfViews(
-      AjaxStaticView(<span>HI HI HI</span>),
-//      AjaxDataSourceView("DemoCtrl", "time", time),
+      AjaxStaticView(<p>Static Content</p>),
+      AjaxDataSourceView("DemoCtrl", "time", time),
       AjaxDataLinkView("DemoCtrl", "text", text)
     )
   }

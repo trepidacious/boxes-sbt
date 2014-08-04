@@ -28,7 +28,7 @@ private class AjaxAngularActionView[T, J](elementId: String, v: String, toT: (J)
   
   implicit val formats = BoxesFormats.formats
 
-  def render = NodeSeq.Empty
+  def render(txn: TxnR) = NodeSeq.Empty
 
   val call = SHtml.ajaxCall(JE.JsRaw("1"), (s:String)=>{
     val json = parse(s)
@@ -47,7 +47,7 @@ private class AjaxAngularActionView[T, J](elementId: String, v: String, toT: (J)
 }
 
 private class AjaxAngularUnitActionView(elementId: String, v: String, action: =>Unit) extends AjaxView with Loggable {
-  def render = NodeSeq.Empty
+  def render(txn: TxnR) = NodeSeq.Empty
   val call = SHtml.ajaxCall(JE.JsRaw("1"), (s:String)=>{
     logger.info("Action called!")
     action

@@ -1,4 +1,4 @@
-package boxes.lift.comet
+package boxes.transact.lift.comet
 
 import scala.language.implicitConversions
 import scala.util.Try
@@ -14,37 +14,60 @@ import scala.xml.NodeSeq
 import scala.util.Success
 import scala.util.Failure
 import org.joda.time.DateTime
-import boxes.transact.lift.comet.AjaxView
-import boxes.transact.lift.comet.BoxesFormats
 import net.liftweb.http.js.JsCmds
 import scala.concurrent.Lock
 import java.util.concurrent.locks.ReentrantLock
 import boxes.transact.util.Lock
 
-private case class VersionedValue[T](value: T, index: Long)
-private case class VersionedValueAndGUID[T](value: T, index: Long, guid: String)
+case class VersionedValue[T](value: T, index: Long)
+case class VersionedValueAndGUID[T](value: T, index: Long, guid: String)
+
+trait JsonTransformer[T] {
+  def toJson(t: VersionedValueAndGUID[T]): String
+  def toJson(t: VersionedValue[T]): String
+  def fromJson(s: String): Try[VersionedValue[T]]
+}
+
+class DefaultJsonTransformer[T](implicit m: Manifest[T]) extends JsonTransformer[T] {
+  implicit val formats = BoxesFormats.formats
+  def toJson(t: VersionedValueAndGUID[T]) =  Serialization.write(t)
+  def toJson(t: VersionedValue[T]) =  Serialization.write(t)
+  def fromJson(s: String) = Try(parse(s).extract[VersionedValue[T]])
+}
+
+object DefaultJsonTransformer{
+  def apply[T] = new DefaultJsonTransformer
+}
 
 object AjaxDataLinkView {
-  def apply[T](elementId: String, v: String, data: Box[T])(implicit shelf: Shelf, mf: Manifest[T]): AjaxView = new AjaxTransformingDataLinkView[T, T](elementId, v, data, identity, identity)
+  def apply[T](elementId: String, v: String, data: Box[T])(implicit shelf: Shelf, mf: Manifest[T]): AjaxView = new AjaxTransformingDataLinkView[T, T](elementId, v, data, identity, identity, new DefaultJsonTransformer)
     
   def optional[T](elementId: String, v: String, data: Box[Option[T]])(implicit shelf: Shelf, mf: Manifest[T]): AjaxView = {
     def toJ[T](o: Option[T]) = o.getOrElse(null.asInstanceOf[T])
     def toT[T](t: T) = if (t == null) None else Some(t)
-    new AjaxTransformingDataLinkView[Option[T], T](elementId, v, data, toJ, toT)
+    new AjaxTransformingDataLinkView[Option[T], T](elementId, v, data, toJ, toT, new DefaultJsonTransformer)
   }
 }
 
-private class AjaxTransformingDataLinkView[T, J](elementId: String, v: String, data: Box[T], toJ: (T)=>J, toT: (J)=>T)(implicit shelf: Shelf, mft: Manifest[T], mfj: Manifest[J]) extends AjaxView with Loggable {
+object AjaxDataSourceView {
+  def apply[T](elementId: String, v: String, data: Box[T])(implicit shelf: Shelf, mf: Manifest[T]): AjaxView = new AjaxTransformingDataSourceView[T, T](elementId, v, data, identity, new DefaultJsonTransformer)
+    
+  def optional[T](elementId: String, v: String, data: Box[Option[T]])(implicit shelf: Shelf, mf: Manifest[T]): AjaxView = {
+    def toJ[T](o: Option[T]) = o.getOrElse(null.asInstanceOf[T])
+    def toT[T](t: T) = if (t == null) None else Some(t)
+    new AjaxTransformingDataSourceView[Option[T], T](elementId, v, data, toJ, new DefaultJsonTransformer)
+  }
+}
+
+private class AjaxTransformingDataLinkView[T, J](elementId: String, v: String, data: Box[T], toJ: (T)=>J, toT: (J)=>T, jt: JsonTransformer[J])(implicit shelf: Shelf, mft: Manifest[T], mfj: Manifest[J]) extends AjaxView with Loggable {
   
-  implicit val formats = BoxesFormats.formats
   val lock = Lock()
   
   private var clientChangesUpTo = None: Option[Long]  //TODO this could probably just be a boolean, set to true on client changes, false on others in partialUpdates
 
   val call = SHtml.ajaxCall(JE.JsRaw("1"), (s:String)=>{
     logger.info("Received " + s)
-    val json = parse(s)
-    Try(json.extract[VersionedValue[J]]) match {
+    jt.fromJson(s) match {
       case Success(inJ) => {
         //Lock while we do the transaction, so that we can see what revision index we get back
         lock{
@@ -71,7 +94,7 @@ private class AjaxTransformingDataLinkView[T, J](elementId: String, v: String, d
   //This creates the controller code in Angular on the browser, that will send commits back to us on the named variable
   override def renderHeader = <div boxes-data-link={v}></div>
   
-  def render = NodeSeq.Empty
+  def render(txn: TxnR) = NodeSeq.Empty
   
   override def partialUpdates = List({implicit txn: TxnR => {
     
@@ -91,10 +114,20 @@ private class AjaxTransformingDataLinkView[T, J](elementId: String, v: String, d
         //Client is NOT up to date
         clientChangesUpTo = None
         val vvg = VersionedValueAndGUID(toJ(d), i, guid)
-        val json = Serialization.write(vvg)
+        val json = jt.toJson(vvg)
         logger.info("AjaxTransformingDataLinkView sending " + json)
         JE.JsRaw("angular.element('#" + elementId + "').scope().$apply(function ($scope) {$scope." + v + " = " + json + ";});")
       }
     }
+  }})
+}
+
+private class AjaxTransformingDataSourceView[T, J](elementId: String, v: String, data: BoxR[T], toJ: (T)=>J, jt: JsonTransformer[J])(implicit shelf: Shelf, mft: Manifest[T], mfj: Manifest[J]) extends AjaxView with Loggable {
+  def render(txn: TxnR) = NodeSeq.Empty
+  override def partialUpdates = List({implicit txn: TxnR => {
+    val vv = VersionedValue(toJ(data()), data.index())
+    val json = jt.toJson(vv)
+    logger.info("AjaxTransformingDataSourceView sending " + json)
+    JE.JsRaw("angular.element('#" + elementId + "').scope().$apply(function ($scope) {$scope." + v + " = " + json + ";});")
   }})
 }

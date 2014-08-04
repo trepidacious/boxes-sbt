@@ -32,7 +32,7 @@ class CometView extends CometActor with Loggable {
   override def lowPriority = {
     case ajaxView: AjaxView => {
       //Now we can do our first render
-      renderOut = ajaxView.render
+      renderOut = shelf.read(implicit txn => ajaxView.render(txn))
       this ! ReRender(false)
       
       //FIXME note that the partialUpdates may not be set up as views until
