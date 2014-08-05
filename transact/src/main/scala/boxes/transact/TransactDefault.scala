@@ -184,18 +184,22 @@ private class ShelfDefault extends Shelf {
 
   
   def transactFromAuto[T](f: Txn => T): (T, TxnDefault) = {
-    def tf(r: RevisionDefault) = new TxnDefault(this, r)
+    def tf(r: RevisionDefault) = new TxnDefault(this, r, ReactionImmediate)
     val result = transactRepeatedTry(f, tf, retries)
     (result._1, result._2)
   }
 
-  def transact[T](f: Txn => T): T = {
-    def tf(r: RevisionDefault) = new TxnDefault(this, r)
+  def transact[T](f: Txn => T): T = transact(f, ReactionImmediate)
+  
+  def transact[T](f: Txn => T, p: ReactionPolicy): T = {
+    def tf(r: RevisionDefault) = new TxnDefault(this, r, p)
     transactRepeatedTry(f, tf, retries)._1
   }
 
-  def transactToRevision[T](f: Txn => T): (T, Revision) = {
-    def tf(r: RevisionDefault) = new TxnDefault(this, r)
+  def transactToRevision[T](f: Txn => T): (T, Revision) = transactToRevision(f, ReactionImmediate)
+    
+  def transactToRevision[T](f: Txn => T, p: ReactionPolicy): (T, Revision) = {
+    def tf(r: RevisionDefault) = new TxnDefault(this, r, p)
     val result = transactRepeatedTry(f, tf, retries)
     return (result._1, result._3)
   }
@@ -204,20 +208,13 @@ private class ShelfDefault extends Shelf {
     Range(0, retries).view.map(_ => transactTry(f, tf)).find(o => o.isDefined).flatten.getOrElse(throw new RuntimeException("Transaction failed too many times"))
   }
   
-  private def revise(updated: RevisionDefault) {
-    current = updated
-    
-    //TODO this can be done outside the lock by just passing the new revision to a queue to be
-    //consumed by another thread that actually updated views
-    views.foreach(_.add(updated))
-    autos.foreach(_.add(updated))
-    
-//    println("updated at " + System.currentTimeMillis())
-  }
-  
   private def transactTry[T, TT <: TxnDefault](f: Txn => T, transFactory: RevisionDefault => TT): Option[(T, TT, Revision)] = {
     val t = transFactory(now)
-    val tryR = Try(f(t))
+    val tryR = Try{
+      val r = f(t)
+      t.beforeCommit()
+      r
+    }
     
     //TODO note we could just lock long enough to get the current revision, and build the new map
     //outside the lock, then re-lock to attempt to make the new map the next revision, failing if
@@ -253,7 +250,19 @@ private class ShelfDefault extends Shelf {
     }
   }
   
+  private def revise(updated: RevisionDefault) {
+    current = updated
+    
+    //TODO this can be done outside the lock by just passing the new revision to a queue to be
+    //consumed by another thread that actually updated views
+    views.foreach(_.add(updated))
+    autos.foreach(_.add(updated))
+    
+  //    println("updated at " + System.currentTimeMillis())
+  }
+
 }
+
 
 object ShelfDefault {
   val defaultExecutorPoolSize = 8
@@ -277,7 +286,7 @@ private class TxnRLogging(val revision: RevisionDefault) extends TxnR {
   }
 }
 
-private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault) extends TxnForReactor {
+private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault, val reactionPolicy: ReactionPolicy) extends TxnForReactor {
   
   var writes = Map[Box[_], Any]()
   var reads = Set[Long]()
@@ -290,6 +299,15 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
   
   var currentReactor: Option[ReactorDefault] = None
   
+  def beforeCommit() {
+    println("beforeCommit on revision " + revision.index)
+    println()
+    currentReactor.foreach(r=>{
+      println("   -> Had pending reactor " + r + ", will call beforeCommit on it")
+      r.beforeCommit()
+    })
+  }
+  
   def create[T](t: T): Box[T] = {
     val box = BoxDefault[T]()
     creates = creates + box
@@ -298,6 +316,30 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
     box
   }
   
+  def withReactor[T](action: ReactorDefault => T): T = {
+    currentReactor match {
+      case Some(r) => {
+        println("Reusing reactor " + r + " on revision " + revision.index)
+        action(r)
+      }
+      case None => {
+        val r = new ReactorDefault(this, reactionPolicy)
+        println("Created new reactor " + r + " on txn on revision " + revision.index)
+        currentReactor = Some(r)
+        action(r)
+      }
+    } 
+  }
+  
+  def reactionFinished() {
+    currentReactor match {
+      case Some(r) => println("Finished with reactor " + r + " on txn on revision " + revision.index)
+      case None => println(">>>>>>Finished with EMPTY reactor on txn on revision " + revision.index + "<<<<<<<")
+    }
+    currentReactor = None
+  }
+
+    
   def set[T](box: Box[T], t: T): Box[T] = {
     //If box value would not be changed, skip write
     if (_get(box) != t) {
@@ -329,20 +371,6 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
     reaction
   }
   
-  def withReactor[T](action: ReactorDefault => T): T = {
-    currentReactor match {
-      case Some(r) => {
-        action(r)
-      }
-      case None => {
-        val r = new ReactorDefault(this)
-//        println("Created new reactor on txn on revision " + revision.index)
-        currentReactor = Some(r)
-        action(r)
-      }
-    } 
-  }
-  
   def failEarly() = if (shelf.now.conflictsWith(this)) throw new TxnEarlyFailException
   
   override def boxRetainsReaction(box: BoxR[_], r: Reaction) {
@@ -352,12 +380,7 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
   override def boxReleasesReaction(box: BoxR[_], r: Reaction) {
     boxReactions = boxReactions.updated(box.id, boxReactions.get(box.id).getOrElse(Set.empty) - r)
   }
-  
-  def reactionFinished() {
-    currentReactor = None
-//    println("Finished with reactor on txn on revision " + revision.index)
-  }
-  
+    
   def clearReactionSourcesAndTargets(rid: Long) {
     sources = sources.removedKey(rid)
     targets = targets.removedKey(rid)
@@ -385,7 +408,6 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault)
   }
 
 }
-
 
 private class ViewDefault(val shelf: ShelfDefault, val f: TxnR => Unit, val exe: Executor, onlyMostRecent: Boolean = true) extends View {
   private val revisionQueue = new scala.collection.mutable.Queue[RevisionDefault]()

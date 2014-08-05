@@ -127,9 +127,11 @@ trait Shelf {
   def create[T](t: T): Box[T]
 
   def transact[T](f: Txn => T): T
+  def transact[T](f: Txn => T, p: ReactionPolicy): T
   def read[T](f: TxnR => T): T
 
   def transactToRevision[T](f: Txn => T): (T, Revision)
+  def transactToRevision[T](f: Txn => T, p: ReactionPolicy): (T, Revision)
   
   def react(f: ReactorTxn => Unit): Reaction
 
@@ -143,6 +145,26 @@ trait Shelf {
   
   def unauto(a: Auto): Boolean
 }
+
+/**
+ * Options for when reactions are applied during a transaction
+ */
+sealed trait ReactionPolicy
+
+/**
+ * Reactions are applied immediately after any writes or new reactions,
+ * so that all data read has reactions applied.
+ */
+case object ReactionImmediate extends ReactionPolicy
+
+/**
+ * Reactions are delayed and run as a batch after all other operations in 
+ * a transaction. During the transaction, reactions will NOT be applied.
+ * This is primarily useful for deserialising data, allowing for a system
+ * of Boxes and Reactions to be rebuilt through possibly invalid intermediate
+ * stages, to a valid final stage that then has reactions applied.
+ */
+case object ReactionBeforeCommit extends ReactionPolicy
 
 trait TxnR {
   def get[T](box: BoxR[T]): T

@@ -1,6 +1,6 @@
 package boxes.transact
 
-private class ReactorDefault(txn: TxnForReactor, val maximumReactionApplicationsPerCycle: Int = 10000) extends ReactorForTxn with ReactorTxn {
+private class ReactorDefault(txn: TxnForReactor, val reactionPolicy: ReactionPolicy, val maximumReactionApplicationsPerCycle: Int = 10000) extends ReactorForTxn with ReactorTxn {
   
   //For each reaction that has had any source change, maps to the set of boxes that have changed for that reaction. Allows
   //reactions to see why they have been called in any given cycle. Empty outside cycles. Note that from one call to
@@ -13,7 +13,7 @@ private class ReactorDefault(txn: TxnForReactor, val maximumReactionApplications
   private val reactionsPending = scala.collection.mutable.ArrayBuffer[Long]()
 
   private var cycling = false
-  private var decoding = false
+  private var delayingCycle = (reactionPolicy == ReactionBeforeCommit)
   private var checkingConflicts = false
 
   //Currently active reaction id - if there is one, it is responsible
@@ -42,7 +42,7 @@ private class ReactorDefault(txn: TxnForReactor, val maximumReactionApplications
       reaction <- txn.reactionsSourcingBox(box.id)
     } pendReaction(reaction, List(box))
 
-    cycle
+    cycle()
   }
   
   def afterGet[T](box: BoxR[T]) {
@@ -52,7 +52,7 @@ private class ReactorDefault(txn: TxnForReactor, val maximumReactionApplications
   
   def registerReaction(r: ReactionDefault) {
     pendReaction(r.id)
-    cycle
+    cycle()
   }
   
   private def pendReaction(rid: Long, sourceBoxes:List[Box[_]] = List()) = {
@@ -62,9 +62,14 @@ private class ReactorDefault(txn: TxnForReactor, val maximumReactionApplications
     }
   }
   
-  private def cycle = {
-    //Only enter one cycle at a time, and we don't cycle while decoding
-    if (!cycling && !decoding) {
+  def beforeCommit() {
+    delayingCycle = false;
+    cycle()
+  }
+    
+  private def cycle() = {
+    //Cycle if we are not already cycling, and we are not delaying cycle 
+    if (!cycling && !delayingCycle) {
       cycling = true
       performCycle()
     }

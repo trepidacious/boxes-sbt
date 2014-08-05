@@ -24,6 +24,7 @@ trait ReactorForTxn {
   def afterSet[T](box: Box[T], t: T): Unit  
   def afterGet[T](box: BoxR[T]): Unit
   def registerReaction(r: ReactionDefault): Unit
+  def beforeCommit(): Unit
 }
 
 /**

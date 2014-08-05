@@ -6,7 +6,7 @@ import org.scalatest.junit.JUnitRunner
 import boxes.transact._
 import boxes.transact.util.BiMultiMap
 
-class BoxSpec extends WordSpec {
+class BiMultiMapSpec extends WordSpec {
 
   "BiMultiMap" should {
 
