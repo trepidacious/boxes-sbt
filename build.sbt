@@ -61,5 +61,3 @@ resolvers ++= Seq(
   "Sonatype OSS Releases"  at "http://oss.sonatype.org/content/repositories/releases/",
   "Sonatype OSS Snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/"
 )
-
-libraryDependencies += "org.clapper" %% "grizzled-slf4j" % "1.0.2"

@@ -1,6 +1,8 @@
 package boxes.transact
 
-private class ReactorDefault(txn: TxnForReactor, val reactionPolicy: ReactionPolicy, val maximumReactionApplicationsPerCycle: Int = 10000) extends ReactorForTxn with ReactorTxn {
+import grizzled.slf4j.Logging
+
+private class ReactorDefault(txn: TxnForReactor, val reactionPolicy: ReactionPolicy, val maximumReactionApplicationsPerCycle: Int = 10000) extends ReactorForTxn with ReactorTxn with Logging {
   
   //For each reaction that has had any source change, maps to the set of boxes that have changed for that reaction. Allows
   //reactions to see why they have been called in any given cycle. Empty outside cycles. Note that from one call to
@@ -117,8 +119,7 @@ private class ReactorDefault(txn: TxnForReactor, val reactionPolicy: ReactionPol
         } catch {
           //TODO If this is NOT a BoxException, need to respond better, but can't allow uncaught exception to just stop cycling
           case e:Exception => {
-//            println("Reaction failed with: " + e)
-//            e.printStackTrace()
+            logger.error("Reaction failed", e)
             
             //Remove the reaction completely from the system, but remember that it failed
             txn.clearReactionSourcesAndTargets(nextReaction)
@@ -146,8 +147,8 @@ private class ReactorDefault(txn: TxnForReactor, val reactionPolicy: ReactionPol
           } catch {
             //TODO if this is NOT a BoxException, need to respond better, but can't allow uncaught exception to just stop cycling
             case e:Exception => {
-              println("Reaction conflicted with exception: " + e)
-              e.printStackTrace()
+              logger.error("Reaction conflicted", e)
+              
               //Remove the reaction completely from the system, but remember that it failed
               txn.clearReactionSourcesAndTargets(r)
               failedReactions.add(r)
@@ -164,9 +165,8 @@ private class ReactorDefault(txn: TxnForReactor, val reactionPolicy: ReactionPol
       cycling = false
   
       if (!failedReactions.isEmpty) {
-        println("Failed Reactions: " + failedReactions)
-        //TODO make immutable copy of failed reactions for exception
-        throw new FailedReactionsException()//Set(failedReactions))
+        logger.debug("Failed Reactions: " + failedReactions)        
+        throw new FailedReactionsException()
       }
     } finally {
       txn.reactionFinished()
