@@ -119,7 +119,7 @@ private class ReactorDefault(txn: TxnForReactor, val reactionPolicy: ReactionPol
           case e:Exception => {
 //            println("Reaction failed with: " + e)
 //            e.printStackTrace()
-            logg
+            
             //Remove the reaction completely from the system, but remember that it failed
             txn.clearReactionSourcesAndTargets(nextReaction)
             conflictReactions.remove(nextReaction)
