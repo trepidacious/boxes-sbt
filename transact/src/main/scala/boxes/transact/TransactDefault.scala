@@ -300,12 +300,12 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault,
   var currentReactor: Option[ReactorDefault] = None
   
   def beforeCommit() {
-    println("beforeCommit on revision " + revision.index)
-    println()
+//    println("beforeCommit on revision " + revision.index)
     currentReactor.foreach(r=>{
-      println("   -> Had pending reactor " + r + ", will call beforeCommit on it")
+//      println("   -> Had pending reactor " + r + ", will call beforeCommit on it")
       r.beforeCommit()
     })
+//    println()
   }
   
   def create[T](t: T): Box[T] = {
@@ -319,12 +319,12 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault,
   def withReactor[T](action: ReactorDefault => T): T = {
     currentReactor match {
       case Some(r) => {
-        println("Reusing reactor " + r + " on revision " + revision.index)
+//        println("Reusing reactor " + r + " on revision " + revision.index)
         action(r)
       }
       case None => {
         val r = new ReactorDefault(this, reactionPolicy)
-        println("Created new reactor " + r + " on txn on revision " + revision.index)
+//        println("Created new reactor " + r + " on txn on revision " + revision.index)
         currentReactor = Some(r)
         action(r)
       }
@@ -332,10 +332,10 @@ private class TxnDefault(val shelf: ShelfDefault, val revision: RevisionDefault,
   }
   
   def reactionFinished() {
-    currentReactor match {
-      case Some(r) => println("Finished with reactor " + r + " on txn on revision " + revision.index)
-      case None => println(">>>>>>Finished with EMPTY reactor on txn on revision " + revision.index + "<<<<<<<")
-    }
+//    currentReactor match {
+//      case Some(r) => println("Finished with reactor " + r + " on txn on revision " + revision.index)
+//      case None => println(">>>>>>Finished with EMPTY reactor on txn on revision " + revision.index + "<<<<<<<")
+//    }
     currentReactor = None
   }
 

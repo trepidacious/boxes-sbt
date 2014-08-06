@@ -117,8 +117,9 @@ private class ReactorDefault(txn: TxnForReactor, val reactionPolicy: ReactionPol
         } catch {
           //TODO If this is NOT a BoxException, need to respond better, but can't allow uncaught exception to just stop cycling
           case e:Exception => {
-            println("Reaction failed with: " + e)
-            e.printStackTrace()
+//            println("Reaction failed with: " + e)
+//            e.printStackTrace()
+            logg
             //Remove the reaction completely from the system, but remember that it failed
             txn.clearReactionSourcesAndTargets(nextReaction)
             conflictReactions.remove(nextReaction)

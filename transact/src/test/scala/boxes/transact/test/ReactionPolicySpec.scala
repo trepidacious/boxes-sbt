@@ -34,7 +34,7 @@ class ReactionPolicySpec extends WordSpec {
       throw new RuntimeException("Reaction was applied before end of transaction")
     }
     
-    //Return the applied Box, so that the test can check it ran at all.
+    //Return the applied Box, so that the test can check the reaction ran at all
     applied
   }
   
