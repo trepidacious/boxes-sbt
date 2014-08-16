@@ -34,6 +34,9 @@ lazy val swinggraph = project.dependsOn(core, swing, graph)
 //Persistence for boxes
 lazy val persistence = project.dependsOn(core)
 
+//Persistence for transact boxes
+lazy val transactpersistence = project.dependsOn(transact, persistence)
+
 //Demos for all projects except lift and transact
 lazy val demo = project.dependsOn(core, swing, graph, swinggraph, persistence)
 

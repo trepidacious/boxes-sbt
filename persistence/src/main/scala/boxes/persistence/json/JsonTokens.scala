@@ -46,12 +46,12 @@ class JSONTokenWriter(writer:Writer, aliases:ClassAliases, pretty: Boolean = fal
   private def printObjPrim[P](p:P)(implicit codec:CodecWithClass[P]) {
     commaIfNeeded()
     //object with _type_ as class alias, _val_ as primitive.
-  print("{\"_val_type_\":" + quoted(aliases.forClass(codec.clazz)) + ", \"_val_\":" + p + "}")
+    print("{\"_val_type_\":" + quoted(aliases.forClass(codec.clazz)) + ", \"_val_\":" + p + "}")
   }
   
   private def printPrim[P](p:P) {
     commaIfNeeded()
-  print("" + p)
+    print("" + p)
   }
 
   private def quoted(s: String) = JsonUtils.quote(s)
