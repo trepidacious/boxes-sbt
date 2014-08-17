@@ -17,6 +17,7 @@ import boxes.transact.ReactionBeforeCommit
 import scala.util.Try
 import boxes.transact.View
 import java.util.concurrent.atomic.AtomicReference
+import boxes.transact.util.Lock
 
 case class MongoNodeIndex(key: String, unique: Boolean = true, ascending: Boolean = true)
 
@@ -42,11 +43,11 @@ class MongoBox(dbName: String, aliases: ClassAliases)(implicit shelf: Shelf) {
   
   //TODO might be better as soft references, to reduce unneeded db access?
   private val idMap = new WeakKeysBIDIMap[MongoNode, ObjectId]()
-  private val idMapLock = RWLock()
+  private val idMapLock = Lock()
   
-  def id(t: MongoNode) = idMapLock.read(idMap.toValue(t))
+  def id(t: MongoNode) = idMapLock(idMap.toValue(t))
 
-  private def toMongoNode[T <: MongoNode](alias: String, dbo: MongoDBObject) = idMapLock.read {
+  private def toMongoNode[T <: MongoNode](alias: String, dbo: MongoDBObject) = idMapLock {
     for {
       id <- dbo._id
     } yield {
@@ -85,7 +86,7 @@ class MongoBox(dbName: String, aliases: ClassAliases)(implicit shelf: Shelf) {
         MongoDBObject(i.key -> (if (i.ascending) 1 else -1)),  i.key,  i.unique))
   }
   
-  private def track(alias:String, t: MongoNode, id: ObjectId) = idMapLock.write{
+  private def track(alias:String, t: MongoNode, id: ObjectId) = idMapLock {
     
     //First make sure any indices are in place, so we respect them from the View we will create
     useMongoNode(alias, t)
@@ -106,7 +107,7 @@ class MongoBox(dbName: String, aliases: ClassAliases)(implicit shelf: Shelf) {
   
   //Register a MongoNode to be kept in mongodb. Returns the ObjectId used. If the
   //MongoNode was already kept, nothing is done, but the ObjectId is still returned.
-  def keep(t: MongoNode) = idMapLock.write {
+  def keep(t: MongoNode) = idMapLock {
     //Get the existing id for the node, or else add the
     //node to mongo and return the new id
     idMap.toValue(t).getOrElse{        
@@ -133,7 +134,7 @@ class MongoBox(dbName: String, aliases: ClassAliases)(implicit shelf: Shelf) {
     }
   }
   
-  def forget(t: MongoNode) = idMapLock.write {
+  def forget(t: MongoNode) = idMapLock {
     //Get the existing id for the node
     idMap.toValue(t).foreach(id => {
       val alias = aliases.forClass(t.getClass())

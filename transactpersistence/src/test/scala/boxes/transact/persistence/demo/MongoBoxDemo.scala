@@ -9,6 +9,8 @@ import boxes.persistence.ClassAliases
 import boxes.transact.persistence.mongo.MongoBox
 import boxes.transact.ShelfDefault
 import boxes.transact.Shelf
+import boxes.transact.implicits.Includes._
+import boxes.transact.TxnR
 
 object TestNode extends MongoMetaNode {
     override val indices = List(MongoNodeIndex("name"))
@@ -19,6 +21,7 @@ class TestNode(implicit txn: Txn) extends MongoNode {
   def meta = TestNode
   val name = Box("bob")
   val index = Box(0)
+  def toString(implicit txn: TxnR) = name() + ", " + index()
 }
 
 object MongoBoxDemo {
@@ -32,6 +35,10 @@ object MongoBoxDemo {
     }
     
     val mb = new MongoBox("MongoBoxDemo", aliases)
+    
+    val storedBob = mb.findOne[TestNode]("name", "bob")
+    read(implicit txn => println(storedBob.map(_.toString)))
+    transact(implicit txn => storedBob.foreach(_.name() = "bobob"))
     
     val bob = TestNode.now
     bob.index.now() = 1
