@@ -39,9 +39,18 @@ object Node {
   }
 }
 
-//Node is a marker trait for objects that contain all their state in Boxes, each of which
-//is reached through a read-only accessor method. Must also have a constructor accepting a Txn
-//and constructing a default instance.
+//Node is a marker trait for objects that contain all their state in un-shared Boxes, each of which
+//is reached through a read-only accessor method. 
 trait Node {
-  
 }
+
+//trait MetaNode[N] {
+//  def apply(txn: Txn): N
+//}
+//
+////Node is a marker trait for objects that contain all their state in Boxes, each of which
+////is reached through a read-only accessor method. Must also have a constructor accepting a Txn
+////and constructing a default instance.
+//trait Node[N <: Node[N]] {
+//  val meta: MetaNode[N]
+//}

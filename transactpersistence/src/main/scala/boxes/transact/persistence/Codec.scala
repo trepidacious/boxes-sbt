@@ -278,7 +278,13 @@ class NodeCodec(delegate:Codec[Any]) extends Codec[Node] {
       }
       case LinkId(id) => {
 
-        val n = c.getConstructor(classOf[Txn]).newInstance(txn)
+        val builderClass = Class.forName(c.getCanonicalName() + "Builder")
+        val builder = builderClass.getConstructor(classOf[Txn]).newInstance(txn)
+        val builderApply = builderClass.getDeclaredMethod("default")
+        val n = builderApply.invoke(builder)
+        
+        //val n = c.getConstructor(classOf[Txn]).newInstance(txn)
+        
         reader.cache(id, n)
         
         //Fill out the node's Vars

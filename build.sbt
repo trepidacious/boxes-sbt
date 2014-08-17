@@ -47,7 +47,7 @@ lazy val transactdemo = project.dependsOn(transact, transactswing, swing, graph,
 lazy val liftdemo = project.dependsOn(core, graph, persistence)
 
 //Transact Lift bindings
-lazy val transactliftdemo = project.dependsOn(core, transact, graph, transactgraph, persistence)
+lazy val transactliftdemo = project.dependsOn(core, transact, graph, transactgraph, transactpersistence, persistence)
 
 //Root project just aggregates all subprojects
 lazy val root = project.in(file(".")).aggregate(core, transact, swing, graph, swinggraph, persistence, demo, liftdemo)
