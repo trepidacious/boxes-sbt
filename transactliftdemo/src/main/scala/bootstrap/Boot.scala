@@ -9,6 +9,8 @@ import javax.mail.PasswordAuthentication
 import net.liftweb.sitemap._
 import net.liftweb.sitemap.Loc._
 import net.liftweb.http._
+import boxes.transact.lift.user.User
+import boxes.transact.lift.user.ExtendedSession
 
 /**
  * A class that's instantiated early and run.  It allows the application
@@ -25,13 +27,13 @@ class Boot {
     
     // where to search snippet
     LiftRules.addToPackages("boxes.transact.lift.demo")
-//    LiftRules.addToPackages("boxes.transact.lift.user")
+    LiftRules.addToPackages("boxes.transact.lift.user")
     LiftRules.addToPackages("boxes.transact.lift")
 
-//    configMailer("smtp.gmail.com", System.getProperty("gmailUser"), System.getProperty("gmailPassword"))
+    configMailer("smtp.gmail.com", System.getProperty("gmailUser"), System.getProperty("gmailPassword"))
 
-//    val loggedIn = If(() => boxes.transact.lift.user.User.loggedIn.isDefined,
-//                      () => RedirectResponse("/user_login"))
+    val loggedIn = If(() => User.loggedIn.isDefined,
+                      () => RedirectResponse("/user_login"))
 
     
     //FIXME reenable?
@@ -40,16 +42,16 @@ class Boot {
     // Build SiteMap
     def sitemap = SiteMap(
       Menu.i("Home") / "index"  >> Hidden,
-      Menu.i("Angular") / "angular"
+      Menu.i("Angular") / "angular",
 //      Menu.i("User signup complete") / "user_signup_complete"  >> Hidden,
-//      Menu.i("User signup") / "user_signup" >> Hidden,
+      Menu.i("User signup") / "user_signup" >> Hidden,
 //      Menu.i("Login box") / "user_login" >> Hidden,
 //      Menu.i("Logout box") / "user_logout" >> Hidden >> loggedIn,
 //      Menu.i("User edit") / "user_edit" >> Hidden >> loggedIn,
 //      Menu.i("Timesheet") / "timesheet_view" >> loggedIn,
       
-//      User.validationMenu / "user_validate" >> Hidden,
-//      User.resetPasswordMenu / "user_reset_password" >> Hidden
+      User.validationMenu / "user_validate" >> Hidden,
+      User.resetPasswordMenu / "user_reset_password" >> Hidden
     )
     
     LiftRules.setSiteMapFunc(() => sitemap)
@@ -66,7 +68,7 @@ class Boot {
 //    LiftRules.loggedInTest = Full(() => User.loggedIn_?)
       
     //Allow users to log in using cookies
-//    ExtendedSession.boot()
+    ExtendedSession.boot()
     
     // Force the request to be UTF-8
     LiftRules.early.append(_.setCharacterEncoding("UTF-8"))

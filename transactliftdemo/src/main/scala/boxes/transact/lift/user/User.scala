@@ -97,6 +97,8 @@ object User extends MongoMetaNode {
     override lazy val __nameSalt = Helpers.nextFuncName
   }
   
+  def newUser() = LiftShelf.shelf.transact(implicit txn => new UserBuilder().default())
+  
   def findByEmail(email: String) = LiftShelf.mb.findOne[User]("email", email)
 
   def findById(id: String) = LiftShelf.mb.findById[User](id)
