@@ -24,14 +24,13 @@ class Boot {
     LiftRules.resourceNames = "boxes" :: "timesheet" :: Nil
     
     // where to search snippet
-    LiftRules.addToPackages("boxes.lift.demo")
-//    LiftRules.addToPackages("boxes.lift.user")
-    LiftRules.addToPackages("boxes.lift")
+    LiftRules.addToPackages("boxes.transact.lift.demo")
+//    LiftRules.addToPackages("boxes.transact.lift.user")
     LiftRules.addToPackages("boxes.transact.lift")
 
 //    configMailer("smtp.gmail.com", System.getProperty("gmailUser"), System.getProperty("gmailPassword"))
 
-//    val loggedIn = If(() => boxes.lift.user.User.loggedIn.isDefined,
+//    val loggedIn = If(() => boxes.transact.lift.user.User.loggedIn.isDefined,
 //                      () => RedirectResponse("/user_login"))
 
     

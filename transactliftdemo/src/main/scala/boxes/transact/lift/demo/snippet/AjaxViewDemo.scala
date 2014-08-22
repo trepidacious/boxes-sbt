@@ -1,4 +1,4 @@
-package boxes.lift.demo.snippet
+package boxes.transact.lift.demo.snippet
 
 import net.liftweb.common.Loggable
 import boxes.transact.ShelfDefault

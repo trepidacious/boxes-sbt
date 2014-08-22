@@ -29,7 +29,7 @@ class IOSpec extends WordSpec {
 
   "IO" should {
 
-    "write json" in {
+    "duplicate simple data" in {
       implicit val shelf = ShelfDefault()
       shelf.transact(implicit txn => {
         val builder = new PersonBuilder
@@ -41,7 +41,9 @@ class IOSpec extends WordSpec {
         println(s)
         
         val p2 = IO.json().read(s)
-        println(IO.json().write(p2))
+        val t = IO.json().write(p2)
+        println(t)
+        assert(s === t)
       })
     }
     
