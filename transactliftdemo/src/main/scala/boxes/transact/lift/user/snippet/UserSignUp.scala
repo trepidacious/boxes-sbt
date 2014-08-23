@@ -52,7 +52,7 @@ class UserSignup() extends InsertCometView[User](User.newUser()){
 //    }
 //    
     AjaxListOfViews(List(
-        AjaxStaticView(<span>hi</span>)
+        AjaxStaticView(<span>UserSignup</span>)
     ))
   }
 }

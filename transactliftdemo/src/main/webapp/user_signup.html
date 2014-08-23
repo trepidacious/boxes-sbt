@@ -7,20 +7,36 @@
   <lift:with-param name="page-buttons">
   </lift:with-param>
 
-  <div ng-app="demoApp">
-    <div id="DemoCtrl" ng-controller="DemoCtrl">
+  <div ng-app="userSignup">
+    <div id="UserSignupCtrl" ng-controller="UserSignupCtrl">
   
     <div class="lift:UserSignup"></div>
   
-    <p>Time is {{time.value}}ms from epoch, at revision index {{time.index}}.</p>
-    <p>Text value is "{{text.value}}", and can be edited below.</p>
-
-    <form class="form-horizontal">
+    <form role="form" name="userSignupForm">
       <div class="form-group">
-        <label class="col-sm-2 control-label">Text</label>
-        <div class="col-sm-6">
-          <input class="form-control" ng-model="text.value">
-        </div>
+        <label class="control-label" for="firstName">First name:</label>
+        <input type="text" class="form-control" id="firstName" ng-model="firstName">
+      </div>
+      <div class="form-group">
+        <label class="control-label" for="lastName">Last name:</label>
+        <input type="text" class="form-control" id="lastName" ng-model="lastName">
+      </div>
+      <div class="form-group">
+        <label class="control-label" for="initials">Initials:</label>
+        <input type="text" class="form-control" id="initials" ng-model="initials">
+      </div>
+      <div class="form-group">
+        <label class="control-label" for="email">Email:</label>
+        <input type="text" class="form-control" id="email" ng-model="email">
+      </div>
+      <div class="form-group">
+        <label class="control-label" for="passA">Password:</label>  
+        <input class="form-control" type="password" id="passA" name="passA" ng-model="passA">
+      </div>
+      <div class="form-group" ng-class="{'has-error': userSignupForm.passB.$error.passwordMatch}">
+        <label class="control-label" for="passB">Repeat password:</label>  
+        <input class="form-control" type="password" id="passB" name="passB" password-check="passA" ng-model="passB">
+        <span class="help-block" ng-show="userSignupForm.passB.$error.passwordMatch">Passwords don't match.</span> 
       </div>
     </form>
       

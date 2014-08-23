@@ -35,10 +35,6 @@ class Boot {
     val loggedIn = If(() => User.loggedIn.isDefined,
                       () => RedirectResponse("/user_login"))
 
-    
-    //FIXME reenable?
-//    TableSorter.init
-
     // Build SiteMap
     def sitemap = SiteMap(
       Menu.i("Home") / "index"  >> Hidden,
@@ -56,13 +52,13 @@ class Boot {
     
     LiftRules.setSiteMapFunc(() => sitemap)
 
-    // Show the spinny image when an Ajax call starts
-    LiftRules.ajaxStart =
-      Full(() => LiftRules.jsArtifacts.show("ajax-loader").cmd)
-
-    // Make the spinny image go away when it ends
-    LiftRules.ajaxEnd =
-      Full(() => LiftRules.jsArtifacts.hide("ajax-loader").cmd)
+//    // Show the spinny image when an Ajax call starts
+//    LiftRules.ajaxStart =
+//      Full(() => LiftRules.jsArtifacts.show("ajax-loader").cmd)
+//
+//    // Make the spinny image go away when it ends
+//    LiftRules.ajaxEnd =
+//      Full(() => LiftRules.jsArtifacts.hide("ajax-loader").cmd)
 
     //FIXME what is this meant to do?
 //    LiftRules.loggedInTest = Full(() => User.loggedIn_?)

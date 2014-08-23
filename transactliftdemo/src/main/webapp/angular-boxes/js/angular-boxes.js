@@ -1,5 +1,22 @@
 var angularBoxes = angular.module('angularBoxes', ['ui.bootstrap']);
 
+angularBoxes.directive('passwordCheck', [function () {
+    return {
+        require: 'ngModel',
+        link: function (scope, elem, attrs, ctrl) {
+			var me = attrs.ngModel;
+			var matchTo = attrs.passwordCheck;
+
+			var f = function(value) {
+				ctrl.$setValidity('passwordMatch', scope[me] === scope[matchTo] );
+			}
+			
+			scope.$watch(me, f);
+			scope.$watch(matchTo, f);
+        }
+    }
+}]);
+
 angularBoxes.directive("boxesDataLink", function() {
 	var editorTemplate = '';
     return {
@@ -24,8 +41,8 @@ angularBoxes.directive('unixmillis', function() {
 	  return {
 			require: 'ngModel',
 			link: function(scope, element, attrs, ngModel) {
-	  		ngModel.$parsers.push(function(viewValue) {
-	       	return +viewValue;
+				ngModel.$parsers.push(function(viewValue) {
+					return +viewValue;
 				});
 			}
 		}
