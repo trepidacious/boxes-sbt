@@ -1,11 +1,11 @@
 var angularBoxes = angular.module('angularBoxes', ['ui.bootstrap']);
 
-angularBoxes.directive('passwordCheck', [function () {
+angularBoxes.directive('passwordMatchCheck', [function () {
     return {
         require: 'ngModel',
         link: function (scope, elem, attrs, ctrl) {
 			var me = attrs.ngModel;
-			var matchTo = attrs.passwordCheck;
+			var matchTo = attrs.passwordMatchCheck;
 
 			var f = function(value) {
 				ctrl.$setValidity('passwordMatch', scope[me] === scope[matchTo] );
@@ -13,6 +13,24 @@ angularBoxes.directive('passwordCheck', [function () {
 			
 			scope.$watch(me, f);
 			scope.$watch(matchTo, f);
+        }
+    }
+}]);
+
+angularBoxes.directive('passwordStrengthCheck', [function () {
+    return {
+        require: 'ngModel',
+        link: function (scope, elem, attrs, ctrl) {
+			var me = attrs.ngModel;
+			
+			//Ignored for now
+			var setting = attrs.passwordMatchCheck;
+
+			var f = function(value) {
+				ctrl.$setValidity('passwordStrength', scope[me] && scope[me].length > 7 && scope[me].length < 257);
+			}
+			
+			scope.$watch(me, f);
         }
     }
 }]);

@@ -13,8 +13,11 @@ import boxes.transact.lift.comet.InsertCometView
 import boxes.transact.lift.user.User
 import boxes.transact.lift.comet.AjaxListOfViews
 import boxes.transact.lift.comet.AjaxStaticView
+import boxes.transact.lift.comet.AjaxAngularActionView
 
-class UserSignup() extends InsertCometView[User](User.newUser()){
+case class UserCase(firstName: String, lastName: String, email: String, initials: String, passA: String, passB: String)
+
+class UserSignup() extends InsertCometView[User](User.newUser()) with Loggable {
 
   val hAndP = S.hostAndPath
 
@@ -51,8 +54,13 @@ class UserSignup() extends InsertCometView[User](User.newUser()){
 //      }
 //    }
 //    
-    AjaxListOfViews(List(
-        AjaxStaticView(<span>UserSignup</span>)
-    ))
+    AjaxListOfViews(
+      AjaxAngularActionView(
+        "UserSignupCtrl",
+        "submitGUID", (u: UserCase)=>{
+          logger.info("Submit: " + u)
+        }
+      )
+    )
   }
 }

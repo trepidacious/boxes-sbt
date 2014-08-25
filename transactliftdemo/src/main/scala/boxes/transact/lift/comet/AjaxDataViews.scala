@@ -63,7 +63,7 @@ private class AjaxTransformingDataLinkView[T, J](elementId: String, v: String, d
   
   val lock = Lock()
   
-  private var clientChangesUpTo = None: Option[Long]  //TODO this could probably just be a boolean, set to true on client changes, false on others in partialUpdates
+  private var clientChangesUpTo = None: Option[Long]
 
   val call = SHtml.ajaxCall(JE.JsRaw("1"), (s:String)=>{
     logger.info("Received " + s)
@@ -92,7 +92,7 @@ private class AjaxTransformingDataLinkView[T, J](elementId: String, v: String, d
   val guid = call.guid
   
   //This creates the controller code in Angular on the browser, that will send commits back to us on the named variable
-  override def renderHeader = <div boxes-data-link={v}></div>
+  override def renderHeader = <span boxes-data-link={v}></span>
   
   def render(txn: TxnR) = NodeSeq.Empty
   
