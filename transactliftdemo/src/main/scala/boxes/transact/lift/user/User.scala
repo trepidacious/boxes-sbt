@@ -59,27 +59,27 @@ class User(
   def checkPass(candidate: String)(implicit txn: TxnR) = passHash().map(Pass.check(candidate, _)).getOrElse(false)
   def checkPass(candidate: Option[String])(implicit txn: TxnR) = (for (h <- passHash(); c <- candidate) yield Pass.check(c, h)).getOrElse(false)
   
-  def newValidationToken(implicit txn: Txn) = {
+  def newValidationToken()(implicit txn: Txn) = {
     val t = User.makeToken
     validationToken.update(Some(t))
     t
   }
 
-  def newResetPasswordToken(implicit txn: Txn) = {
+  def newResetPasswordToken()(implicit txn: Txn) = {
     val t = User.makeToken
     resetPasswordToken() = Some(t)
     t
   }
 
-  def clearValidationToken(implicit txn: Txn) {
+  def clearValidationToken()(implicit txn: Txn) {
     validationToken() = None
   }
 
-  def clearResetPasswordToken(implicit txn: Txn) {
+  def clearResetPasswordToken()(implicit txn: Txn) {
     resetPasswordToken() = None
   }
   
-  def id() = LiftShelf.mb.keep(this).toStringMongod()
+  def id() = LiftShelf.mb.keep2(this).toStringMongod()
   
   def tokenParam(token: Option[String]) = id() + "-" + token.getOrElse("no_token")
   
@@ -238,25 +238,25 @@ object User extends MongoMetaNode {
     List[MailBodyType] = List(XHTMLMailBodyType(resetMailBody(user, resetLink)))
 
   def validatePassword(pass: String) = DefaultPasswordValidation.validate(pass)
-  def validateEmail(email: String) = DefaultEmailValidation.validate(email)
+//  def validateEmail(email: String) = DefaultEmailValidation.validate(email)
 }
 
 object DefaultPasswordValidation {
-  val isAlphabetic = (s: String) => s.filter(c => c.isLetter || c.isWhitespace).length == s.length
-  val isNumeric = (s: String) => s.filter(c => c.isDigit).length == s.length
-  
+//  val isAlphabetic = (s: String) => s.filter(c => c.isLetter || c.isWhitespace).length == s.length
+//  val isNumeric = (s: String) => s.filter(c => c.isDigit).length == s.length
+//  
   val minLength = 8
-  val maxLength = 512
-  val minLengthPure = 16
-
+  val maxLength = 256
+//  val minLengthPure = 16
+//
   //To avoid telling anyone looking over the user's shoulder that the password is mixed or not, always tell the user all restrictions at once
-  def minError = Some(S.?("user.minlength.prefix") + " " + minLength + " " + S.?("user.minlength.midfix") + " " + minLengthPure + " " + S.?("user.minlength.suffix"))
+  def minError = Some(S.?("user.minlength.prefix") + " " + minLength + " " + S.?("user.minlength.suffix"))
   def maxError = Some(S.?("user.maxlength.prefix") + " " + maxLength + " " + S.?("user.maxlength.suffix"))
   
   //FIXME strings as resources
   def validate(s: String) = {
-    val min = if (isAlphabetic(s) || isNumeric(s)) minLengthPure else minLength 
-    if (s.length() < min) {
+//    val min = if (isAlphabetic(s) || isNumeric(s)) minLengthPure else minLength 
+    if (s.length() < minLength) {
       minError
     } else if (s.length() > maxLength) {
       maxError
@@ -266,20 +266,20 @@ object DefaultPasswordValidation {
   }
 }
 
-object DefaultEmailValidation {
-  
-  val regex = new Regex("""^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$""")
-  
-  def validate(s: String) = {
-    //Regex from here: http://www.w3.org/TR/html-markup/datatypes.html#form.data.emailaddress
-    //This is not particularly strict, shouldn't reject any valid email addresses, but may pass invalid ones.
-    //Note that we check the email address properly by trying to mail it, and requiring
-    //the user to visit a link in the email. This is just to remind people gently that they should put something slightly
-    //like an email address in there.
-    if (regex.findFirstMatchIn(s) == None) {
-      Some(S.?("user.invalid.email"))
-    } else {
-      None
-    }
-  }
-}
+//object DefaultEmailValidation {
+//  
+//  val regex = new Regex("""^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$""")
+//  
+//  def validate(s: String) = {
+//    //Regex from here: http://www.w3.org/TR/html-markup/datatypes.html#form.data.emailaddress
+//    //This is not particularly strict, shouldn't reject any valid email addresses, but may pass invalid ones.
+//    //Note that we check the email address properly by trying to mail it, and requiring
+//    //the user to visit a link in the email. This is just to remind people gently that they should put something slightly
+//    //like an email address in there.
+//    if (regex.findFirstMatchIn(s) == None) {
+//      Some(S.?("user.invalid.email"))
+//    } else {
+//      None
+//    }
+//  }
+//}

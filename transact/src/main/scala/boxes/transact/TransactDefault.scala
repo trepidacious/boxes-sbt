@@ -39,9 +39,13 @@ private class BoxDefault[T](val id: Long) extends Box[T] {
   
   private[transact] def addChange(c: Change, t: T) = changes.put(c, t)
   private[transact] def getValue(c: Change) = changes.get(c)
+  
+  override def toString() = "BoxDefault id " + id + ", changes " + changes
 }
 
-private class Change(val revision: Long)
+private class Change(val revision: Long) {
+  override def toString() = "Change, revision " + revision
+}
 
 private object Change {
   def apply(revision: Long) = new Change(revision)
@@ -280,7 +284,7 @@ private class TxnRDefault(val shelf: ShelfDefault, val revision: RevisionDefault
 private class TxnRLogging(val revision: RevisionDefault) extends TxnR {
   var reads = Set[Long]()
   def get[T](box: BoxR[T]): T = {
-    val v = revision.valueOf(box).getOrElse(throw new RuntimeException("Missing Box"))
+    val v = revision.valueOf(box).getOrElse(throw new RuntimeException("Missing Box " + box))
     reads = reads + box.id
     return v
   }
@@ -436,6 +440,7 @@ private class ViewDefault(val shelf: ShelfDefault, val f: TxnR => Unit, val exe:
 
         exe.execute(new Runnable() {
           def run = {
+            //FIXME if this has an exception, it kills the View (i.e. it won't run on any future revisions).
             f(t)
             lock.run{
               state = Some((r.index, t.reads))

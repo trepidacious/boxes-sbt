@@ -49,9 +49,11 @@ object MongoBoxDemo {
     bill.name.now() = "bill"
     bill.index.now() = 42
 
-    mb.keep(bobDup)
-    mb.keep(bob)
-    mb.keep(bill)
+    shelf.read(implicit txn => {
+      mb.keep2(bobDup)
+      mb.keep2(bob)
+      mb.keep2(bill)
+    })
   }
   
 }

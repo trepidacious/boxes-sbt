@@ -12,6 +12,7 @@ userSignup.controller('UserSignupCtrl', function ($scope) {
   $scope.initials = "";
   $scope.passA = "";
   $scope.passB = "";
+  $scope.made = false;
   
   $scope.submit = function(){
     $scope.$broadcast('show-errors-check-validity');

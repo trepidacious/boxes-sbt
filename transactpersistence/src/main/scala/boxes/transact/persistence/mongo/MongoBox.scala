@@ -18,6 +18,8 @@ import scala.util.Try
 import boxes.transact.View
 import java.util.concurrent.atomic.AtomicReference
 import boxes.transact.util.Lock
+import boxes.transact.TxnR
+import grizzled.slf4j.Logging
 
 case class MongoNodeIndex(key: String, unique: Boolean = true, ascending: Boolean = true)
 
@@ -35,7 +37,7 @@ trait MongoNode extends Node {
   def retainView(view: View) = retainedView.set(view)
 }
 
-class MongoBox(dbName: String, aliases: ClassAliases)(implicit shelf: Shelf) {
+class MongoBox(dbName: String, aliases: ClassAliases)(implicit shelf: Shelf) extends Logging{
 
   private val mongoConn = MongoConnection()
   private val db = mongoConn(dbName)
@@ -107,7 +109,9 @@ class MongoBox(dbName: String, aliases: ClassAliases)(implicit shelf: Shelf) {
   
   //Register a MongoNode to be kept in mongodb. Returns the ObjectId used. If the
   //MongoNode was already kept, nothing is done, but the ObjectId is still returned.
-  def keep(t: MongoNode) = idMapLock {
+  //The provided transaction is used to read the MongoNode's state while storing it to the
+  //database
+  def keep2(t: MongoNode) = idMapLock {
     //Get the existing id for the node, or else add the
     //node to mongo and return the new id
     idMap.toValue(t).getOrElse{        
@@ -127,7 +131,7 @@ class MongoBox(dbName: String, aliases: ClassAliases)(implicit shelf: Shelf) {
       
       val leOrNull = db(alias).lastError.getException()
       if (leOrNull != null) throw leOrNull 
-        
+  
       //Set up View and add to map
       track(alias, t, id)
       id        

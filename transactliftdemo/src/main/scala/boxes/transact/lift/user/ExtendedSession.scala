@@ -26,9 +26,11 @@ class ExtendedSessionBuilder(implicit txn: Txn) {
 
 class ExtendedSession(val cookieId : boxes.transact.Box[String], val userId: boxes.transact.Box[String], val expirationMillis: boxes.transact.Box[Long]) extends MongoNode {
   val meta = ExtendedSession
+  
+  override def toString() = "ExtendedSession(" + cookieId + ", " + userId + ", " + expirationMillis + ")"
 }
 
-object ExtendedSession extends MongoMetaNode with Logger {  
+object ExtendedSession extends MongoMetaNode with Loggable {  
   override val indices = List(MongoNodeIndex("cookieId"))
 
   val cookieIdLength = 256
@@ -56,6 +58,7 @@ object ExtendedSession extends MongoMetaNode with Logger {
   def onUserLogin(userObjectId: String) {
     deleteSessionAndCookie()    
     createSessionAndCookie(userObjectId)
+
   }
 
   def onUserLogout() = deleteSessionAndCookie()
@@ -76,19 +79,19 @@ object ExtendedSession extends MongoMetaNode with Logger {
   
   def createSessionAndCookie(userObjectId: String) {
     //Make a new ExtSession for this user, store it in DB
-    val (es, cookieId, expiration) = LiftShelf.shelf.transact(implicit txn => {
+    val (cookie, extSession) = LiftShelf.shelf.transact(implicit txn => {
       val extSessionBuilder = new ExtendedSessionBuilder
       val extSession = extSessionBuilder.default
       extSession.userId() = userObjectId
-      (extSession, extSession.cookieId(), extSession.expirationMillis())
+
+      (HTTPCookie(cookieName, extSession.cookieId())
+        .setMaxAge(((extSession.expirationMillis() - millis) / 1000L).toInt)
+        .setPath("/"), extSession)
     })
-    
-    LiftShelf.mb.keep(es)
+
+    LiftShelf.mb.keep2(extSession)
     
     //Give the browser a cookie with the ExtSession's cookieId to allow retrieving it later for automatic login
-    val cookie = HTTPCookie(cookieName, cookieId)
-                    .setMaxAge(((expiration - millis) / 1000L).toInt)
-                    .setPath("/")
     S.addCookie(cookie)
   }
 

@@ -7,21 +7,27 @@ import net.liftweb.http.S
 import net.liftweb.http.js.JsCommands
 import net.liftweb.http.js.JsCmds
 import com.mongodb.MongoException
-import scalaz._
-import Scalaz._
 import boxes.transact.lift.comet.InsertCometView
 import boxes.transact.lift.user.User
 import boxes.transact.lift.comet.AjaxListOfViews
 import boxes.transact.lift.comet.AjaxStaticView
 import boxes.transact.lift.comet.AjaxAngularActionView
+import boxes.transact.lift.LiftShelf
+import boxes.transact.lift.user.Pass
+import scala.util.Try
+import boxes.transact.BoxNow
+import boxes.transact.lift.comet.AjaxDataSourceView
 
 case class UserCase(firstName: String, lastName: String, email: String, initials: String, passA: String, passB: String)
 
 class UserSignup() extends InsertCometView[User](User.newUser()) with Loggable {
 
   val hAndP = S.hostAndPath
+  implicit val shelf = LiftShelf.shelf
 
   def makeView(u: User) = {
+    
+    val created = BoxNow(false)
 //    
 //    //Temporarily store password plaintext, note these are NOT committed to any permanent storage
 //    val passA = Var("")
@@ -53,14 +59,45 @@ class UserSignup() extends InsertCometView[User](User.newUser()) with Loggable {
 //        case e: MongoException.DuplicateKey => S.error(S.?("user.email.exists"))
 //      }
 //    }
-//    
+//
+    
+    def signup(uc: UserCase) {
+      if (uc.passA != uc.passB) {
+        S.error(S.?("user.signup.passwords.incorrect"))
+        
+      } else User.validatePassword(uc.passA) match {
+        case Some(error) => S.error(error)
+        case None => {
+          LiftShelf.shelf.transact(implicit txn => {
+            u.firstName() = uc.firstName
+            u.lastName() = uc.lastName
+            u.email() = uc.email
+            u.initials() = uc.initials
+            u.passHash() = Some(Pass.hash(uc.passA))
+          })
+          
+          try {
+            LiftShelf.mb.keep2(u)
+            LiftShelf.shelf.transact(implicit txn => {
+              User.sendValidationEmail(hAndP, u)
+              created() = true
+            })
+          } catch {
+            case e: MongoException.DuplicateKey => S.error(S.?("user.email.exists"))
+          }
+        }
+      }
+    }
+    
     AjaxListOfViews(
       AjaxAngularActionView(
         "UserSignupCtrl",
         "submitGUID", (u: UserCase)=>{
           logger.info("Submit: " + u)
+          signup(u)
         }
-      )
+      ),
+      AjaxDataSourceView("UserSignupCtrl", "created", created)
     )
   }
 }

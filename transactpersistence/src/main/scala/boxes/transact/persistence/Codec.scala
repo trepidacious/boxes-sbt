@@ -323,7 +323,7 @@ class NodeCodec(delegate:Codec[Any]) extends Codec[Node] {
       //We are new, write out as normal, and include the id
       case New(id) => {
         writer.write(OpenObj(n.getClass, LinkId(id)))
-        Node.accessors(n).foreach(entry => {
+        Node.accessors(n).foreach(entry => {          
           writer.write(OpenField(entry._1))
           delegate.write(entry._2.invoke(n).asInstanceOf[Box[_]].apply, writer)
         })

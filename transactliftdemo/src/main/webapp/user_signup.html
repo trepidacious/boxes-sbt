@@ -10,7 +10,7 @@
   <div ng-app="userSignup">
     <div id="UserSignupCtrl" ng-controller="UserSignupCtrl">
     
-    <form role="form" name="userSignupForm" novalidate>
+    <form role="form" name="userSignupForm" novalidate ng-show="!created.value">
     
       <div class="form-group" show-errors>
         <label class="control-label" for="firstName">First name</label>
@@ -67,6 +67,9 @@
       </div>
     </div>
  -->      
+ 
+    <div ng-show="created.value">You have successfully signed up - you will receive an email with a validation link, please click on this to login for the first time.</div>
+ 
     </div>
   </div>
 

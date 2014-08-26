@@ -41,8 +41,8 @@ class Boot {
       Menu.i("Angular") / "angular",
 //      Menu.i("User signup complete") / "user_signup_complete"  >> Hidden,
       Menu.i("User signup") / "user_signup" >> Hidden,
-//      Menu.i("Login box") / "user_login" >> Hidden,
-//      Menu.i("Logout box") / "user_logout" >> Hidden >> loggedIn,
+      Menu.i("User login") / "user_login" >> Hidden,
+      Menu.i("User logout") / "user_logout" >> Hidden >> loggedIn,
 //      Menu.i("User edit") / "user_edit" >> Hidden >> loggedIn,
 //      Menu.i("Timesheet") / "timesheet_view" >> loggedIn,
       
