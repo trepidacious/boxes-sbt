@@ -89,7 +89,7 @@ object ExtendedSession extends MongoMetaNode with Loggable {
         .setPath("/"), extSession)
     })
 
-    LiftShelf.mb.keep2(extSession)
+    LiftShelf.mb.keep(extSession)
     
     //Give the browser a cookie with the ExtSession's cookieId to allow retrieving it later for automatic login
     S.addCookie(cookie)

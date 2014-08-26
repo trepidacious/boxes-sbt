@@ -79,7 +79,7 @@ class User(
     resetPasswordToken() = None
   }
   
-  def id() = LiftShelf.mb.keep2(this).toStringMongod()
+  def id() = LiftShelf.mb.keep(this).toStringMongod()
   
   def tokenParam(token: Option[String]) = id() + "-" + token.getOrElse("no_token")
   

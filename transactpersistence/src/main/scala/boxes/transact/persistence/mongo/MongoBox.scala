@@ -111,7 +111,7 @@ class MongoBox(dbName: String, aliases: ClassAliases)(implicit shelf: Shelf) ext
   //MongoNode was already kept, nothing is done, but the ObjectId is still returned.
   //The provided transaction is used to read the MongoNode's state while storing it to the
   //database
-  def keep2(t: MongoNode) = idMapLock {
+  def keep(t: MongoNode) = idMapLock {
     //Get the existing id for the node, or else add the
     //node to mongo and return the new id
     idMap.toValue(t).getOrElse{        

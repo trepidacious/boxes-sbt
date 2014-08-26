@@ -77,7 +77,7 @@ class UserSignup() extends InsertCometView[User](User.newUser()) with Loggable {
           })
           
           try {
-            LiftShelf.mb.keep2(u)
+            LiftShelf.mb.keep(u)
             LiftShelf.shelf.transact(implicit txn => {
               User.sendValidationEmail(hAndP, u)
               created() = true
