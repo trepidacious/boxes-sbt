@@ -7,11 +7,63 @@
   <lift:with-param name="page-buttons">
   </lift:with-param>
 
-  <div>
- 
-    <div class="lift:UserEdit" />
-
-  </div>
+  <div ng-app="userEdit">
+    <div id="UserEditCtrl" ng-controller="UserEditCtrl">
     
+    <form role="form" name="userEditForm" novalidate><!-- ng-show="!created.value">  --> 
+    
+      <div class="form-group">
+        <label class="control-label" for="firstName">First name</label>
+        <input type="text" class="form-control" name="firstName" ng-model="firstName.value">
+      </div>
+
+      <div class="form-group">
+        <label class="control-label" for="lastName">Last name</label>
+        <input type="text" class="form-control" name="lastName" ng-model="lastName.value">
+      </div>
+      
+      <div class="form-group">
+        <label class="control-label" for="initials">Initials</label>
+        <input type="text" class="form-control" name="initials" ng-model="initials.value">
+      </div>
+      
+    </form>
+      
+    <form role="form" name="userEditPassForm" novalidate ng-show="!passChanged.value"> 
+      
+      <div class="form-group" show-errors>
+        <label class="control-label" for="passA">Password:</label>  
+        <input class="form-control" type="password" id="passA" name="passA" password-strength-check="default" ng-model="passA" required>
+        <p class="help-block" ng-if="userEditPassForm.passA.$error.passwordStrength">
+          Password must be between 8 and 256 characters.
+        </p> 
+      </div>
+      
+      <div class="form-group" show-errors>
+        <label class="control-label" for="passB">Repeat password:</label>  
+        <input class="form-control" type="password" id="passB" name="passB" password-match-check="passA" ng-model="passB" required>
+        <p class="help-block" ng-if="userEditPassForm.passB.$error.passwordMatch">
+          Passwords don't match.
+        </p> 
+      </div>
+
+      <button id="submit-pass-btn" class="btn btn-success" ng-click="submitPass()" data-loading-text="Changing...">Change password</button>
+      
+    </form>
+
+    <div ng-show="passChanged.value" class="alert alert-success" role="alert" ng-cloak>Password changed.</div>
+    
+    <span class="lift:UserEdit"></span>
+ 
+    </div>
+  </div>
+
+  <lift:with-param name="angular-scripts">
+    <!-- Angular controllers/directives -->
+    <script src="/angular-bootstrap/js/angular-bootstrap-show-errors-1.0.2.min.js"></script>
+    <script src="/angular-boxes/js/angular-boxes.js"></script>
+    <script src="/angular-user/js/edit.js"></script>
+  </lift:with-param> 
+        
 </lift:surround>
 

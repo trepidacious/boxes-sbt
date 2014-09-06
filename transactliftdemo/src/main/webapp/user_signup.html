@@ -68,7 +68,9 @@
     </div>
  -->      
  
-    <div ng-show="created.value">You have successfully signed up - you will receive an email with a validation link, please click on this to login for the first time.</div>
+    <div ng-show="created.value" ng-cloak>You have successfully signed up - you will receive an email with a validation link, please click on this to login for the first time.</div>
+ 
+    <span class="lift:UserSignup"></span>
  
     </div>
   </div>
@@ -79,10 +81,6 @@
     <script src="/angular-boxes/js/angular-boxes.js"></script>
     <script src="/angular-user/js/signup.js"></script>
   </lift:with-param> 
-    
-  <lift:with-param name="angular-comet">
-    <span class="lift:UserSignup"></span>
-  </lift:with-param> 
-    
+        
 </lift:surround>
 

@@ -39,15 +39,18 @@ class Boot {
     def sitemap = SiteMap(
       Menu.i("Home") / "index"  >> Hidden,
       Menu.i("Angular") / "angular",
-//      Menu.i("User signup complete") / "user_signup_complete"  >> Hidden,
+
+      //User management pages
       Menu.i("User signup") / "user_signup" >> Hidden,
       Menu.i("User login") / "user_login" >> Hidden,
       Menu.i("User logout") / "user_logout" >> Hidden >> loggedIn,
-//      Menu.i("User edit") / "user_edit" >> Hidden >> loggedIn,
-//      Menu.i("Timesheet") / "timesheet_view" >> loggedIn,
-      
+      Menu.i("User edit") / "user_edit" >> Hidden >> loggedIn,
       User.validationMenu / "user_validate" >> Hidden,
       User.resetPasswordMenu / "user_reset_password" >> Hidden
+      //      Menu.i("User signup complete") / "user_signup_complete"  >> Hidden,
+      
+//      Menu.i("Timesheet") / "timesheet_view" >> loggedIn,
+      
     )
     
     LiftRules.setSiteMapFunc(() => sitemap)

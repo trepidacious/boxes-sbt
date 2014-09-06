@@ -52,7 +52,7 @@ private class AjaxAngularActionView[T, J](elementId: String, v: String, toT: (J)
   
   implicit val formats = BoxesFormats.formats
 
-  override def renderHeader = <script type="text/javascript">{actionSetter()}</script>
+//  override def renderHeader = <script type="text/javascript">{actionSetter()}</script>
   
   override def render(txn: TxnR) = NodeSeq.Empty
 
@@ -72,12 +72,12 @@ private class AjaxAngularActionView[T, J](elementId: String, v: String, toT: (J)
   def actionSetter() = "jQuery(document).ready(function() {" + actionRaw() + "});"
   def actionRaw() = "angular.element('#" + elementId + "').scope().$apply(function ($scope) {$scope." + v + " = '" + call.guid + "';});"
   
-  override def partialUpdates = Nil//List({implicit txn: TxnR => JE.JsRaw(actionRaw())})
+  override def partialUpdates = List({implicit txn: TxnR => JE.JsRaw(actionRaw())})
 }
 
 private class AjaxAngularUnitActionView(elementId: String, v: String, action: =>Unit) extends AjaxView with Loggable {
   
-  override def renderHeader = <script type="text/javascript">{actionSetter()}</script>
+//  override def renderHeader = <script type="text/javascript">{actionSetter()}</script>
 
   override def render(txn: TxnR) = NodeSeq.Empty
   
@@ -89,5 +89,5 @@ private class AjaxAngularUnitActionView(elementId: String, v: String, action: =>
   def actionSetter() = "jQuery(document).ready(function() {" + actionRaw() + "});"
   def actionRaw() = "angular.element('#" + elementId + "').scope().$apply(function ($scope) {$scope." + v + " = '" + call.guid + "';});"
 
-  override def partialUpdates = Nil;//List({implicit txn: TxnR => JE.JsRaw("angular.element('#" + elementId + "').scope().$apply(function ($scope) {$scope." + v + " = '" + call.guid + "';});")})
+  override def partialUpdates = List({implicit txn: TxnR => JE.JsRaw(actionRaw())})
 }

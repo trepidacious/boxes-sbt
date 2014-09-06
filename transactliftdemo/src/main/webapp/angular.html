@@ -6,8 +6,8 @@
   <div ng-app="demoApp">
     <div id="DemoCtrl" ng-controller="DemoCtrl">
   
-	    <div class="lift:AjaxViewDemo"></div>
-	
+<!-- 	    <div class="lift:AjaxViewDemo"></div>
+ -->	
 	    <p>Time is {{time.value}}ms from epoch, at revision index {{time.index}}.</p>
 	    <p>Text value is "{{text.value}}", and can be edited below.</p>
 	
@@ -20,6 +20,8 @@
 	      </div>
 	    </form>
 	    
+      <span class="lift:AjaxViewDemo"></span>
+	    
 	  </div>
   </div>
 
@@ -28,5 +30,5 @@
     <script src="/angular-boxes/js/angular-boxes.js"></script>
     <script src="/angular-demo/js/controllers.js"></script>
 	</lift:with-param> 
-  
+    
 </lift:surround>
