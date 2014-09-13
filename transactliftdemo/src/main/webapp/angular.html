@@ -11,12 +11,10 @@
 	    <p>Time is {{time.value}}ms from epoch, at revision index {{time.index}}.</p>
 	    <p>Text value is "{{text.value}}", and can be edited below.</p>
 	
-	    <form class="form-horizontal">
+	    <form role="form">
 	      <div class="form-group">
-	        <label class="col-sm-2 control-label">Text</label>
-	        <div class="col-sm-6">
-	          <input class="form-control" ng-model="text.value">
-	        </div>
+	        <label class="control-label">Text</label>
+          <input class="form-control" ng-model="text.value">
 	      </div>
 	    </form>
 	    
