@@ -28,3 +28,5 @@ out/
 *.sublime-workspace
 
 *.sublime-project
+
+transactliftdemo/src/main/webapp/bower_components

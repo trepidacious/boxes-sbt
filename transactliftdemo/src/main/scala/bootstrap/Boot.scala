@@ -39,6 +39,7 @@ class Boot {
     def sitemap = SiteMap(
       Menu.i("Home") / "index"  >> Hidden,
       Menu.i("Angular") / "angular",
+      Menu.i("Polymer") / "polymer-demo",
 
       //User management pages
       Menu.i("User signup") / "user_signup" >> Hidden,
@@ -46,11 +47,16 @@ class Boot {
       Menu.i("User logout") / "user_logout" >> Hidden >> loggedIn,
       Menu.i("User edit") / "user_edit" >> Hidden >> loggedIn,
       User.validationMenu / "user_validate" >> Hidden,
-      User.resetPasswordMenu / "user_reset_password" >> Hidden
+      User.resetPasswordMenu / "user_reset_password" >> Hidden,
       //      Menu.i("User signup complete") / "user_signup_complete"  >> Hidden,
       
 //      Menu.i("Timesheet") / "timesheet_view" >> loggedIn,
-      
+
+      //Anything we get via bower
+      Menu.i("Bower Components") / "bower_components" / ** >> Hidden,
+
+      //Polymer elements
+      Menu.i("Polymer Demo Elements") / "polymer-demo-elements" / ** >> Hidden
     )
     
     LiftRules.setSiteMapFunc(() => sitemap)

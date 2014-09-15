@@ -1,0 +1,30 @@
+{
+  "name": "transactliftdemo",
+  "version": "0.0.1",
+  "homepage": "https://github.com/trepidacious/boxes-sbt",
+  "authors": [
+    "trepidacious <trepidacious@gmail.com>"
+  ],
+  "description": "Demonstration of Boxes transactional Lift binding.",
+  "keywords": [
+    "boxes",
+    "lift",
+    "angular",
+    "polymer",
+    "transactional"
+  ],
+  "license": "GPL",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "polymer": "Polymer/polymer#~0.4.0",
+    "core-elements": "Polymer/core-elements#~0.4.0",
+    "paper-elements": "Polymer/paper-elements#~0.4.0",
+    "core-ajax": "Polymer/core-ajax#~0.4.0"
+  }
+}
