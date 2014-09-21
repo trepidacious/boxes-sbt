@@ -1,7 +1,46 @@
-<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import"
+      href="../bower_components/polymer/polymer.html">
+<link rel="import"
+      href="../bower_components/paper-input/paper-input.html">
 
-<polymer-element name="my-element" noscript>
+<polymer-element name="my-element" attributes="owner color time text">
   <template>
-    <span>Hello from <b>my-element</b>. This is my Shadow DOM.</span>
+    This is <b>{{owner}}</b>'s fav-color element. 
+    {{owner}} likes the color 
+    <span style="color: {{color}}">{{color}}</span>.
+    The time is <b>{{time}}</b>.
+    <paper-input label="Type something" value="{{text}}"></paper-input>
+    <p>Text is '{{text}}'</p>
+    
   </template>
+  <script>
+    Polymer('my-element', {
+   	  observe: {
+   		  'text': 'textFromBrowser'
+  		},
+  	  ready: function() {
+	      this.owner = "Daniel";
+        this.color = "red";
+	      this.time = 0;
+	      this.text = "";
+  	  },
+      textFromBrowser: function(oldValue, newValue) {
+        //Check that we have data, and we aren't doing this in response to a new value from the server
+        //We do this by tracking the last index seen
+				if (this.textGUID && (this.lastIndexSeen == this.textIndex)) {
+					console.log(oldValue + "->" + newValue)
+					cmd = this.textGUID + '=' + JSON.stringify({"value": this.text, "index": this.textIndex, "guid": this.textGUID})
+					console.log(cmd)
+					liftAjax.lift_ajaxHandler(cmd, null, null, null)
+				}
+    	  this.lastIndexSeen = this.textIndex;
+      },
+      textFromServer: function(data) {
+        //Note we set index before value, so that textFromBrowser will realise there is new server data when it is called
+        this.textIndex = data.index;
+    	  this.text = data.value;
+    	  this.textGUID = data.guid;
+    	}
+    });
+  </script>
 </polymer-element>

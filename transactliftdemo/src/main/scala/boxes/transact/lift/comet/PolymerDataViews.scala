@@ -19,27 +19,28 @@ import scala.concurrent.Lock
 import java.util.concurrent.locks.ReentrantLock
 import boxes.transact.util.Lock
 
-object AjaxDataLinkView {
-  def apply[T](elementId: String, v: String, data: Box[T])(implicit shelf: Shelf, mf: Manifest[T]): AjaxView = new AjaxTransformingDataLinkView[T, T](elementId, v, data, identity, identity, new DefaultJsonTransformer)
+object PolymerDataLinkView {
+  def apply[T](elementId: String, v: String, data: Box[T])(implicit shelf: Shelf, mf: Manifest[T]): AjaxView = new PolymerTransformingDataLinkView[T, T](elementId, v, data, identity, identity, new DefaultJsonTransformer)
     
   def optional[T](elementId: String, v: String, data: Box[Option[T]])(implicit shelf: Shelf, mf: Manifest[T]): AjaxView = {
     def toJ[T](o: Option[T]) = o.getOrElse(null.asInstanceOf[T])
     def toT[T](t: T) = if (t == null) None else Some(t)
-    new AjaxTransformingDataLinkView[Option[T], T](elementId, v, data, toJ, toT, new DefaultJsonTransformer)
+    new PolymerTransformingDataLinkView[Option[T], T](elementId, v, data, toJ, toT, new DefaultJsonTransformer)
   }
 }
 
-object AjaxDataSourceView {
-  def apply[T](elementId: String, v: String, data: Box[T])(implicit shelf: Shelf, mf: Manifest[T]): AjaxView = new AjaxTransformingDataSourceView[T, T](elementId, v, data, identity, new DefaultJsonTransformer)
+object PolymerDataSourceView {
+  def apply[T](selector: String, v: String, data: Box[T])(implicit shelf: Shelf, mf: Manifest[T]): AjaxView = new PolymerTransformingDataSourceView[T, T](selector, v, data, identity, new DefaultJsonTransformer)
     
-  def optional[T](elementId: String, v: String, data: Box[Option[T]])(implicit shelf: Shelf, mf: Manifest[T]): AjaxView = {
+  def optional[T](selector: String, v: String, data: Box[Option[T]])(implicit shelf: Shelf, mf: Manifest[T]): AjaxView = {
     def toJ[T](o: Option[T]) = o.getOrElse(null.asInstanceOf[T])
     def toT[T](t: T) = if (t == null) None else Some(t)
-    new AjaxTransformingDataSourceView[Option[T], T](elementId, v, data, toJ, new DefaultJsonTransformer)
+    new PolymerTransformingDataSourceView[Option[T], T](selector, v, data, toJ, new DefaultJsonTransformer)
   }
 }
 
-private class AjaxTransformingDataLinkView[T, J](elementId: String, v: String, data: Box[T], toJ: (T)=>J, toT: (J)=>T, jt: JsonTransformer[J])(implicit shelf: Shelf, mft: Manifest[T], mfj: Manifest[J]) extends AjaxView with Loggable {
+
+private class PolymerTransformingDataLinkView[T, J](selector: String, v: String, data: Box[T], toJ: (T)=>J, toT: (J)=>T, jt: JsonTransformer[J])(implicit shelf: Shelf, mft: Manifest[T], mfj: Manifest[J]) extends AjaxView with Loggable {
   
   val lock = Lock()
   
@@ -93,21 +94,26 @@ private class AjaxTransformingDataLinkView[T, J](elementId: String, v: String, d
       } else {
         //Client is NOT up to date
         clientChangesUpTo = None
-        val vvg = VersionedValueAndGUID(toJ(d), i, guid)
+        val valueJson = toJ(d)
+        val vvg = VersionedValueAndGUID(valueJson, i, guid)
         val json = jt.toJson(vvg)
-        logger.info("AjaxTransformingDataLinkView sending " + json)
-        JE.JsRaw("angular.element('#" + elementId + "').scope().$apply(function ($scope) {$scope." + v + " = " + json + ";});")
+//        val js = "document.querySelector('" + selector + "')." + v + " = " + json + ";"
+        val js = "document.querySelector('" + selector + "')." + v + "FromServer(" + json + ");"
+        logger.info("PolymerTransformingDataLinkView sending:\n" + js)
+        JE.JsRaw(js)
       }
     }
   }})
 }
 
-private class AjaxTransformingDataSourceView[T, J](elementId: String, v: String, data: BoxR[T], toJ: (T)=>J, jt: JsonTransformer[J])(implicit shelf: Shelf, mft: Manifest[T], mfj: Manifest[J]) extends AjaxView with Loggable {
+private class PolymerTransformingDataSourceView[T, J](selector: String, v: String, data: BoxR[T], toJ: (T)=>J, jt: JsonTransformer[J])(implicit shelf: Shelf, mft: Manifest[T], mfj: Manifest[J]) extends AjaxView with Loggable {
   def render(txn: TxnR) = NodeSeq.Empty
   override def partialUpdates = List({implicit txn: TxnR => {
-    val vv = VersionedValue(toJ(data()), data.index())
+    val valueJson = toJ(data())
+    val vv = VersionedValue(valueJson, data.index())
     val json = jt.toJson(vv)
-    logger.info("AjaxTransformingDataSourceView sending " + json)
-    JE.JsRaw("angular.element('#" + elementId + "').scope().$apply(function ($scope) {$scope." + v + " = " + json + ";});")
+    val js = "document.querySelector('" + selector + "')." + v + " = " + json + ";"
+    logger.info("PolymerTransformingDataSourceView sending:\n" + js)
+    JE.JsRaw(js)
   }})
 }

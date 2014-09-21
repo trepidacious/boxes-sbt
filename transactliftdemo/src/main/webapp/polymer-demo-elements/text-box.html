@@ -1,0 +1,18 @@
+<link rel="import"
+      href="../bower_components/polymer/polymer.html">
+
+<polymer-element name="my-element" attributes="owner color time">
+  <template>
+    This is <b>{{owner}}</b>'s fav-color element. 
+    {{owner}} likes the color 
+    <span style="color: {{color}}">{{color}}</span>.
+    The time is <b>{{time.value}}</b>.
+  </template>
+  <script>
+    Polymer('my-element', {
+      owner: "Daniel",
+      color: "red",
+      time: {value: 0, index: -1}
+    });
+  </script>
+</polymer-element>
