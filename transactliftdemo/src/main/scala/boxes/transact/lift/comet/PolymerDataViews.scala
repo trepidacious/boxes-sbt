@@ -98,7 +98,7 @@ private class PolymerTransformingDataLinkView[T, J](selector: String, v: String,
         val vvg = VersionedValueAndGUID(valueJson, i, guid)
         val json = jt.toJson(vvg)
 //        val js = "document.querySelector('" + selector + "')." + v + " = " + json + ";"
-        val js = "document.querySelector('" + selector + "')." + v + "FromServer(" + json + ");"
+        val js = "document.querySelector('" + selector + "').dataFromServer('" + v + "', " + json + ");"
         logger.info("PolymerTransformingDataLinkView sending:\n" + js)
         JE.JsRaw(js)
       }

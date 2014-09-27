@@ -25,21 +25,10 @@
 	      this.text = "";
   	  },
       textFromBrowser: function(oldValue, newValue) {
-        //Check that we have data, and we aren't doing this in response to a new value from the server
-        //We do this by tracking the last index seen
-				if (this.textGUID && (this.lastIndexSeen == this.textIndex)) {
-					console.log(oldValue + "->" + newValue)
-					cmd = this.textGUID + '=' + JSON.stringify({"value": this.text, "index": this.textIndex, "guid": this.textGUID})
-					console.log(cmd)
-					liftAjax.lift_ajaxHandler(cmd, null, null, null)
-				}
-    	  this.lastIndexSeen = this.textIndex;
+    	  PolymerBoxes.handleObserve(this, 'text', oldValue, newValue);
       },
-      textFromServer: function(data) {
-        //Note we set index before value, so that textFromBrowser will realise there is new server data when it is called
-        this.textIndex = data.index;
-    	  this.text = data.value;
-    	  this.textGUID = data.guid;
+      dataFromServer: function(variable, data) {
+    	  PolymerBoxes.handleServerData(this, variable, data);
     	}
     });
   </script>
