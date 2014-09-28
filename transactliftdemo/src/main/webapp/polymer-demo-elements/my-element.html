@@ -2,6 +2,12 @@
       href="../bower_components/polymer/polymer.html">
 <link rel="import"
       href="../bower_components/paper-input/paper-input.html">
+<link rel="import"
+      href="../bower_components/paper-menu-button/paper-menu-button.html">
+<link rel="import"
+      href="../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import"
+      href="../bower_components/paper-item/paper-item.html">
 
 <polymer-element name="my-element" attributes="owner color time text">
   <template>
@@ -12,6 +18,19 @@
     <paper-input label="Type something" value="{{text}}"></paper-input>
     <p>Text is '{{text}}'</p>
     
+<!--     <paper-menu-button icon="more-vert" halign="right" noTransition>
+      <template repeat="{{countries}}">
+        <paper-item>{{name}}</paper-item>
+      </template>
+    </paper-menu-button> -->
+    <paper-dropdown-menu selected="{{color}}" valueattr="label">
+      <template repeat="{{c in colors}}">
+        <paper-item label="{{c}}" color="{{c}}"></paper-item>
+      </template>
+    </paper-dropdown-menu>
+    <p>Text is still '{{text}}'</p>
+    
+      
   </template>
   <script>
     Polymer('my-element', {
@@ -23,6 +42,7 @@
         this.color = "red";
 	      this.time = 0;
 	      this.text = "";
+	      this.colors = ["red", "blue", "green", "purple"];
   	  },
       textFromBrowser: function(oldValue, newValue) {
     	  PolymerBoxes.handleObserve(this, 'text', oldValue, newValue);
