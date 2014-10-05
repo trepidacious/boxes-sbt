@@ -43,6 +43,7 @@ class Boot {
 
       //User management pages
       Menu.i("User signup") / "user_signup" >> Hidden,
+      Menu.i("User signup (Polymer)") / "polymer-user-signup" >> Hidden,
       Menu.i("User login") / "user_login" >> Hidden,
       Menu.i("User logout") / "user_logout" >> Hidden >> loggedIn,
       Menu.i("User edit") / "user_edit" >> Hidden >> loggedIn,
