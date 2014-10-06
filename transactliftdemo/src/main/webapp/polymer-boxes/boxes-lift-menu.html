@@ -1,0 +1,22 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-menu-button/paper-menu-button.html">  
+<link rel="import" href="../bower_components/paper-item/paper-item.html">  
+
+<polymer-element name="boxes-lift-menu" attributes="var_name">
+  <template>
+  
+    <paper-menu-button icon="more-vert" halign="right">
+      <template repeat="{{m in menu_items}}">
+        <paper-item label="{{m.text}}"><a href="{{m.uri}}"></a></paper-item>
+      </template>
+    </paper-menu-button>
+      
+  </template>
+  <script>
+    Polymer('boxes-lift-menu', {
+     ready: function() {
+        this.menu_items = boxes_lift_menu_items.menu;
+      }
+    });
+  </script>
+</polymer-element>

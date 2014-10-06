@@ -56,8 +56,11 @@ class Boot {
       //Anything we get via bower
       Menu.i("Bower Components") / "bower_components" / ** >> Hidden,
 
-      //Polymer elements
-      Menu.i("Polymer Demo Elements") / "polymer-demo-elements" / ** >> Hidden
+      //Polymer demo elements
+      Menu.i("Polymer Demo Elements") / "polymer-demo-elements" / ** >> Hidden,
+
+      //Boxes polymer elements
+      Menu.i("Boxes Polymer Elements") / "polymer-boxes" / ** >> Hidden
     )
     
     LiftRules.setSiteMapFunc(() => sitemap)
