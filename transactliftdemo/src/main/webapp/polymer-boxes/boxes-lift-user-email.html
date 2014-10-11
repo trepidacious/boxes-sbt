@@ -1,0 +1,52 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-menu-button/paper-menu-button.html">  
+<link rel="import" href="../bower_components/paper-item/paper-item.html">  
+<link rel="import" href="../bower_components/core-icon/core-icon.html">
+<link rel="import" href="boxes-header-item.html">
+
+<polymer-element name="boxes-lift-user-email" attributes="var_name">
+  <template>
+    <style>
+      a,
+      a:link,
+      a:visited,
+      a:hover,
+      a:active {
+	      color: inherit;
+	      text-decoration: none;
+	      font-weight: normal;
+	      font-size: 75%;
+	      opacity: 0.54;
+      }
+      
+      a:hover {
+        opacity: 1;
+      }
+      .separator {
+        padding-left: 6px;
+        padding-right: 6px;
+			}
+      
+    </style>
+    <template if="{{user}}">
+      <paper-menu-button icon="account-box" halign="right">
+        <boxes-header-item icon="account-box" label="{{user.email}}" color="blue"></boxes-header-item>
+	      <paper-item icon="create" label="Edit details"><a href="/user_edit"></a></paper-item>
+        <paper-item icon="arrow-back" label="Logout"><a href="/user_logout"></a></paper-item>
+		  </paper-menu-button>      
+    </template>
+    <template if="{{!user}}">
+      <a href="/user_signup">Sign up</a>
+      <span class="separator"></span>
+      <a href="/user_login">Login</a>
+    </template>
+      
+  </template>
+  <script>
+    Polymer('boxes-lift-user-email', {
+     ready: function() {
+        this.user = boxes_logged_in_user;
+      }
+    });
+  </script>
+</polymer-element>

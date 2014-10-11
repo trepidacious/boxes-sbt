@@ -6,6 +6,10 @@ import net.liftweb.util.Helpers._
 import net.liftweb.http.StatefulSnippet
 import boxes.transact.lift.user.User
 import boxes.transact.lift.LiftShelf
+import net.liftweb.http.js.JsCmds._
+import net.liftweb.http.js._
+import net.liftweb.http.js.JE._
+import net.liftweb.http.S
 
 //TODO doesn't need to be stateful?
 class UserEmail extends StatefulSnippet {
@@ -14,8 +18,14 @@ class UserEmail extends StatefulSnippet {
   
   var dispatch: DispatchIt = {
     case "widget" => widget _
+    case "json" => json _
   }
 
+  def json(ignore: NodeSeq): NodeSeq = {
+    val user = User.loggedIn.map(_.email.now()).map(e => JsObj("email" -> e)).getOrElse(JsNull)
+    Script(JsCrVar(S.attr("var") openOr "boxes_logged_in_user", user))
+  }
+  
   def widget(xhtml: NodeSeq): NodeSeq = {
     
     //TODO can just return the css selector?

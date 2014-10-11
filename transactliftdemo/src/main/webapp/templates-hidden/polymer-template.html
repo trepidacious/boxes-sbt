@@ -24,13 +24,14 @@
     <link rel="import" href="bower_components/paper-shadow/paper-shadow.html">  
 		<link rel="import" href="bower_components/font-roboto/roboto.html">
     <link rel="import" href="polymer-boxes/boxes-lift-menu.html">
+    <link rel="import" href="polymer-boxes/boxes-lift-user-email.html">
 		
 		<style shim-shadowdom>
 			
 			html, body {
 	      margin: 0;		
 	      height: 100%;
-        font-family: 'RobotoDraft', sans-serif;  
+        font-family: 'RobotoDraft', sans-serif;
 	    }
 		
 	    core-scroll-header-panel {
@@ -75,10 +76,15 @@
 			.title a:visited,
 			.title a:hover,
 			.title a:active {
-			    color: inherit;
-			    text-decoration: none;
-			    font-weight: normal;
-			}
+		    color: inherit;
+		    text-decoration: none;
+		    font-weight: normal;
+        opacity: 0.87;
+      }
+      
+      .title a:hover {
+        opacity: 1;
+      }
 		  
 		</style>
 	
@@ -87,17 +93,18 @@
 	<body unresolved>
 
     <span class="lift:Menu.json?var=boxes_lift_menu_items"></span>
+    <span class="lift:UserEmail.json?var=boxes_logged_in_user"></span>
 	
 	<!-- condenses keepCondensedHeader -->
 	  <core-scroll-header-panel fixed>
 	
-	    <core-toolbar> <!-- class="tall" -->
+	    <core-toolbar class="core-narrow"> <!-- class="tall" -->
 	      <paper-shadow id="toolbar-shadow" z="1" animated="true"></paper-shadow>
 	
 <!-- 	      <core-icon-button icon="arrow-back"></core-icon-button> -->
 	      <div flex></div>
-	      <core-icon-button icon="search"></core-icon-button>
-	      
+
+	      <boxes-lift-user-email></boxes-lift-user-email>
         <boxes-lift-menu></boxes-lift-menu>
  	      
 	      <div class="bottom indent title"><a href="/"><i class="fa fa-inbox"></i> Boxes</a></div>
