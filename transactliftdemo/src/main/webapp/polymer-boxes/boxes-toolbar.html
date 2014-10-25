@@ -1,0 +1,27 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<link rel="import" href="bower_components/core-toolbar/core-toolbar.html">
+<link rel="import" href="bower_components/core-icons/core-icons.html">
+<link rel="import" href="bower_components/paper-shadow/paper-shadow.html">  
+
+<link rel="import" href="polymer-boxes/boxes-lift-menu.html">
+<link rel="import" href="polymer-boxes/boxes-lift-user-email.html">
+
+<link href="boxes-toolbar.css" rel="stylesheet" shim-shadowdom>
+
+<polymer-element name="boxes-toolbar" attributes="site page">
+  <template>
+      <div class="title" style="margin-right:0px;"><a href="/"><core-icon src="polymer-demo-elements/boxes-logo4.svg" style="width: 26px; height: 26px; margin-bottom:1px;"></core-icon></a></div>
+      <div class="title"><a href="/">{{site}}</a></div>      
+      <div class="chevron" style="margin-left:0px;margin-right:0px;"><core-icon icon="chevron-right" style="width:28px;height:28px;"></core-icon></div>
+      <div class="subtitle"><a href="#">{{page}}</a></div>
+  </template>
+  <script>
+    Polymer('boxes-toolbar', {
+  	  ready: function() {
+	      this.site = "";
+        this.page = "";
+  	  }
+    });
+  </script>
+</polymer-element>

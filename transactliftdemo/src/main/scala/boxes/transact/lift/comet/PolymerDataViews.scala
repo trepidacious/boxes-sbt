@@ -20,12 +20,12 @@ import java.util.concurrent.locks.ReentrantLock
 import boxes.transact.util.Lock
 
 object PolymerDataLinkView {
-  def apply[T](elementId: String, v: String, data: Box[T])(implicit shelf: Shelf, mf: Manifest[T]): AjaxView = new PolymerTransformingDataLinkView[T, T](elementId, v, data, identity, identity, new DefaultJsonTransformer)
+  def apply[T](selector: String, v: String, data: Box[T])(implicit shelf: Shelf, mf: Manifest[T]): AjaxView = new PolymerTransformingDataLinkView[T, T](selector, v, data, identity, identity, new DefaultJsonTransformer)
     
-  def optional[T](elementId: String, v: String, data: Box[Option[T]])(implicit shelf: Shelf, mf: Manifest[T]): AjaxView = {
+  def optional[T](selector: String, v: String, data: Box[Option[T]])(implicit shelf: Shelf, mf: Manifest[T]): AjaxView = {
     def toJ[T](o: Option[T]) = o.getOrElse(null.asInstanceOf[T])
     def toT[T](t: T) = if (t == null) None else Some(t)
-    new PolymerTransformingDataLinkView[Option[T], T](elementId, v, data, toJ, toT, new DefaultJsonTransformer)
+    new PolymerTransformingDataLinkView[Option[T], T](selector, v, data, toJ, toT, new DefaultJsonTransformer)
   }
 }
 
@@ -112,7 +112,8 @@ private class PolymerTransformingDataSourceView[T, J](selector: String, v: Strin
     val valueJson = toJ(data())
     val vv = VersionedValue(valueJson, data.index())
     val json = jt.toJson(vv)
-    val js = "document.querySelector('" + selector + "')." + v + " = " + json + ";"
+//    val js = "document.querySelector('" + selector + "')." + v + " = " + json + ";"
+    val js = "document.querySelector('" + selector + "').dataFromServer('" + v + "', " + json + ");"
     logger.info("PolymerTransformingDataSourceView sending:\n" + js)
     JE.JsRaw(js)
   }})

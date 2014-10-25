@@ -5,7 +5,7 @@
 <polymer-element name="boxes-lift-menu" attributes="var_name">
   <template>
   
-    <paper-menu-button icon="more-vert" halign="right">
+    <paper-menu-button noTransition icon="menu" halign="left">
       <template repeat="{{m in menu_items}}">
         <paper-item icon="arrow-forward" label="{{m.text}}"><a href="{{m.uri}}"></a></paper-item>
       </template>

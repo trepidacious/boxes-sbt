@@ -1,0 +1,38 @@
+/*
+ * @license
+ * Copyright (c) 2014 The Polymer Project Authors. All rights reserved.
+ * This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+ * The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+ * The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+ * Code distributed by Google as part of the polymer project is also
+ * subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+ */
+
+html /deep/ boxes-sub-header {
+  display: block;
+  position: relative;
+  font-size: 14px;
+  box-sizing: border-box;
+  height: 48px;
+  white-space: nowrap;
+  opacity: 0.54;
+  cursor: auto;
+}
+
+html /deep/ boxes-sub-header::shadow #icon {
+  margin-right: 8px;
+  opacity: 0.54;
+}
+
+html /deep/ boxes-sub-header::shadow #label {
+  opacity: 0.54;
+}
+
+html /deep/ boxes-sub-header::shadow ::content > a {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  opacity: 0.54;
+}

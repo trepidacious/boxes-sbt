@@ -18,11 +18,30 @@ window.PolymerBoxes = {
   },
   
   handleServerData: function(element, variable, data) {
-	//Make server data in element if we don't have it
-	element.boxesServerData = element.boxesServerData || {};
+	if (data.isGUID) {
+	  console.log("GUID, " + variable + " = " + data.guid);
+	  element[variable] = data.guid;
+	  
+	} else {		
+	  console.log("Data, " + variable + " = " + JSON.stringify(data));
+	  
+	  //Make server data in element if we don't have it
+	  element.boxesServerData = element.boxesServerData || {};
 
-    //Note we set data (including index) before value, so that textFromBrowser will realise there is new server data when it is called
-	element.boxesServerData[variable] = data;
-    element[variable] = data.value;
+      //Note we set data (including index) before value, so that textFromBrowser will realise there is new server data when it is called
+	  element.boxesServerData[variable] = data;
+      element[variable] = data.value;
+	}
+  },
+  
+  submitData: function(guid, data) {
+    var json = JSON.stringify(data);
+	if (guid) {
+      console.log(guid + '=' + json)
+      liftAjax.lift_ajaxHandler(guid + '=' + json, null, null, null)
+	} else {
+	  console.log("Attempting to send " + json + " to guid " + guid);
+	}
   }
+  
 }

@@ -29,7 +29,7 @@
       
     </style>
     <template if="{{user}}">
-      <paper-menu-button icon="account-box" halign="right">
+      <paper-menu-button noTransition icon="account-box" halign="right">
         <boxes-header-item icon="account-box" label="{{user.email}}" color="blue"></boxes-header-item>
 	      <paper-item icon="create" label="Edit details"><a href="/user_edit"></a></paper-item>
         <paper-item icon="arrow-back" label="Logout"><a href="/user_logout"></a></paper-item>

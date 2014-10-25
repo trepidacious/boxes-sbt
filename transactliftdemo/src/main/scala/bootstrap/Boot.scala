@@ -43,14 +43,15 @@ class Boot {
 
       //User management pages
       Menu.i("User signup") / "user_signup" >> Hidden,
-      Menu.i("User signup (Polymer)") / "polymer-user-signup" >> Hidden,
       Menu.i("User login") / "user_login" >> Hidden,
       Menu.i("User logout") / "user_logout" >> Hidden >> loggedIn,
       Menu.i("User edit") / "user_edit" >> Hidden >> loggedIn,
       User.validationMenu / "user_validate" >> Hidden,
       User.resetPasswordMenu / "user_reset_password" >> Hidden,
       //      Menu.i("User signup complete") / "user_signup_complete"  >> Hidden,
-      
+
+      Menu.i("User signup (Polymer)") / "polymer-user-signup" >> Hidden,
+
 //      Menu.i("Timesheet") / "timesheet_view" >> loggedIn,
 
       //Anything we get via bower
@@ -58,6 +59,7 @@ class Boot {
 
       //Polymer demo elements
       Menu.i("Polymer Demo Elements") / "polymer-demo-elements" / ** >> Hidden,
+      Menu.i("Polymer Demo 2") / "polymer-demo-2",
 
       //Boxes polymer elements
       Menu.i("Boxes Polymer Elements") / "polymer-boxes" / ** >> Hidden
