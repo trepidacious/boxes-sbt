@@ -4,9 +4,14 @@
 <link rel="import" href="../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
 <link rel="import" href="../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/core-animated-pages/core-animated-pages.html">
+<!-- 
+<link rel="import" href="../bower_components/transitions/cross-fade.html">
+<link rel="import" href="../bower_components/transitions/slide-from-right.html">
+ -->
 <link rel="import" href="boxes-sub-header.html">
 
-<polymer-element name="user-signup" attributes="firstName lastName initials email passA passB">
+<polymer-element name="user-signup" attributes="firstName lastName initials email passA passB stage">
   <template>
 	  <style shadowshim>
 	  
@@ -18,27 +23,41 @@
 	      background: #4285f4;
 	      color: #fff;
 	    }
+	    
+	    .signed-up {
+	      /* background: #ffab40; */
+	      color: #ffab40;
+        font-size: 32px;
+	    }
 
 	  </style>
 	  
-    <boxes-sub-header label="User details"></boxes-sub-header>
-    <paper-input required error="First name is required" label="First name" value="{{firstName}}"></paper-input>
-    <paper-input required error="Last name is required" label="Last name" value="{{lastName}}"></paper-input>
-    <paper-input label="Initials" value="{{initials}}"></paper-input>
-    <paper-input required error="A valid email address is required" label="Email" type="email" value="{{email}}"></paper-input>
-<!-- 
-    <paper-input error="Password is required" label="Password" type="password" value="{{passA}}" invalid="{{inputValue | passAInvalid}}"></paper-input>
-    <paper-input error="Password repeat is required" label="Repeat password" type="password" value="{{passB}}" invalid="{{inputValue | passBInvalid}}"></paper-input>
- --> 
-    <paper-input error="Password of 8 to 256 characters is required" pattern=".{8,256}" required label="Password" type="password" value="{{passA}}" ></paper-input>
-    <paper-input error="Password repeat is required" pattern=".{8,256}" required label="Repeat password" type="password" value="{{passB}}""></paper-input>
-
-<!--     
-    <template if="{{!passA || !passB || (passA!=passB)}}">
-      Please enter the same password twice.
-    </template>
- -->    
-    <paper-button raised="" class="colored" role="button" tabindex="0" on-click={{submitClick}}>Signup</paper-button>
+    <core-animated-pages transitions="cross-fade-all" selected="{{stage}}">
+	    <section>
+		    <boxes-sub-header label="User details"></boxes-sub-header>
+		    <paper-input required error="First name is required" label="First name" value="{{firstName}}"></paper-input>
+		    <paper-input required error="Last name is required" label="Last name" value="{{lastName}}"></paper-input>
+		    <paper-input label="Initials" value="{{initials}}"></paper-input>
+		    <paper-input required error="A valid email address is required" label="Email" type="email" value="{{email}}"></paper-input>
+		<!-- 
+		    <paper-input error="Password is required" label="Password" type="password" value="{{passA}}" invalid="{{inputValue | passAInvalid}}"></paper-input>
+		    <paper-input error="Password repeat is required" label="Repeat password" type="password" value="{{passB}}" invalid="{{inputValue | passBInvalid}}"></paper-input>
+		 --> 
+		    <paper-input error="Password of 8 to 256 characters is required" pattern=".{8,256}" required label="Password" type="password" value="{{passA}}" ></paper-input>
+		    <paper-input error="Password repeat is required" pattern=".{8,256}" required label="Repeat password" type="password" value="{{passB}}""></paper-input>
+		
+		<!--     
+		    <template if="{{!passA || !passB || (passA!=passB)}}">
+		      Please enter the same password twice.
+		    </template>
+		 -->    
+		    <paper-button id="submitButton" raised="" class="colored" role="button" tabindex="0" on-click={{submitClick}} label="SIGNUP"></paper-button>
+	    </section>
+      <section>
+       <div class="signed-up">Welcome to Boxes, {{firstName}}!</div>
+       <div>You will receive a mail at {{email}}, please click the link in this mail to activate your account.</div>
+      </section>
+    </core-animated-pages>
     
   </template>
   <script>
@@ -52,12 +71,17 @@
         this.passA = "";
         this.passB = "";
         this.submitGUID = null;
-        this.created = false;
+        this.stage = 0;
+        this.submitted = false;
   	  },
       
   	  submitClick: function(event, detail, sender) {
-  		  var user = {firstName:this.firstName, lastName:this.lastName, email:this.email, initials:this.initials, passA:this.passA, passB:this.passB};
-  		  PolymerBoxes.submitData(this.submitGUID, user)
+  		  if (!this.submitted) {
+	  		  this.submitted = true;
+	  		  this.$.submitButton.label = "SIGNING UP...";
+	  		  var user = {firstName:this.firstName, lastName:this.lastName, email:this.email, initials:this.initials, passA:this.passA, passB:this.passB};
+	  		  PolymerBoxes.submitData(this.submitGUID, user);
+  		  }
   	  },
   	  
   	  dataFromServer: function(variable, data) {

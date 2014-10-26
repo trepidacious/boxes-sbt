@@ -29,7 +29,7 @@ class PolymerUserSignup() extends InsertCometView[User](User.newUser()) with Log
 
   def makeView(u: User) = {
     
-    val created = BoxNow(false)
+    val stage = BoxNow(0)
 
     def signup(uc: PolymerUserCase) {
       if (uc.passA != uc.passB) {
@@ -50,7 +50,7 @@ class PolymerUserSignup() extends InsertCometView[User](User.newUser()) with Log
             LiftShelf.mb.keep(u)
             LiftShelf.shelf.transact(implicit txn => {
               User.sendValidationEmail(hAndP, u)
-              created() = true
+              stage() = 1
             })
           } catch {
             case e: MongoException.DuplicateKey => S.error(S.?("user.email.exists"))
@@ -65,9 +65,10 @@ class PolymerUserSignup() extends InsertCometView[User](User.newUser()) with Log
         "submitGUID", (u: PolymerUserCase)=>{
           logger.info("Submit: " + u)
 //          signup(u)
+          stage.now() = 1
         }
       ),
-      PolymerDataSourceView("user-signup", "created", created)
+      PolymerDataSourceView("user-signup", "stage", stage)
     )
   }
 }
