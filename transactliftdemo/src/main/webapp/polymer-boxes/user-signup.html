@@ -27,7 +27,8 @@
 	    .signed-up {
 	      /* background: #ffab40; */
 	      color: #ffab40;
-        font-size: 32px;
+        font-size: 24px;
+        line-height: 48px;
 	    }
 
 	  </style>
@@ -54,8 +55,8 @@
 		    <paper-button id="submitButton" raised="" class="colored" role="button" tabindex="0" on-click={{submitClick}} label="SIGNUP"></paper-button>
 	    </section>
       <section>
-       <div class="signed-up">Welcome to Boxes, {{firstName}}!</div>
-       <div>You will receive a mail at {{email}}, please click the link in this mail to activate your account.</div>
+       <h2>Welcome to Boxes, {{firstName}}!</h2>
+       <p>You will receive a mail at {{email}}, please click the link in this mail to activate your account.</p>
       </section>
     </core-animated-pages>
     

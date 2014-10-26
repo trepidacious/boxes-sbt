@@ -33,11 +33,24 @@
 		
       html, body {
         font-family: RobotoDraft, 'Helvetica Neue', Helvetica, Arial;
+        font-size: 16px;
+        font-weight: 300;
+      }
+      
+      html /deep/ h2 {
+        color: #ffab40;
+        font-size: 24px;
+        line-height: 48px;
+        margin: 20px 0px 0px 0px;
+      }
+
+      html /deep/ p {
+        margin: 1em 0px 1em 0px;
       }
 		  .content {
-		    margin: 16px;
+		    padding-left: 64px;
+        padding-right: 64px;
 		  }
-		  
 		  core-toolbar {
         color: #f1f1f1;
         fill: #f1f1f1;
@@ -66,12 +79,12 @@
         margin-right: 0;
       }
       
-      
       .subtitle {
         font-weight: 300;      
         font-size: 24px;
         color: #ffab40;             /* Orange A200 */
       }
+      
       .subtitle a,
       .subtitle a:link,
       .subtitle a:visited,
@@ -111,7 +124,7 @@
         
       </core-toolbar>
       
-      <div class="content">  
+      <div class="content">
         <lift:bind name="content"></lift:bind>
       </div>
 	  </core-scroll-header-panel>

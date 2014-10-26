@@ -17,6 +17,7 @@ html /deep/ boxes-sub-header {
   white-space: nowrap;
   opacity: 0.54;
   cursor: auto;
+  margin: 20px 0px 0px 0px;  
 }
 
 html /deep/ boxes-sub-header::shadow #icon {
