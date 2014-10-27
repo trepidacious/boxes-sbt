@@ -4,6 +4,7 @@
 <link rel="import" href="../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
 <link rel="import" href="../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-toast/paper-toast.html">
 <link rel="import" href="../bower_components/core-animated-pages/core-animated-pages.html">
 <!-- 
 <link rel="import" href="../bower_components/transitions/cross-fade.html">
@@ -36,16 +37,16 @@
     <core-animated-pages transitions="cross-fade-all" selected="{{stage}}">
 	    <section>
 		    <boxes-sub-header label="User details"></boxes-sub-header>
-		    <paper-input required error="First name is required" label="First name" value="{{firstName}}"></paper-input>
-		    <paper-input required error="Last name is required" label="Last name" value="{{lastName}}"></paper-input>
-		    <paper-input label="Initials" value="{{initials}}"></paper-input>
-		    <paper-input required error="A valid email address is required" label="Email" type="email" value="{{email}}"></paper-input>
+		    <paper-input id="firstName" required error="First name is required" label="First name" value="{{firstName}}"></paper-input>
+		    <paper-input id="lastName" required error="Last name is required" label="Last name" value="{{lastName}}"></paper-input>
+		    <paper-input id="initials" label="Initials" value="{{initials}}"></paper-input>
+		    <paper-input id="email" required error="A valid email address is required" label="Email" type="email" value="{{email}}"></paper-input>
 		<!-- 
 		    <paper-input error="Password is required" label="Password" type="password" value="{{passA}}" invalid="{{inputValue | passAInvalid}}"></paper-input>
 		    <paper-input error="Password repeat is required" label="Repeat password" type="password" value="{{passB}}" invalid="{{inputValue | passBInvalid}}"></paper-input>
 		 --> 
-		    <paper-input error="Password of 8 to 256 characters is required" pattern=".{8,256}" required label="Password" type="password" value="{{passA}}" ></paper-input>
-		    <paper-input error="Password repeat is required" pattern=".{8,256}" required label="Repeat password" type="password" value="{{passB}}""></paper-input>
+		    <paper-input id="passA" error="Password of 8 to 256 characters is required" pattern=".{8,256}" required label="Password" type="password" value="{{passA}}" ></paper-input>
+		    <paper-input id="passB" error="Password repeat is required" pattern=".{8,256}" required label="Repeat password" type="password" value="{{passB}}""></paper-input>
 		
 		<!--     
 		    <template if="{{!passA || !passB || (passA!=passB)}}">
@@ -59,6 +60,8 @@
        <p>You will receive a mail at {{email}}, please click the link in this mail to activate your account.</p>
       </section>
     </core-animated-pages>
+    <paper-toast id="complete" text="Please complete all fields."></paper-toast>
+    <paper-toast id="mismatch" text="Passwords do not match."></paper-toast>
     
   </template>
   <script>
@@ -77,13 +80,25 @@
   	  },
       
   	  submitClick: function(event, detail, sender) {
-  		  if (!this.submitted) {
-	  		  this.submitted = true;
-	  		  this.$.submitButton.label = "SIGNING UP...";
-	  		  var user = {firstName:this.firstName, lastName:this.lastName, email:this.email, initials:this.initials, passA:this.passA, passB:this.passB};
-	  		  PolymerBoxes.submitData(this.submitGUID, user);
-  		  }
-  	  },
+   		  if (!this.submitted) {
+  	      if (this.$.firstName.invalid || 
+ 	    		  this.$.lastName.invalid || 
+ 	    		  this.$.email.invalid || 
+ 	    		  this.$.initials.invalid || 
+ 	    		  this.$.passA.invalid || 
+ 	    		  this.$.passB.invalid) {
+  	    	  this.$.complete.show();
+  	      } else if (this.$.passA.value != this.$.passB.value) {
+  	    	  this.$.mismatch.show();
+  	      } else {
+ 	          this.submitted = true;
+ 	          this.$.submitButton.label = "SIGNING UP...";
+ 	          var user = {firstName:this.firstName, lastName:this.lastName, email:this.email, initials:this.initials, passA:this.passA, passB:this.passB};
+ 	          PolymerBoxes.submitData(this.submitGUID, user);  	    	  
+  	      }
+
+   		  }
+   	  },
   	  
   	  dataFromServer: function(variable, data) {
         PolymerBoxes.handleServerData(this, variable, data);
