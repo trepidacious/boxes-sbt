@@ -62,6 +62,7 @@
     </core-animated-pages>
     <paper-toast id="complete" text="Please complete all fields."></paper-toast>
     <paper-toast id="mismatch" text="Passwords do not match."></paper-toast>
+    <paper-toast id="serverError" text="Server error."></paper-toast>
     
   </template>
   <script>
@@ -80,7 +81,8 @@
   	  },
       
   	  submitClick: function(event, detail, sender) {
-   		  if (!this.submitted) {
+  		  if (!this.submitted) {
+  			  //General invalid notice
   	      if (this.$.firstName.invalid || 
  	    		  this.$.lastName.invalid || 
  	    		  this.$.email.invalid || 
@@ -88,33 +90,33 @@
  	    		  this.$.passA.invalid || 
  	    		  this.$.passB.invalid) {
   	    	  this.$.complete.show();
+  	    	  
+  	    	//Password mismatch notice
   	      } else if (this.$.passA.value != this.$.passB.value) {
   	    	  this.$.mismatch.show();
+  	    	  
+  	    	//All good - try submitting
   	      } else {
  	          this.submitted = true;
  	          this.$.submitButton.label = "SIGNING UP...";
  	          var user = {firstName:this.firstName, lastName:this.lastName, email:this.email, initials:this.initials, passA:this.passA, passB:this.passB};
- 	          PolymerBoxes.submitData(this.submitGUID, user);  	    	  
+ 	          var el = this
+ 	          PolymerBoxes.transact(this.submitGUID, user, function(s) {
+ 	        	  if (s.length==0) {
+ 	        		  el.stage = 1;
+ 	        	  } else {
+ 	        		  el.submitted = false;
+ 	        		  el.$.submitButton.label = "SIGNUP";
+ 	        		  el.$.serverError.text = s;
+ 	        		  el.$.serverError.show();
+ 	        	  }
+ 	          });  	    	  
   	      }
-
-   		  }
+   		  } 
    	  },
   	  
-  	  dataFromServer: function(variable, data) {
-        PolymerBoxes.handleServerData(this, variable, data);
-      },
-      
-  	  passAInvalid: function(value) {
-  		  console.log(value);
-  		  if (value) {
-	  		  return (value.length < 8) || (value.length > 256);
-  		  } else {
-  			  return false;
-  		  }
-  	  },
-  	  
-      passBInvalid: function(value) {
-        return !((value == this.passA) && passAValid(this.passA));
+  	  server: function(variable, data) {
+        PolymerBoxes.server(this, variable, data);
       }
     
     });

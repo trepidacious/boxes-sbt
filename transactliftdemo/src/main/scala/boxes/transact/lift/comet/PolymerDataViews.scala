@@ -39,7 +39,6 @@ object PolymerDataSourceView {
   }
 }
 
-
 private class PolymerTransformingDataLinkView[T, J](selector: String, v: String, data: Box[T], toJ: (T)=>J, toT: (J)=>T, jt: JsonTransformer[J])(implicit shelf: Shelf, mft: Manifest[T], mfj: Manifest[J]) extends AjaxView with Loggable {
   
   val lock = Lock()
@@ -98,7 +97,7 @@ private class PolymerTransformingDataLinkView[T, J](selector: String, v: String,
         val vvg = VersionedValueAndGUID(valueJson, i, guid)
         val json = jt.toJson(vvg)
 //        val js = "document.querySelector('" + selector + "')." + v + " = " + json + ";"
-        val js = "document.querySelector('" + selector + "').dataFromServer('" + v + "', " + json + ");"
+        val js =  Polymer.server(selector, v, json)
         logger.info("PolymerTransformingDataLinkView sending:\n" + js)
         JE.JsRaw(js)
       }
@@ -113,7 +112,7 @@ private class PolymerTransformingDataSourceView[T, J](selector: String, v: Strin
     val vv = VersionedValue(valueJson, data.index())
     val json = jt.toJson(vv)
 //    val js = "document.querySelector('" + selector + "')." + v + " = " + json + ";"
-    val js = "document.querySelector('" + selector + "').dataFromServer('" + v + "', " + json + ");"
+    val js =  Polymer.server(selector, v, json)
     logger.info("PolymerTransformingDataSourceView sending:\n" + js)
     JE.JsRaw(js)
   }})

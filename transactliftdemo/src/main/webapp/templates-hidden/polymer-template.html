@@ -125,6 +125,20 @@
       </core-toolbar>
       
       <div class="content">
+      
+        <div class="lift:Msgs?showAll=true">
+		      <div>
+		        <lift:error_msg><strong>Errors</strong></lift:error_msg>
+		        <lift:error_class>alert alert-danger</lift:error_class>
+		        
+		        <lift:warning_msg><strong>Warnings</strong></lift:warning_msg>
+		        <lift:warning_class>alert alert-warning</lift:warning_class>
+		        
+		        <lift:notice_msg><strong>Notes</strong></lift:notice_msg>
+		        <lift:notice_class>alert alert-info</lift:notice_class>
+		      </div>
+		    </div>
+		    
         <lift:bind name="content"></lift:bind>
       </div>
 	  </core-scroll-header-panel>

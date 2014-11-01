@@ -29,7 +29,7 @@ class PolymerViewDemo() extends InsertCometView[String]("") with Loggable {
   def makeView(s: String) = {  
     AjaxListOfViews(
       AjaxStaticView(<p>PoymerViewDemo</p>),
-//      PolymerDataSourceView("my-element", "time", time),
+      PolymerDataSourceView("my-element", "time", time),
       PolymerDataLinkView("my-element", "text", text)
     )
   }

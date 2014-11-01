@@ -1,4 +1,6 @@
 window.PolymerBoxes = {
+  responseTable: {nextGUID: 0},
+  
   handleObserve: function (element, variable, oldValue, newValue) {
 	//Make server data in element if we don't have it
 	element.boxesServerData = element.boxesServerData || {};
@@ -17,11 +19,22 @@ window.PolymerBoxes = {
     }
   },
   
-  handleServerData: function(element, variable, data) {
-	if (data.isGUID) {
-	  console.log("GUID, " + variable + " = " + data.guid);
-	  element[variable] = data.guid;
+  server: function(element, variable, data) {
+	//Receiving a new action GUID
+	if (data.actionGUID) {
+	  console.log("GUID, " + variable + " = " + data.actionGUID);
+	  element[variable] = data.actionGUID;
 	  
+	//Receiving a response to a previous action submit
+	} else if (data.responseGUID) {
+	  console.log("responseGUID, " + variable + " = " + JSON.stringify(data));
+	  if (this.responseTable[data.responseGUID]) {
+		  this.responseTable[data.responseGUID](data.response);
+        delete this.responseTable[data.responseGUID];
+        console.log(Object.keys(this.responseTable).length);
+	  }
+	  
+	//Receiving a new data state
 	} else {		
 	  console.log("Data, " + variable + " = " + JSON.stringify(data));
 	  
@@ -34,7 +47,7 @@ window.PolymerBoxes = {
 	}
   },
   
-  submitData: function(guid, data) {
+  send: function(guid, data) {
     var json = JSON.stringify(data);
 	if (guid) {
       console.log(guid + '=' + json)
@@ -42,6 +55,22 @@ window.PolymerBoxes = {
 	} else {
 	  console.log("Attempting to send " + json + " to guid " + guid);
 	}
+  },
+
+  transact: function(guid, data, receiver) {
+	var responseGUID = "rguid" + this.responseTable.nextGUID;
+	this.responseTable.nextGUID++;
+	this.responseTable[responseGUID] = receiver;
+	
+	var dataAndResponse = {'data': data, 'responseGUID': responseGUID}
+    var json = JSON.stringify(dataAndResponse);
+	if (guid) {
+      console.log(guid + '=' + json)
+      liftAjax.lift_ajaxHandler(guid + '=' + json, null, null, null)
+	} else {
+	  console.log("Attempting to send " + json + " to guid " + guid);
+	}
   }
+
   
 }

@@ -47,8 +47,8 @@
       textFromBrowser: function(oldValue, newValue) {
     	  PolymerBoxes.handleObserve(this, 'text', oldValue, newValue);
       },
-      dataFromServer: function(variable, data) {
-    	  PolymerBoxes.handleServerData(this, variable, data);
+      server: function(variable, data) {
+    	  PolymerBoxes.server(this, variable, data);
     	}
     });
   </script>

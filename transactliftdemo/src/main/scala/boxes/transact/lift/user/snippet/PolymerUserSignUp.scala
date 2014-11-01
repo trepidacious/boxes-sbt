@@ -19,6 +19,7 @@ import boxes.transact.BoxNow
 import boxes.transact.lift.comet.AjaxDataSourceView
 import boxes.transact.lift.comet.PolymerDataSourceView
 import boxes.transact.lift.comet.PolymerActionView
+import boxes.transact.lift.comet.PolymerTransactView
 
 case class PolymerUserCase(firstName: String, lastName: String, email: String, initials: String, passA: String, passB: String)
 
@@ -31,12 +32,12 @@ class PolymerUserSignup() extends InsertCometView[User](User.newUser()) with Log
     
     val stage = BoxNow(0)
 
-    def signup(uc: PolymerUserCase) {
+    def signup(uc: PolymerUserCase): String = {
       if (uc.passA != uc.passB) {
-        S.error(S.?("user.signup.passwords.incorrect"))
+        S.?("user.signup.passwords.incorrect")
         
       } else User.validatePassword(uc.passA) match {
-        case Some(error) => S.error(error)
+        case Some(error) => error
         case None => {
           LiftShelf.shelf.transact(implicit txn => {
             u.firstName() = uc.firstName
@@ -51,21 +52,23 @@ class PolymerUserSignup() extends InsertCometView[User](User.newUser()) with Log
             LiftShelf.shelf.transact(implicit txn => {
               User.sendValidationEmail(hAndP, u)
               stage() = 1
+              ""  //Success
             })
           } catch {
-            case e: MongoException.DuplicateKey => S.error(S.?("user.email.exists"))
+            case e: MongoException.DuplicateKey => {
+              S.?("user.email.exists")
+            }
           }
         }
       }
     }
     
     AjaxListOfViews(
-      PolymerActionView(
+      PolymerTransactView(
         "user-signup",
         "submitGUID", (u: PolymerUserCase)=>{
           logger.info("Submit: " + u)
-//          signup(u)
-          stage.now() = 1
+          signup(u)
         }
       ),
       PolymerDataSourceView("user-signup", "stage", stage)
