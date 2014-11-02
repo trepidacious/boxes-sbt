@@ -30,8 +30,6 @@ class PolymerUserSignup() extends InsertCometView[User](User.newUser()) with Log
 
   def makeView(u: User) = {
     
-    val stage = BoxNow(0)
-
     def signup(uc: PolymerUserCase): String = {
       if (uc.passA != uc.passB) {
         S.?("user.signup.passwords.incorrect")
@@ -51,7 +49,6 @@ class PolymerUserSignup() extends InsertCometView[User](User.newUser()) with Log
             LiftShelf.mb.keep(u)
             LiftShelf.shelf.transact(implicit txn => {
               User.sendValidationEmail(hAndP, u)
-              stage() = 1
               ""  //Success
             })
           } catch {
@@ -70,8 +67,7 @@ class PolymerUserSignup() extends InsertCometView[User](User.newUser()) with Log
           logger.info("Submit: " + u)
           signup(u)
         }
-      ),
-      PolymerDataSourceView("user-signup", "stage", stage)
+      )
     )
   }
 }
