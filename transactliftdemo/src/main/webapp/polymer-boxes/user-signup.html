@@ -53,16 +53,16 @@
 		      Please enter the same password twice.
 		    </template>
 		 -->    
-		    <paper-button id="submitButton" raised="" class="colored" role="button" tabindex="0" on-click={{submitClick}} label="SIGNUP"></paper-button>
+		    <paper-button id="submitButton" raised="" class="colored" role="button" tabindex="0" on-click={{submitClick}}>{{signupLabel}}</paper-button>
 	    </section>
       <section>
        <h2>Welcome to Boxes, {{firstName}}!</h2>
        <p>You will receive a mail at {{email}}, please click the link in this mail to activate your account.</p>
       </section>
     </core-animated-pages>
-    <paper-toast id="complete" text="Please complete all fields."></paper-toast>
-    <paper-toast id="mismatch" text="Passwords do not match."></paper-toast>
-    <paper-toast id="serverError" text="Server error."></paper-toast>
+    <paper-toast id="complete" text="Please complete all fields"></paper-toast>
+    <paper-toast id="mismatch" text="Passwords do not match"></paper-toast>
+    <paper-toast id="serverError" text="Server error"></paper-toast>
     
   </template>
   <script>
@@ -78,6 +78,7 @@
         this.submitGUID = null;
         this.stage = 0;
         this.submitted = false;
+        this.signupLabel = "Signup";
   	  },
       
   	  submitClick: function(event, detail, sender) {
@@ -98,19 +99,22 @@
   	    	//All good - try submitting
   	      } else {
  	          this.submitted = true;
- 	          this.$.submitButton.label = "SIGNING UP...";
+ 	          this.signupLabel = "SIGNING UP...";
  	          var user = {firstName:this.firstName, lastName:this.lastName, email:this.email, initials:this.initials, passA:this.passA, passB:this.passB};
+ 	          
+ 	          //On response, update UI as necessary for success or error
  	          var el = this
  	          PolymerBoxes.transact(this.submitGUID, user, function(s) {
  	        	  if (s.length==0) {
  	        		  el.stage = 1;
  	        	  } else {
  	        		  el.submitted = false;
- 	        		  el.$.submitButton.label = "SIGNUP";
+ 	        		  el.signupLabel = "Signup";
  	        		  el.$.serverError.text = s;
  	        		  el.$.serverError.show();
  	        	  }
- 	          });  	    	  
+ 	          });  
+ 	          
   	      }
    		  } 
    	  },
