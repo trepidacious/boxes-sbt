@@ -21,10 +21,10 @@ lazy val swing = project.dependsOn(core)
 lazy val transactswinggraph = project.dependsOn(transact, transactswing, swing, graph, transactgraph, swinggraph)
 
 //Graph system for boxes - see also swinggraph for Swing bindings of graphs
-//TODO need to remove dependency on swing by moving colors and icons to a ui 
-//project, and preferably making graph project use non-Swing class instead 
-//of Color, and maybe to make a replacement for Image that could just use a 
-//String name, with the canvas responsible for converting the name to an 
+//TODO need to remove dependency on swing by moving colors and icons to a ui
+//project, and preferably making graph project use non-Swing class instead
+//of Color, and maybe to make a replacement for Image that could just use a
+//String name, with the canvas responsible for converting the name to an
 //image and drawing it.
 lazy val graph = project.dependsOn(core, swing)
 
@@ -48,6 +48,9 @@ lazy val liftdemo = project.dependsOn(core, graph, persistence)
 
 //Transact Lift bindings
 lazy val transactliftdemo = project.dependsOn(core, transact, graph, transactgraph, transactpersistence, persistence)
+
+//Vert.x stuff
+lazy val vertx = project.dependsOn(core, transact, graph, transactgraph, transactpersistence, persistence)
 
 //Root project just aggregates all subprojects
 lazy val root = project.in(file(".")).aggregate(core, transact, swing, graph, swinggraph, persistence, demo, liftdemo)

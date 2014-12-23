@@ -47,9 +47,11 @@
       html /deep/ p {
         margin: 1em 0px 1em 0px;
       }
-		  .content {
-		    padding-left: 64px;
-        padding-right: 64px;
+		  html /deep/ .content-padding {
+		    padding-left: 42px;
+        padding-right: 42px;
+        padding-top: 24px;
+        padding-bottom: 24px;
 		  }
 		  core-toolbar {
         color: #f1f1f1;
@@ -140,6 +142,7 @@
 		    </div>
 		    
         <lift:bind name="content"></lift:bind>
+        
       </div>
 	  </core-scroll-header-panel>
 	  

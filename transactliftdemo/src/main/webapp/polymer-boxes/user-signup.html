@@ -36,28 +36,31 @@
 	  
     <core-animated-pages transitions="cross-fade-all" selected="{{stage}}">
 	    <section>
-		    <boxes-sub-header label="User details"></boxes-sub-header>
-		    <paper-input id="firstName" required error="First name is required" label="First name" value="{{firstName}}"></paper-input>
-		    <paper-input id="lastName" required error="Last name is required" label="Last name" value="{{lastName}}"></paper-input>
-		    <paper-input id="initials" label="Initials" value="{{initials}}"></paper-input>
-		    <paper-input id="email" required error="A valid email address is required" label="Email" type="email" value="{{email}}"></paper-input>
-		<!-- 
-		    <paper-input error="Password is required" label="Password" type="password" value="{{passA}}" invalid="{{inputValue | passAInvalid}}"></paper-input>
-		    <paper-input error="Password repeat is required" label="Repeat password" type="password" value="{{passB}}" invalid="{{inputValue | passBInvalid}}"></paper-input>
-		 --> 
-		    <paper-input id="passA" error="Password of 8 to 256 characters is required" pattern=".{8,256}" required label="Password" type="password" value="{{passA}}" ></paper-input>
-		    <paper-input id="passB" error="Password repeat is required" pattern=".{8,256}" required label="Repeat password" type="password" value="{{passB}}""></paper-input>
-		
+	      <div class="content-padding">
+			    <boxes-sub-header label="User details"></boxes-sub-header>
+			    <paper-input id="firstName" required error="First name is required" label="First name" value="{{firstName}}"></paper-input>
+			    <paper-input id="lastName" required error="Last name is required" label="Last name" value="{{lastName}}"></paper-input>
+			    <paper-input id="initials" label="Initials" value="{{initials}}"></paper-input>
+			    <paper-input id="email" required error="A valid email address is required" label="Email" type="email" value="{{email}}"></paper-input>
+			<!-- 
+			    <paper-input error="Password is required" label="Password" type="password" value="{{passA}}" invalid="{{inputValue | passAInvalid}}"></paper-input>
+			    <paper-input error="Password repeat is required" label="Repeat password" type="password" value="{{passB}}" invalid="{{inputValue | passBInvalid}}"></paper-input>
+			 --> 
+			    <paper-input id="passA" error="Password of 8 to 256 characters is required" pattern=".{8,256}" required label="Password" type="password" value="{{passA}}" ></paper-input>
+			    <paper-input id="passB" error="Password repeat is required" pattern=".{8,256}" required label="Repeat password" type="password" value="{{passB}}""></paper-input>
 		<!--     
 		    <template if="{{!passA || !passB || (passA!=passB)}}">
 		      Please enter the same password twice.
 		    </template>
 		 -->    
-		    <paper-button id="submitButton" raised="" class="colored" role="button" tabindex="0" on-click={{submitClick}}>{{signupLabel}}</paper-button>
+		      <paper-button id="submitButton" raised="" class="colored" role="button" tabindex="0" on-click={{submitClick}}>{{signupLabel}}</paper-button>
+        </div>    
 	    </section>
       <section>
-       <h2>Welcome to Boxes, {{firstName}}!</h2>
-       <p>You will receive a mail at {{email}}, please click the link in this mail to activate your account.</p>
+        <div class="content-padding">
+	        <h2>Welcome to Boxes, {{firstName}}!</h2>
+	        <p>You will receive a mail at {{email}}, please click the link in this mail to activate your account.</p>
+        </div>
       </section>
     </core-animated-pages>
     <paper-toast id="complete" text="Please complete all fields"></paper-toast>
@@ -82,6 +85,8 @@
   	  },
       
   	  submitClick: function(event, detail, sender) {
+  		  this.stage = 1;
+  		  return;
   		  if (!this.submitted) {
   			  //General invalid notice
   	      if (this.$.firstName.invalid || 
@@ -99,7 +104,7 @@
   	    	//All good - try submitting
   	      } else {
  	          this.submitted = true;
- 	          this.signupLabel = "SIGNING UP...";
+ 	          this.signupLabel = "Signing up...";
  	          var user = {firstName:this.firstName, lastName:this.lastName, email:this.email, initials:this.initials, passA:this.passA, passB:this.passB};
  	          
  	          //On response, update UI as necessary for success or error

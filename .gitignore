@@ -30,3 +30,5 @@ out/
 *.sublime-project
 
 transactliftdemo/src/main/webapp/bower_components
+
+mods
