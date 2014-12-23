@@ -14,17 +14,25 @@
  * limitations under the License.
  */
 package com.example
- 
+
 import org.vertx.scala.core._
 import org.vertx.scala.core.http.HttpServerRequest
 import org.vertx.scala.platform.Verticle
- 
+
+import scala.util.Try
+
 class HelloWorldServer extends Verticle {
- 
+
+  def envInt(s: String) = envString(s).flatMap(i => Try(i.toInt).toOption)
+  def envString(s: String) = sys.env.get(s)
+
+  val port = envInt("OPENSHIFT_VERTX_PORT").getOrElse(8080)
+  val ip = envString("OPENSHIFT_VERTX_IP").getOrElse("localhost")
+
   override def start() {
     vertx.createHttpServer.requestHandler { req: HttpServerRequest =>
-      req.response.end("Hello Scala World!")
-    }.listen(8080)
+      req.response.end("Scala verticle deployed using zipped module.\n")
+    }.listen(port, ip)
   }
- 
+
 }
