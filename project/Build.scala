@@ -1,0 +1,168 @@
+// See here for a good example of a similar project:
+// http://www.scala-sbt.org/0.13/docs/Full-Def-Example.html
+
+import sbt._
+import Keys._
+
+object Libs {
+  val scalatest     = "org.scalatest" %% "scalatest" % "1.9.2" % "test"
+  val shapeless     = "com.chuusai" % "shapeless_2.10.4" % "2.0.0"
+  val grizzled      = "org.clapper" %% "grizzled-slf4j" % "1.0.2"
+
+  val salat         = "com.novus" %% "salat" % "1.9.3"
+  val protobuf      = "com.google.protobuf" % "protobuf-java" % "2.5.0"
+
+  val scalafx       = "org.scalafx" %% "scalafx" % "8.0.0-R4"
+
+  val vertxScala    = "io.vertx" % "lang-scala" % "1.0.0"
+  val vertxPlatform = "io.vertx" % "vertx-platform" % "2.1.5"
+
+  val liftVersion = "2.5.1"
+  val allLift = Seq(
+    "net.liftweb" %% "lift-webkit" % liftVersion % "compile",
+    "net.liftweb" %% "lift-mapper" % liftVersion % "compile",
+    "org.eclipse.jetty" % "jetty-webapp" % "8.1.7.v20120910" % "container,test",
+    "org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "container,compile" artifacts Artifact("javax.servlet", "jar", "jar"),
+    "org.slf4j" % "slf4j-log4j12" % "1.6.1",
+    "org.scalaz" %% "scalaz-core" % "7.0.5"
+  )
+}
+
+object Build extends Build {
+
+  import Libs._
+
+  // Default settings for all sub projects
+  val buildSettings = Seq (
+    scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
+    version := "0.1",
+    organization := "org.boxstack",
+    scalaVersion := "2.10.4"
+  )
+
+  //def printy() {
+  //  println("PRINTY IN SCALA")
+  //}
+  //
+  //val hello = TaskKey[Unit]("hello", "Prints 'Hello World'")
+  //
+  //val helloTask = hello := {
+  //  println("Hello World")
+  //}
+
+  def subProject(name: String) = Project(name, file(name), settings = buildSettings)
+
+  def subProject(name: String, extraSettings: Seq[Def.Setting[_]]) = Project(name, file(name), settings = buildSettings ++ extraSettings)
+
+  //The core project has minimal library dependencies, and provides the basic Box system
+  val coreLibs = Seq(scalatest)
+  lazy val core = subProject (
+    "core",
+    Seq(libraryDependencies ++= coreLibs)
+  )
+
+  //New prototype stuff for providing concurrent transactions
+  val transactLibs = Seq(scalatest, shapeless, grizzled)
+  lazy val transact = subProject(
+    "transact",
+    Seq(libraryDependencies ++= transactLibs)
+  ).dependsOn(core)
+
+  //Swing bindings for transact
+  val transactSwingLibs = Seq(scalatest)
+  lazy val transactswing = subProject(
+    "transactswing",
+    Seq(libraryDependencies ++= transactSwingLibs)
+  ).dependsOn(transact, swing)
+
+  //JavaFX 8 bindings for transact
+  val transactfxLibs = Seq(scalatest, scalafx)
+  lazy val transactfx = subProject(
+    "transactfx",
+    Seq(libraryDependencies ++= transactfxLibs)
+  ).dependsOn(transact)
+
+  //Graph system for transact
+  lazy val transactgraph = subProject("transactgraph").dependsOn(transact, swing, graph)
+
+  //Swing bindings for boxes
+  lazy val swing = subProject("swing").dependsOn(core)
+
+  //Swing bindings for graph system for transact
+  lazy val transactswinggraph = subProject("transactswinggraph").dependsOn(transact, transactswing, swing, graph, transactgraph, swinggraph)
+
+  //Graph system for boxes - see also swinggraph for Swing bindings of graphs
+  //TODO need to remove dependency on swing by moving colors and icons to a ui
+  //project, and preferably making graph project use non-Swing class instead
+  //of Color, and maybe to make a replacement for Image that could just use a
+  //String name, with the canvas responsible for converting the name to an
+  //image and drawing it.
+  lazy val graph = subProject("graph").dependsOn(core, swing)
+
+  //Swing bindings for graphs
+  lazy val swinggraph = subProject("swinggraph").dependsOn(core, swing, graph)
+
+  //Persistence for boxes
+  val persistenceLibs = Seq(scalatest, salat, protobuf)
+  lazy val persistence = subProject(
+    "persistence",
+    Seq(libraryDependencies ++= persistenceLibs)
+  ).dependsOn(core)
+
+  //Persistence for transact boxes
+  val transactpersistenceLibs = persistenceLibs
+  lazy val transactpersistence = subProject(
+    "transactpersistence",
+    Seq(libraryDependencies ++= transactpersistenceLibs)
+  ).dependsOn(transact, persistence)
+
+  //Demos for all projects except lift and transact
+  lazy val demo = subProject("demo").dependsOn(core, swing, graph, swinggraph, persistence)
+
+  //Demos for transact projects
+  lazy val transactdemo = subProject("transactdemo").dependsOn(transact, transactswing, swing, graph, transactgraph, swinggraph, transactswinggraph)
+
+  //TODO move the webSettings stuff here from liftdemo build.sbt, possibly move to 1.0.0 version of earldouglas/xsbt-web-plugin
+  //Lift bindings
+  lazy val liftdemo = subProject(
+    "liftdemo",
+    Seq(libraryDependencies ++= allLift) //++ Seq(WebPlugin.webSettings :_*)
+  ).dependsOn(core, graph, persistence)
+
+  //TODO move the webSettings stuff here from transactliftdemo build.sbt, possibly move to 1.0.0 version of earldouglas/xsbt-web-plugin
+  //Transact Lift bindings
+  lazy val transactliftdemo = subProject(
+    "transactliftdemo",
+    Seq(libraryDependencies ++= allLift) //++ Seq(WebPlugin.webSettings :_*)
+  ).dependsOn(core, transact, graph, transactgraph, transactpersistence, persistence)
+
+  //Vert.x stuff
+  val vertxLibs = Seq(vertxPlatform, vertxScala)
+  lazy val vertx = subProject(
+    "vertx",
+    Seq(libraryDependencies ++= vertxLibs)
+  ).dependsOn(core, transact, graph, transactgraph, transactpersistence, persistence)
+
+  lazy val root = Project (
+    "root",
+    file("."),
+    settings = buildSettings
+  ) aggregate (
+    core,
+    transact,
+    transactswing,
+    transactfx,
+    transactgraph,
+    swing,
+    transactswinggraph,
+    graph,
+    swinggraph,
+    persistence,
+    transactpersistence,
+    demo,
+    transactdemo,
+    liftdemo,
+    transactliftdemo,
+    vertx)
+
+}
