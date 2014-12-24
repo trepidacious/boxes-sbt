@@ -122,14 +122,14 @@ object Build extends Build {
   //Demos for transact projects
   lazy val transactdemo = subProject("transactdemo").dependsOn(transact, transactswing, swing, graph, transactgraph, swinggraph, transactswinggraph)
 
-  //TODO move the webSettings stuff here from liftdemo build.sbt, possibly move to 1.0.0 version of earldouglas/xsbt-web-plugin
+  //TODO move the webSettings stuff here from liftdemo build.sbt, possibly move to 1.0.0 version of https://github.com/earldouglas/xsbt-web-plugin
   //Lift bindings
   lazy val liftdemo = subProject(
     "liftdemo",
     Seq(libraryDependencies ++= allLift) //++ Seq(WebPlugin.webSettings :_*)
   ).dependsOn(core, graph, persistence)
 
-  //TODO move the webSettings stuff here from transactliftdemo build.sbt, possibly move to 1.0.0 version of earldouglas/xsbt-web-plugin
+  //TODO move the webSettings stuff here from transactliftdemo build.sbt, possibly move to 1.0.0 version of https://github.com/earldouglas/xsbt-web-plugin
   //Transact Lift bindings
   lazy val transactliftdemo = subProject(
     "transactliftdemo",
@@ -137,11 +137,16 @@ object Build extends Build {
   ).dependsOn(core, transact, graph, transactgraph, transactpersistence, persistence)
 
   //Vert.x stuff
+  lazy val hello = taskKey[Unit]("Prints 'Hello World'")
   val vertxLibs = Seq(vertxPlatform, vertxScala)
   lazy val vertx = subProject(
     "vertx",
-    Seq(libraryDependencies ++= vertxLibs)
+    Seq(
+      libraryDependencies ++= vertxLibs,
+      hello := {println("Hello from Build.scala vertx project task!")}
+    )
   ).dependsOn(core, transact, graph, transactgraph, transactpersistence, persistence)
+
 
   lazy val root = Project (
     "root",
@@ -163,6 +168,7 @@ object Build extends Build {
     transactdemo,
     liftdemo,
     transactliftdemo,
-    vertx)
+    vertx
+  )
 
 }
