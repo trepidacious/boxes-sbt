@@ -119,13 +119,37 @@ object Build extends Build {
     .settings(libraryDependencies ++= allLift) //++ Seq(WebPlugin.webSettings :_*)
     .dependsOn(core, transact, graph, transactgraph, transactpersistence, persistence)
 
+  //def vertxZipMod() {
+  //  IO.
+  //}
+
   //Vert.x stuff
-  lazy val hello = taskKey[Unit]("Prints 'Hello World'")
+  lazy val zipmod = taskKey[File]("Makes a zip of vertx module.")
+  lazy val modTarget = settingKey[File]("The target directory in which to build module.")
+
   val vertxLibs = Seq(vertxPlatform, vertxScala)
   lazy val vertx = subProject("vertx")
     .settings(
       libraryDependencies ++= vertxLibs,
-      hello := {println("Hello from Build.scala vertx project task!")}
+      modTarget := target.value / "mod",
+      zipmod := {
+        //Get the jar File produced by package task
+        //Note that "package" task conflicts with keyword, hence backticks.
+        val vertxJar = (Keys.`package` in Compile).value
+        val dir = baseDirectory.value
+        val modDir = modTarget.value
+        val modLibDir = modDir / "lib"
+        val targetDir = target.value
+        val n = name.value
+        IO.createDirectory(modDir)
+        IO.createDirectory(modLibDir)
+        IO.copyFile(vertxJar, modLibDir / vertxJar.getName(), true)
+        IO.copyFile(dir / "mod.json", modDir / "mod.json", true)
+        val zipContents = Path.allSubpaths(modDir)
+        val zipFile = targetDir / (n + ".zip")
+        IO.zip(zipContents, zipFile)
+        zipFile
+      }
     )
     .dependsOn(core, transact, graph, transactgraph, transactpersistence, persistence)
 
