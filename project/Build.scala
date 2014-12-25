@@ -37,59 +37,42 @@ object Build extends Build {
     scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
     version := "0.1",
     organization := "org.boxstack",
-    scalaVersion := "2.10.4"
+    scalaVersion := "2.10.4",
+    libraryDependencies += scalatest
   )
-
-  //def printy() {
-  //  println("PRINTY IN SCALA")
-  //}
-  //
-  //val hello = TaskKey[Unit]("hello", "Prints 'Hello World'")
-  //
-  //val helloTask = hello := {
-  //  println("Hello World")
-  //}
 
   def subProject(name: String) = Project(name, file(name), settings = buildSettings)
 
-  def subProject(name: String, extraSettings: Seq[Def.Setting[_]]) = Project(name, file(name), settings = buildSettings ++ extraSettings)
-
   //The core project has minimal library dependencies, and provides the basic Box system
-  val coreLibs = Seq(scalatest)
-  lazy val core = subProject (
-    "core",
-    Seq(libraryDependencies ++= coreLibs)
-  )
+  lazy val core = subProject ("core")
 
   //New prototype stuff for providing concurrent transactions
-  val transactLibs = Seq(scalatest, shapeless, grizzled)
-  lazy val transact = subProject(
-    "transact",
-    Seq(libraryDependencies ++= transactLibs)
-  ).dependsOn(core)
+  val transactLibs = Seq(shapeless, grizzled)
+  lazy val transact = subProject("transact")
+    .settings(libraryDependencies ++= transactLibs)
+    .dependsOn(core)
 
   //Swing bindings for transact
-  val transactSwingLibs = Seq(scalatest)
-  lazy val transactswing = subProject(
-    "transactswing",
-    Seq(libraryDependencies ++= transactSwingLibs)
-  ).dependsOn(transact, swing)
+  lazy val transactswing = subProject("transactswing")
+    .dependsOn(transact, swing)
 
   //JavaFX 8 bindings for transact
-  val transactfxLibs = Seq(scalatest, scalafx)
-  lazy val transactfx = subProject(
-    "transactfx",
-    Seq(libraryDependencies ++= transactfxLibs)
-  ).dependsOn(transact)
+  val transactfxLibs = Seq(scalafx)
+  lazy val transactfx = subProject("transactfx")
+    .settings(libraryDependencies ++= transactfxLibs)
+    .dependsOn(transact)
 
   //Graph system for transact
-  lazy val transactgraph = subProject("transactgraph").dependsOn(transact, swing, graph)
+  lazy val transactgraph = subProject("transactgraph")
+    .dependsOn(transact, swing, graph)
 
   //Swing bindings for boxes
-  lazy val swing = subProject("swing").dependsOn(core)
+  lazy val swing = subProject("swing")
+    .dependsOn(core)
 
   //Swing bindings for graph system for transact
-  lazy val transactswinggraph = subProject("transactswinggraph").dependsOn(transact, transactswing, swing, graph, transactgraph, swinggraph)
+  lazy val transactswinggraph = subProject("transactswinggraph")
+    .dependsOn(transact, transactswing, swing, graph, transactgraph, swinggraph)
 
   //Graph system for boxes - see also swinggraph for Swing bindings of graphs
   //TODO need to remove dependency on swing by moving colors and icons to a ui
@@ -97,55 +80,54 @@ object Build extends Build {
   //of Color, and maybe to make a replacement for Image that could just use a
   //String name, with the canvas responsible for converting the name to an
   //image and drawing it.
-  lazy val graph = subProject("graph").dependsOn(core, swing)
+  lazy val graph = subProject("graph")
+    .dependsOn(core, swing)
 
   //Swing bindings for graphs
-  lazy val swinggraph = subProject("swinggraph").dependsOn(core, swing, graph)
+  lazy val swinggraph = subProject("swinggraph")
+    .dependsOn(core, swing, graph)
 
   //Persistence for boxes
-  val persistenceLibs = Seq(scalatest, salat, protobuf)
-  lazy val persistence = subProject(
-    "persistence",
-    Seq(libraryDependencies ++= persistenceLibs)
-  ).dependsOn(core)
+  val persistenceLibs = Seq(salat, protobuf)
+  lazy val persistence = subProject("persistence")
+    .settings(libraryDependencies ++= persistenceLibs)
+    .dependsOn(core)
 
   //Persistence for transact boxes
   val transactpersistenceLibs = persistenceLibs
-  lazy val transactpersistence = subProject(
-    "transactpersistence",
-    Seq(libraryDependencies ++= transactpersistenceLibs)
-  ).dependsOn(transact, persistence)
+  lazy val transactpersistence = subProject("transactpersistence")
+    .settings(libraryDependencies ++= transactpersistenceLibs)
+    .dependsOn(transact, persistence)
 
   //Demos for all projects except lift and transact
-  lazy val demo = subProject("demo").dependsOn(core, swing, graph, swinggraph, persistence)
+  lazy val demo = subProject("demo")
+    .dependsOn(core, swing, graph, swinggraph, persistence)
 
   //Demos for transact projects
-  lazy val transactdemo = subProject("transactdemo").dependsOn(transact, transactswing, swing, graph, transactgraph, swinggraph, transactswinggraph)
+  lazy val transactdemo = subProject("transactdemo")
+    .dependsOn(transact, transactswing, swing, graph, transactgraph, swinggraph, transactswinggraph)
 
   //TODO move the webSettings stuff here from liftdemo build.sbt, possibly move to 1.0.0 version of https://github.com/earldouglas/xsbt-web-plugin
   //Lift bindings
-  lazy val liftdemo = subProject(
-    "liftdemo",
-    Seq(libraryDependencies ++= allLift) //++ Seq(WebPlugin.webSettings :_*)
-  ).dependsOn(core, graph, persistence)
+  lazy val liftdemo = subProject("liftdemo")
+    .settings(libraryDependencies ++= allLift) //++ Seq(WebPlugin.webSettings :_*)
+    .dependsOn(core, graph, persistence)
 
   //TODO move the webSettings stuff here from transactliftdemo build.sbt, possibly move to 1.0.0 version of https://github.com/earldouglas/xsbt-web-plugin
   //Transact Lift bindings
-  lazy val transactliftdemo = subProject(
-    "transactliftdemo",
-    Seq(libraryDependencies ++= allLift) //++ Seq(WebPlugin.webSettings :_*)
-  ).dependsOn(core, transact, graph, transactgraph, transactpersistence, persistence)
+  lazy val transactliftdemo = subProject("transactliftdemo")
+    .settings(libraryDependencies ++= allLift) //++ Seq(WebPlugin.webSettings :_*)
+    .dependsOn(core, transact, graph, transactgraph, transactpersistence, persistence)
 
   //Vert.x stuff
   lazy val hello = taskKey[Unit]("Prints 'Hello World'")
   val vertxLibs = Seq(vertxPlatform, vertxScala)
-  lazy val vertx = subProject(
-    "vertx",
-    Seq(
+  lazy val vertx = subProject("vertx")
+    .settings(
       libraryDependencies ++= vertxLibs,
       hello := {println("Hello from Build.scala vertx project task!")}
     )
-  ).dependsOn(core, transact, graph, transactgraph, transactpersistence, persistence)
+    .dependsOn(core, transact, graph, transactgraph, transactpersistence, persistence)
 
 
   lazy val root = Project (
