@@ -123,21 +123,26 @@ object Build extends Build {
   //  IO.
   //}
 
+  def replaceExtension(s: String, newExtension: String) =
+    (if (s.contains('.')) s.take(s.lastIndexOf(".")) else s) + newExtension
+
   //Vert.x stuff
   lazy val zipmod = taskKey[File]("Makes a zip of vertx module.")
-  lazy val modTarget = settingKey[File]("The target directory in which to build module.")
+  lazy val modsTarget = settingKey[File]("The target directory in which to build module.")
 
   val vertxLibs = Seq(vertxPlatform, vertxScala)
   lazy val vertx = subProject("vertx")
     .settings(
       libraryDependencies ++= vertxLibs,
-      modTarget := target.value / "mod",
+      modsTarget := target.value / "mods",
       zipmod := {
         //Get the jar File produced by package task
         //Note that "package" task conflicts with keyword, hence backticks.
         val vertxJar = (Keys.`package` in Compile).value
+
         val dir = baseDirectory.value
-        val modDir = modTarget.value
+        val modsDir = modsTarget.value
+        val modDir = modsDir /"org.rebeam~vertx_2.10~0.1"
         val modLibDir = modDir / "lib"
         val targetDir = target.value
         val n = name.value
@@ -146,7 +151,8 @@ object Build extends Build {
         IO.copyFile(vertxJar, modLibDir / vertxJar.getName(), true)
         IO.copyFile(dir / "mod.json", modDir / "mod.json", true)
         val zipContents = Path.allSubpaths(modDir)
-        val zipFile = targetDir / (n + ".zip")
+        val zipFile = targetDir / replaceExtension(vertxJar.getName(), ".zip")
+        println("Zipping module to " + zipFile + "...")
         IO.zip(zipContents, zipFile)
         zipFile
       }

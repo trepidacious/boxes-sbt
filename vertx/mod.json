@@ -1,3 +1,7 @@
 {
-  "main": "scala:com.example.HelloWorldServer"
+  "description": "Example server",
+  "licenses": ["GPL v3"],
+  "author": "b@rebeam.org",  
+  "main": "scala:org.rebeam.Server",
+  "auto-redeploy": true
 }

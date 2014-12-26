@@ -13,16 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.example
+package org.rebeam
 
 import org.vertx.scala.core._
 import org.vertx.scala.core.http.HttpServerRequest
+import org.vertx.scala.core.http.RouteMatcher
 import org.vertx.scala.platform.Verticle
-
 import scala.util.Try
+import org.vertx.scala.core.json.Json
+import Utils._
 
-class HelloWorldServer extends Verticle {
+class Server extends Verticle {
 
+  val ver = 2
+  
   def envInt(s: String) = envString(s).flatMap(i => Try(i.toInt).toOption)
   def envString(s: String) = sys.env.get(s)
 
@@ -30,9 +34,18 @@ class HelloWorldServer extends Verticle {
   val ip = envString("OPENSHIFT_VERTX_IP").getOrElse("localhost")
 
   override def start() {
-    vertx.createHttpServer.requestHandler { req: HttpServerRequest =>
-      req.response.end("Scala verticle deployed using zipped module.\n")
-    }.listen(port, ip)
+    val routeMatcher = RouteMatcher()
+
+    routeMatcher.get("/ver", {req: HttpServerRequest => {      
+      req.response.end(Json.obj("ver" -> ver).encode())
+    }})
+
+    routeMatcher.get("/iv/new", {req: HttpServerRequest => {
+      val iv = Json.obj("iv" -> randomHex(12))
+      req.response.end(iv.encode())
+    }})
+
+    vertx.createHttpServer.requestHandler(routeMatcher).listen(port, ip)
   }
 
 }
