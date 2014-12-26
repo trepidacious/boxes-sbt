@@ -25,7 +25,7 @@ import Utils._
 
 class Server extends Verticle {
 
-  val ver = 2
+  val ver = 1
   
   def envInt(s: String) = envString(s).flatMap(i => Try(i.toInt).toOption)
   def envString(s: String) = sys.env.get(s)

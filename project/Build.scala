@@ -36,7 +36,7 @@ object Build extends Build {
   val buildSettings = Seq (
     scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
     version := "0.1",
-    organization := "org.boxstack",
+    organization := "org.rebeam",
     scalaVersion := "2.10.4",
     libraryDependencies += scalatest
   )
@@ -142,10 +142,14 @@ object Build extends Build {
 
         val dir = baseDirectory.value
         val modsDir = modsTarget.value
-        val modDir = modsDir /"org.rebeam~vertx_2.10~0.1"
+        val v = version.value
+        val n = name.value
+        val sbv = scalaBinaryVersion.value
+        val o = organization.value
+        val modDir = modsDir / (o + "~" + n + "_" + sbv + "~" + v)
         val modLibDir = modDir / "lib"
         val targetDir = target.value
-        val n = name.value
+        println("Creating module in " + modDir + "...")
         IO.createDirectory(modDir)
         IO.createDirectory(modLibDir)
         IO.copyFile(vertxJar, modLibDir / vertxJar.getName(), true)
