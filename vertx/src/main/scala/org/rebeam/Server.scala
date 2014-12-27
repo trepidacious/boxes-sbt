@@ -22,6 +22,8 @@ import org.vertx.scala.platform.Verticle
 import scala.util.Try
 import org.vertx.scala.core.json.Json
 import Utils._
+import org.vertx.scala.core.eventbus.Message
+import org.vertx.scala.core.json.JsonObject
 
 class Server extends Verticle {
 
@@ -32,8 +34,10 @@ class Server extends Verticle {
 
   val port = envInt("OPENSHIFT_VERTX_PORT").getOrElse(8080)
   val ip = envString("OPENSHIFT_VERTX_IP").getOrElse("localhost")
-
+  
   override def start() {
+    println("Server starting...")
+    
     val routeMatcher = RouteMatcher()
 
     routeMatcher.get("/ver", {req: HttpServerRequest => {      
@@ -41,11 +45,35 @@ class Server extends Verticle {
     }})
 
     routeMatcher.get("/iv/new", {req: HttpServerRequest => {
-      val iv = Json.obj("iv" -> randomHex(12))
+      val ivHex = randomHex(12)
+      
+      vertx.eventBus.send("org.rebeam.psql", 
+        Json.obj(
+            "action" -> "insert",
+            "table" -> "iv",
+            "fields" -> Json.arr("iv"),
+            "values" -> Json.arr(
+                Json.arr(ivHex)
+            )          
+        ), {message: Message[JsonObject] => println("Response from psql '" + message + "'")}
+      )
+       
+      vertx.eventBus.send("org.rebeam.psql", 
+        Json.obj(
+            "action" -> "prepared",
+            "statement" -> "SELECT * FROM iv WHERE iv=?",
+            "values" -> Json.arr(ivHex)          
+        ), {message: Message[JsonObject] => println("IVs already in table? '" + message.body + "'")}
+      )
+      
+      val iv = Json.obj("iv" -> ivHex)
+      
       req.response.end(iv.encode())
     }})
 
     vertx.createHttpServer.requestHandler(routeMatcher).listen(port, ip)
+    println("Server STARTED")
+
   }
 
 }

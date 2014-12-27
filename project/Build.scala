@@ -133,6 +133,7 @@ object Build extends Build {
   val vertxLibs = Seq(vertxPlatform, vertxScala)
   lazy val vertx = subProject("vertx")
     .settings(
+      watchSources += baseDirectory.value / "mod.json",
       libraryDependencies ++= vertxLibs,
       modsTarget := target.value / "mods",
       zipmod := {

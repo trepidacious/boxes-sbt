@@ -1,7 +1,8 @@
 {
   "description": "Example server",
   "licenses": ["GPL v3"],
-  "author": "b@rebeam.org",  
-  "main": "scala:org.rebeam.Server",
-  "auto-redeploy": true
+  "author": "b@rebeam.org",
+  "main": "scala:org.rebeam.Launch",
+  "auto-redeploy": true,
+  "includes": "io.vertx~mod-mysql-postgresql_2.10~0.3.1"
 }
