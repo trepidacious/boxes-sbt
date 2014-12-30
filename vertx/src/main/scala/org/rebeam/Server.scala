@@ -66,6 +66,15 @@ class Server extends Futicle {
     status == "ok"
   })
   
+  def requireHTTPS(handler: HttpServerRequest => Unit) = {
+    {req: HttpServerRequest =>
+      req.headers.get("x-forwarded-proto") match {
+        case Some(s) if s.contains("http") => req.response.end("Please use https") 
+        case _ => handler(req)
+      }
+    }
+  }
+  
   def startServer() {
     
     val routeMatcher = RouteMatcher()
@@ -78,7 +87,7 @@ class Server extends Futicle {
       req.response.end(Json.obj("ver" -> ver).encode())
     }})
 
-    routeMatcher.get("/auth/" + authSecret + "/iv/list", {req: HttpServerRequest => 
+    routeMatcher.get("/auth/" + authSecret + "/iv/list", requireHTTPS{req: HttpServerRequest => 
       postgres.raw("SELECT iv FROM iv").onComplete{
         case Success(msg) => {
           req.response.end(msg.body.toString())
@@ -90,7 +99,7 @@ class Server extends Futicle {
       }
     })
 
-    routeMatcher.get("/auth/" + authSecret + "/iv/new", {req: HttpServerRequest => {
+    routeMatcher.get("/auth/" + authSecret + "/iv/new", requireHTTPS{req: HttpServerRequest => {
       newIVHex.onComplete{
         case Success(iv) => req.response.end(Json.obj("iv" -> iv).encode())
         case Failure(e) => {
