@@ -7,7 +7,16 @@ import org.vertx.scala.core.json.JsonObject
 
 import scala.concurrent._
 
+class PostgresException(val j: JsonObject) extends Exception(j.encode)
+
+object PostgresException {
+  def apply(j: JsonObject) = new PostgresException(j)
+}
+
 class Postgres(address: String, futicle: Futicle) {
+  
+  def fail(j: JsonObject) = Future.failed(PostgresException(j))
+  def succeed[T](t: T) = Future.successful(t)
   
   val futureBus = futicle.futureBus
   implicit lazy val context = futicle.context 
@@ -52,12 +61,13 @@ class Postgres(address: String, futicle: Futicle) {
         "action" -> "raw",
         "command" -> command
       )    
-    ).map(msg => {
-      println("command " + command + " -> " + msg.body)
-      msg.body.getString("status") == "ok"    
-    })
+    ).flatMap(msg => if (msg.body.getString("status") == "ok") succeed(msg.body) else fail(msg.body))
   }
   
   def tableExists(tableName: String) = raw("SELECT true FROM pg_tables WHERE tablename = '" + tableName + "'").map(msg => msg.body.getArray("results").size() > 0)
 
+  def withTable(tableName: String) = 
+    raw("SELECT true FROM pg_tables WHERE tablename = '" + tableName + "'")
+      .flatMap(msg => if(msg.body.getArray("results").size() > 0) Future.successful(msg.body) else fail(msg.body))
+  
 }

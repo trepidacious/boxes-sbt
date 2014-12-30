@@ -7,6 +7,8 @@ The postgres module used requires at least version 1.1.0-M1 of the scala languag
     # scala=io.vertx~lang-scala~1.0.0:org.vertx.scala.platform.impl.ScalaVerticleFactory
     scala=io.vertx~lang-scala_2.10~1.1.0-M1:org.vertx.scala.platform.impl.ScalaVerticleFactory
 
+To adjust these on Openshift, you will need to ssh into your application, then go to `vertx/conf` directory and edit `langs.properties` there. See [Openshift cartridge ](https://github.com/vert-x/openshift-cartridge) readme for more details.
+
 You will need postgres running (adjust config.json for server settings, currently these will work out of the box for postgres.app on OS X), and a table as follows:
 
     create table iv(

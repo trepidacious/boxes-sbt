@@ -70,6 +70,10 @@ class Server extends Futicle {
     
     val routeMatcher = RouteMatcher()
 
+    routeMatcher.get("/", {req: HttpServerRequest => {      
+      req.response.end("Vertx Demo")
+    }})
+
     routeMatcher.get("/ver", {req: HttpServerRequest => {      
       req.response.end(Json.obj("ver" -> ver).encode())
     }})
@@ -97,9 +101,13 @@ class Server extends Futicle {
     }})
 
     val server = vertx.createHttpServer
-      .setSSL(true)
-      .setKeyStorePath("keystore.jks") 
-      .setKeyStorePassword(keyStorePassword)
+    
+// Can enable https - this is not needed on openshift, which has an SSL proxy that calls through to
+// application http (and hence provides its own certificate etc.), and is also not needed for dev., but
+// could be enabled when deploying for production on another host.
+//      .setSSL(true)
+//      .setKeyStorePath("keystore.jks") 
+//      .setKeyStorePassword(keyStorePassword)
     
     server.requestHandler(routeMatcher).listen(port, host)
   }
@@ -109,33 +117,15 @@ class Server extends Futicle {
     println("Server on " + host + ":" + port + ", postgres on " + postgresAddress)
     
     //Initialise database if not there already
-    val makeIV = postgres.tableExists("iv").flatMap{
-      case true => Future.successful(true)
-      case false => postgres.rawOK(
-      """
-        create table iv(
-          key serial primary key,
-          iv text not null
-        );
-      """)
-      .flatMap{
-        case false => Future.successful(false)
-        case true => postgres.rawOK(
-        """
-          create unique index on iv (iv);
-        """)
-      }
-    }
-    
-    makeIV.onSuccess{case exists => {
-      if (exists) {
-        println("Table iv exists, starting server")
-        startServer
-      } else {
-        println("Can't create table iv, not starting server")
-      }
-    }}
-    
+    val makeIV = postgres.withTable("iv").fallbackTo(
+      postgres.rawOK("""
+          create table iv(
+            key serial primary key, 
+            iv text not null
+          );
+      """).flatMap(_ => postgres.rawOK("create unique index on iv (iv);"))
+    )
+    makeIV.onSuccess{case msg => startServer}
   }
 
 }
