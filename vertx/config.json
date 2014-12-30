@@ -1,0 +1,22 @@
+{
+  "postgresConfig": {
+    "address"     : "org.rebeam.psql",
+    "connection"  : "PostgreSQL",
+    "hostEnv"     : "OPENSHIFT_POSTGRESQL_DB_HOST",
+    "portEnv"     : "OPENSHIFT_POSTGRESQL_DB_PORT",
+    "usernameEnv" : "OPENSHIFT_POSTGRESQL_DB_USERNAME",
+    "passwordEnv" : "OPENSHIFT_POSTGRESQL_DB_PASSWORD",
+    "host"        : "localhost",
+    "port"        : 5432,
+    "maxPoolSize" : 10,
+    "password"    : ""
+  },
+  "serverConfig": {
+    "authSecret"  : "feiuljbvaeipwefurbguyebvkasdvbaioerbhabdnkvjasdbilweqwrufnlakduyf",
+    "portEnv"     : "OPENSHIFT_VERTX_PORT",
+    "hostEnv"     : "OPENSHIFT_VERTX_IP",
+    "port"        : 8080,
+    "host"        : "localhost",
+    "keyStorePassword" : "K2d42foTQiT9icRcoVA2"
+  }
+}

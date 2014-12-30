@@ -24,19 +24,51 @@ import org.vertx.scala.core.json.Json
 import Utils._
 import org.vertx.scala.core.eventbus.Message
 import org.vertx.scala.core.json.JsonObject
+import scala.concurrent._
+import scala.util.Success
+import scala.util.Failure
 
-class Server extends Verticle {
+class Server extends Futicle {
 
   val ver = 1
   
-  def envInt(s: String) = envString(s).flatMap(i => Try(i.toInt).toOption)
-  def envString(s: String) = sys.env.get(s)
-
-  val port = envInt("OPENSHIFT_VERTX_PORT").getOrElse(8080)
-  val ip = envString("OPENSHIFT_VERTX_IP").getOrElse("localhost")
-  
   override def start() {
-    println("Server starting...")
+
+    val cfg: JsonObject = container.config()
+
+    val authSecret = cfg.getString("authSecret")
+    val port = envIntWithFallback("port", cfg, 8080)
+    val host = envStringWithFallback("host", cfg, "localhost")
+    val keyStorePassword = cfg.getString("keyStorePassword")
+    val postgresAddress = cfg.getString("postgresAddress")
+
+    println("Server on " + host + ":" + port + ", postgres on " + postgresAddress)
+    
+    val postgres = new Postgres(postgresAddress, futureBus)
+
+    def ivHexExists(ivHex: String) = postgres.prepared("SELECT * FROM iv WHERE iv=?", ivHex).map((message) => message.body.getInteger("rows") > 0)
+
+    def maybeNewIvHex() = {
+      val ivHex = randomHex(12)
+      println("Trying " + ivHex)
+    //    ivHexExists(ivHex).map(exists => if (exists) None else Some(ivHex))
+      storeIVHex(ivHex).map(success => if (success) Some(ivHex) else None)
+    }
+    
+    def newIVHex(): Future[String] = {
+      maybeNewIvHex.flatMap{
+        case Some(ivHex) => {
+          println("Got " + ivHex)
+          future{ivHex}
+        }
+        case None => newIVHex()
+      }
+    }
+    
+    def storeIVHex(ivHex: String): Future[Boolean] = postgres.insert("iv", Seq("iv"), Seq(ivHex)).map((message) => {
+      val status = message.body.getString("status") 
+      status == "ok"
+    })
     
     val routeMatcher = RouteMatcher()
 
@@ -44,35 +76,42 @@ class Server extends Verticle {
       req.response.end(Json.obj("ver" -> ver).encode())
     }})
 
-    routeMatcher.get("/iv/new", {req: HttpServerRequest => {
-      val ivHex = randomHex(12)
+    routeMatcher.get("/auth/" + authSecret + "/iv/list", {req: HttpServerRequest => 
+      postgres.raw("SELECT iv FROM iv").onComplete{
+        case Success(msg) => {
+          req.response.end(msg.body.toString())
+        }
+        case Failure(e) => {
+          e.printStackTrace()
+          req.response.end
+        }
+      }
+    })
+
+    routeMatcher.get("/auth/" + authSecret + "/iv/new", {req: HttpServerRequest => {
       
-      vertx.eventBus.send("org.rebeam.psql", 
-        Json.obj(
-            "action" -> "insert",
-            "table" -> "iv",
-            "fields" -> Json.arr("iv"),
-            "values" -> Json.arr(
-                Json.arr(ivHex)
-            )          
-        ), {message: Message[JsonObject] => println("Response from psql '" + message + "'")}
-      )
-       
-      vertx.eventBus.send("org.rebeam.psql", 
-        Json.obj(
-            "action" -> "prepared",
-            "statement" -> "SELECT * FROM iv WHERE iv=?",
-            "values" -> Json.arr(ivHex)          
-        ), {message: Message[JsonObject] => println("IVs already in table? '" + message.body + "'")}
-      )
       
-      val iv = Json.obj("iv" -> ivHex)
+//      for {
+//        insert <- Postgres.insert("iv", Seq("iv"), Seq(ivHex))
+//        select <- Postgres.prepared("SELECT * FROM iv WHERE iv=?", ivHex)
+//      } {println("Insert: " + insert.body + ", then select: " + select.body)}
       
-      req.response.end(iv.encode())
+      newIVHex.onComplete{
+        case Success(iv) => req.response.end(Json.obj("iv" -> iv).encode())
+        case Failure(e) => {
+          e.printStackTrace()
+          req.response.end
+        }
+      }
+      
     }})
 
-    vertx.createHttpServer.requestHandler(routeMatcher).listen(port, ip)
-    println("Server STARTED")
+    val server = vertx.createHttpServer
+      .setSSL(true)
+      .setKeyStorePath("keystore.jks") 
+      .setKeyStorePassword(keyStorePassword)
+    
+    server.requestHandler(routeMatcher).listen(port, host)
 
   }
 

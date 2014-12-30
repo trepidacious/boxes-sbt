@@ -155,6 +155,7 @@ object Build extends Build {
         IO.createDirectory(modLibDir)
         IO.copyFile(vertxJar, modLibDir / vertxJar.getName(), true)
         IO.copyFile(dir / "mod.json", modDir / "mod.json", true)
+        IO.copyFile(dir / "keystore.jks", modDir / "keystore.jks", true)
         val zipContents = Path.allSubpaths(modDir)
         val zipFile = targetDir / replaceExtension(vertxJar.getName(), ".zip")
         println("Zipping module to " + zipFile + "...")

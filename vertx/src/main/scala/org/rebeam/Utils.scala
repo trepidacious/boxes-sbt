@@ -2,6 +2,8 @@ package org.rebeam
 
 import javax.xml.bind.DatatypeConverter
 import java.security.SecureRandom
+import scala.util.Try
+import org.vertx.scala.core.json.JsonObject
 
 object Utils {
 
@@ -26,5 +28,11 @@ object Utils {
     random.nextBytes(bytes)
     bytesToHex(bytes)
   }
+
+  def envInt(s: String) = envString(s).flatMap(i => Try(i.toInt).toOption)
+  def envString(s: String) = sys.env.get(s)
   
+  def envIntWithFallback(s: String, cfg: JsonObject, default: Int) = Option(cfg.getString(s + "Env")).flatMap(envInt(_)).orElse(Option(cfg.getInteger(s).toInt)).getOrElse(default)
+  def envStringWithFallback(s: String, cfg: JsonObject, default: String) = Option(cfg.getString(s + "Env")).flatMap(envString(_)).orElse(Option(cfg.getString(s))).getOrElse(default)
+
 }

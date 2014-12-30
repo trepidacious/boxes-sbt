@@ -22,6 +22,7 @@ import org.vertx.scala.platform.Verticle
 import scala.util.Try
 import org.vertx.scala.core.json.Json
 import Utils._
+import org.vertx.scala.core.json.JsonObject
 
 /**
  * Launches all verticles in the module
@@ -29,19 +30,33 @@ import Utils._
 class Launch extends Verticle {
 
   override def start() {
+    
+    val appConfig: JsonObject = container.config()
+
+    val postgresConfig = appConfig.getObject("postgresConfig")
+    val serverConfig = appConfig.getObject("serverConfig")
+
+    val postgresHost = envStringWithFallback("host", postgresConfig, "localhost")
+    val postgresPort = envIntWithFallback("port", postgresConfig, 5432)
+    val postgresUsername = envStringWithFallback("username", postgresConfig, System.getProperty("user.name"))
+    val postgresPassword = envStringWithFallback("password", postgresConfig, "")
+    val postgresDatabase = envStringWithFallback("database", postgresConfig, System.getProperty("user.name"))
+    
+    postgresConfig.putString("host", postgresHost)
+    postgresConfig.putNumber("port", postgresPort)
+    postgresConfig.putString("username", postgresUsername)
+    postgresConfig.putString("password", postgresPassword)
+    postgresConfig.putString("database", postgresDatabase)
+
+    println("Postgres config:\n" + postgresConfig.encodePrettily())
+    
+    serverConfig.putString("postgresAddress", postgresConfig.getString("address"))
+    println("Server config:\n" + serverConfig.encodePrettily())
+    
     //Start postgresql module, then our server
-    container.deployModule("io.vertx~mod-mysql-postgresql_2.10~0.3.1", Json.obj(
-      "address"     -> "org.rebeam.psql",
-      "connection"  -> "PostgreSQL",
-      "host"        -> "localhost",
-      "port"        -> 5432,
-      "maxPoolSize" -> 4,
-      "username"    -> "trepidacious",
-      "password"    -> "",
-      "database"    -> "trepidacious"
-    ), 1, { r: AsyncResult[String] => {
+    container.deployModule("io.vertx~mod-mysql-postgresql_2.10~0.3.1", postgresConfig, 1, { r: AsyncResult[String] => {
       if (r.succeeded()) {
-        container.deployVerticle("scala:org.rebeam.Server", Json.obj(), 1, { r: AsyncResult[String] => {
+        container.deployVerticle("scala:org.rebeam.Server", serverConfig, 1, { r: AsyncResult[String] => {
           println("org.rebeam.Server deploy finished")
           if (r.succeeded()) {
             println("Succeeded:")
