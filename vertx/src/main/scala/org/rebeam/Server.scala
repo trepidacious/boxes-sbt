@@ -31,44 +31,42 @@ import scala.util.Failure
 class Server extends Futicle {
 
   val ver = 1
+
+  lazy val cfg: JsonObject = container.config()
+
+  lazy val authSecret = cfg.getString("authSecret")
+  lazy val port = envIntWithFallback("port", cfg, 8080)
+  lazy val host = envStringWithFallback("host", cfg, "localhost")
+  lazy val keyStorePassword = cfg.getString("keyStorePassword")
+  lazy val postgresAddress = cfg.getString("postgresAddress")
+
+  lazy val postgres = new Postgres(postgresAddress, this)
+
+  def ivHexExists(ivHex: String) = postgres.prepared("SELECT * FROM iv WHERE iv=?", ivHex).map((message) => message.body.getInteger("rows") > 0)
+
+  def maybeNewIvHex() = {
+    val ivHex = randomHex(12)
+    println("Trying " + ivHex)
+  //    ivHexExists(ivHex).map(exists => if (exists) None else Some(ivHex))
+    storeIVHex(ivHex).map(success => if (success) Some(ivHex) else None)
+  }
   
-  override def start() {
-
-    val cfg: JsonObject = container.config()
-
-    val authSecret = cfg.getString("authSecret")
-    val port = envIntWithFallback("port", cfg, 8080)
-    val host = envStringWithFallback("host", cfg, "localhost")
-    val keyStorePassword = cfg.getString("keyStorePassword")
-    val postgresAddress = cfg.getString("postgresAddress")
-
-    println("Server on " + host + ":" + port + ", postgres on " + postgresAddress)
-    
-    val postgres = new Postgres(postgresAddress, futureBus)
-
-    def ivHexExists(ivHex: String) = postgres.prepared("SELECT * FROM iv WHERE iv=?", ivHex).map((message) => message.body.getInteger("rows") > 0)
-
-    def maybeNewIvHex() = {
-      val ivHex = randomHex(12)
-      println("Trying " + ivHex)
-    //    ivHexExists(ivHex).map(exists => if (exists) None else Some(ivHex))
-      storeIVHex(ivHex).map(success => if (success) Some(ivHex) else None)
-    }
-    
-    def newIVHex(): Future[String] = {
-      maybeNewIvHex.flatMap{
-        case Some(ivHex) => {
-          println("Got " + ivHex)
-          future{ivHex}
-        }
-        case None => newIVHex()
+  def newIVHex(): Future[String] = {
+    maybeNewIvHex.flatMap{
+      case Some(ivHex) => {
+        println("Got " + ivHex)
+        future{ivHex}
       }
+      case None => newIVHex()
     }
-    
-    def storeIVHex(ivHex: String): Future[Boolean] = postgres.insert("iv", Seq("iv"), Seq(ivHex)).map((message) => {
-      val status = message.body.getString("status") 
-      status == "ok"
-    })
+  }
+  
+  def storeIVHex(ivHex: String): Future[Boolean] = postgres.insert("iv", Seq("iv"), Seq(ivHex)).map((message) => {
+    val status = message.body.getString("status") 
+    status == "ok"
+  })
+  
+  def startServer() {
     
     val routeMatcher = RouteMatcher()
 
@@ -89,13 +87,6 @@ class Server extends Futicle {
     })
 
     routeMatcher.get("/auth/" + authSecret + "/iv/new", {req: HttpServerRequest => {
-      
-      
-//      for {
-//        insert <- Postgres.insert("iv", Seq("iv"), Seq(ivHex))
-//        select <- Postgres.prepared("SELECT * FROM iv WHERE iv=?", ivHex)
-//      } {println("Insert: " + insert.body + ", then select: " + select.body)}
-      
       newIVHex.onComplete{
         case Success(iv) => req.response.end(Json.obj("iv" -> iv).encode())
         case Failure(e) => {
@@ -103,7 +94,6 @@ class Server extends Futicle {
           req.response.end
         }
       }
-      
     }})
 
     val server = vertx.createHttpServer
@@ -112,7 +102,40 @@ class Server extends Futicle {
       .setKeyStorePassword(keyStorePassword)
     
     server.requestHandler(routeMatcher).listen(port, host)
+  }
+  
+  override def start() {
 
+    println("Server on " + host + ":" + port + ", postgres on " + postgresAddress)
+    
+    //Initialise database if not there already
+    val makeIV = postgres.tableExists("iv").flatMap{
+      case true => Future.successful(true)
+      case false => postgres.rawOK(
+      """
+        create table iv(
+          key serial primary key,
+          iv text not null
+        );
+      """)
+      .flatMap{
+        case false => Future.successful(false)
+        case true => postgres.rawOK(
+        """
+          create unique index on iv (iv);
+        """)
+      }
+    }
+    
+    makeIV.onSuccess{case exists => {
+      if (exists) {
+        println("Table iv exists, starting server")
+        startServer
+      } else {
+        println("Can't create table iv, not starting server")
+      }
+    }}
+    
   }
 
 }

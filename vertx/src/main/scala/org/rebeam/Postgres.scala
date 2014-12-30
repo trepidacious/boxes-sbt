@@ -7,7 +7,10 @@ import org.vertx.scala.core.json.JsonObject
 
 import scala.concurrent._
 
-class Postgres(address: String, futureBus: FutureEventBus) {
+class Postgres(address: String, futicle: Futicle) {
+  
+  val futureBus = futicle.futureBus
+  implicit lazy val context = futicle.context 
   
   def insert(table: String, fields: Seq[String], values: Seq[Any]*) = {
     futureBus.sendFuture[JsonObject, JsonObject](
@@ -41,5 +44,20 @@ class Postgres(address: String, futureBus: FutureEventBus) {
       )    
     )    
   }
+  
+  def rawOK(command: String) = {
+    futureBus.sendFuture[JsonObject, JsonObject](
+      address, 
+      Json.obj(
+        "action" -> "raw",
+        "command" -> command
+      )    
+    ).map(msg => {
+      println("command " + command + " -> " + msg.body)
+      msg.body.getString("status") == "ok"    
+    })
+  }
+  
+  def tableExists(tableName: String) = raw("SELECT true FROM pg_tables WHERE tablename = '" + tableName + "'").map(msg => msg.body.getArray("results").size() > 0)
 
 }
