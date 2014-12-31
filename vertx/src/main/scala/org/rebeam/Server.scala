@@ -37,9 +37,10 @@ class Server extends Futicle {
   lazy val authSecret = cfg.getString("authSecret")
   lazy val port = envIntWithFallback("port", cfg, 8080)
   lazy val host = envStringWithFallback("host", cfg, "localhost")
-  lazy val keyStorePassword = cfg.getString("keyStorePassword")
+  lazy val keyStorePassword = Option(cfg.getString("keyStorePassword"))
   lazy val postgresAddress = cfg.getString("postgresAddress")
-
+  lazy val requireHTTPSRedirect = cfgBooleanWithFallback("requireHTTPSRedirect", cfg, false)
+  
   lazy val postgres = new Postgres(postgresAddress, this)
 
   def ivHexExists(ivHex: String) = postgres.prepared("SELECT * FROM iv WHERE iv=?", ivHex).map((message) => message.body.getInteger("rows") > 0)
@@ -66,15 +67,6 @@ class Server extends Futicle {
     status == "ok"
   })
   
-  def requireHTTPS(handler: HttpServerRequest => Unit) = {
-    {req: HttpServerRequest =>
-      req.headers.get("x-forwarded-proto") match {
-        case Some(s) if s.contains("http") => req.response.end("Please use https") 
-        case _ => handler(req)
-      }
-    }
-  }
-  
   def startServer() {
     
     val routeMatcher = RouteMatcher()
@@ -87,7 +79,7 @@ class Server extends Futicle {
       req.response.end(Json.obj("ver" -> ver).encode())
     }})
 
-    routeMatcher.get("/auth/" + authSecret + "/iv/list", requireHTTPS{req: HttpServerRequest => 
+    routeMatcher.get("/auth/" + authSecret + "/iv/list", requireHTTPS(requireHTTPSRedirect, {req: HttpServerRequest => 
       postgres.raw("SELECT iv FROM iv").onComplete{
         case Success(msg) => {
           req.response.end(msg.body.toString())
@@ -97,9 +89,9 @@ class Server extends Futicle {
           req.response.end
         }
       }
-    })
+    }))
 
-    routeMatcher.get("/auth/" + authSecret + "/iv/new", requireHTTPS{req: HttpServerRequest => {
+    routeMatcher.get("/auth/" + authSecret + "/iv/new", requireHTTPS(requireHTTPSRedirect, {req: HttpServerRequest => 
       newIVHex.onComplete{
         case Success(iv) => req.response.end(Json.obj("iv" -> iv).encode())
         case Failure(e) => {
@@ -107,16 +99,21 @@ class Server extends Futicle {
           req.response.end
         }
       }
-    }})
+    }))
 
     val server = vertx.createHttpServer
     
-// Can enable https - this is not needed on openshift, which has an SSL proxy that calls through to
-// application http (and hence provides its own certificate etc.), and is also not needed for dev., but
-// could be enabled when deploying for production on another host.
-//      .setSSL(true)
-//      .setKeyStorePath("keystore.jks") 
-//      .setKeyStorePassword(keyStorePassword)
+    //Use ssl if we have a password. This is not needed on openshift, 
+    //which has an SSL proxy that calls through to application http 
+    //(and hence provides its own certificate etc.), and is also not 
+    //needed for dev., but could be enabled when deploying for production 
+    //on another host.
+    keyStorePassword.foreach(p => {
+      server
+        .setSSL(true)
+        .setKeyStorePath("keystore.jks") 
+        .setKeyStorePassword(p)      
+    })
     
     server.requestHandler(routeMatcher).listen(port, host)
   }
