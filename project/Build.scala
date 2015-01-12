@@ -131,6 +131,7 @@ object Build extends Build {
   lazy val modsTarget = settingKey[File]("The target directory in which to build module.")
 
   val vertxLibs = Seq(vertxPlatform, vertxScala)
+
   lazy val vertx = subProject("vertx")
     .settings(
       watchSources += baseDirectory.value / "mod.json",
@@ -154,8 +155,7 @@ object Build extends Build {
         IO.createDirectory(modDir)
         IO.createDirectory(modLibDir)
         IO.copyFile(vertxJar, modLibDir / vertxJar.getName(), true)
-        IO.copyFile(dir / "mod.json", modDir / "mod.json", true)
-        IO.copyFile(dir / "keystore.jks", modDir / "keystore.jks", true)
+        IO.copyDirectory(dir / "src/main/resources", modDir, true)
         val zipContents = Path.allSubpaths(modDir)
         val zipFile = targetDir / replaceExtension(vertxJar.getName(), ".zip")
         println("Zipping module to " + zipFile + "...")

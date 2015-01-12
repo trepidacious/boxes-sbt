@@ -27,6 +27,9 @@ import org.vertx.scala.core.json.JsonObject
 import scala.concurrent._
 import scala.util.Success
 import scala.util.Failure
+import org.vertx.scala.core.http.ServerWebSocket
+import org.vertx.scala.core.streams.Pump
+import org.vertx.scala.core.sockjs.SockJSSocket
 
 class Server extends Futicle {
 
@@ -34,29 +37,29 @@ class Server extends Futicle {
 
   lazy val cfg: JsonObject = container.config()
 
-  lazy val authSecret = cfg.getString("authSecret")
-  lazy val port = envIntWithFallback("port", cfg, 8080)
-  lazy val host = envStringWithFallback("host", cfg, "localhost")
-  lazy val keyStorePassword = Option(cfg.getString("keyStorePassword"))
-  lazy val postgresAddress = cfg.getString("postgresAddress")
+  lazy val authSecret           = cfg.getString("authSecret")
+  lazy val port                 = envIntWithFallback("port", cfg, 8080)
+  lazy val host                 = envStringWithFallback("host", cfg, "localhost")
+  lazy val keyStorePassword     = Option(cfg.getString("keyStorePassword"))
+  lazy val postgresAddress      = cfg.getString("postgresAddress")
   lazy val requireHTTPSRedirect = cfgBooleanWithFallback("requireHTTPSRedirect", cfg, false)
   
   lazy val postgres = new Postgres(postgresAddress, this)
 
-  def ivHexExists(ivHex: String) = postgres.prepared("SELECT * FROM iv WHERE iv=?", ivHex).map((message) => message.body.getInteger("rows") > 0)
+  def ivHexExists(ivHex: String) = postgres.prepared("SELECT * FROM iv WHERE iv=?", ivHex).map(_.body.getInteger("rows") > 0)
 
   def maybeNewIvHex() = {
     val ivHex = randomHex(12)
     println("Trying " + ivHex)
   //    ivHexExists(ivHex).map(exists => if (exists) None else Some(ivHex))
-    storeIVHex(ivHex).map(success => if (success) Some(ivHex) else None)
+    storeIVHex(ivHex).map(if (_) Some(ivHex) else None)
   }
   
   def newIVHex(): Future[String] = {
     maybeNewIvHex.flatMap{
       case Some(ivHex) => {
         println("Got " + ivHex)
-        future{ivHex}
+        Future.successful(ivHex)
       }
       case None => newIVHex()
     }
@@ -77,6 +80,11 @@ class Server extends Futicle {
 
     routeMatcher.get("/ver", {req: HttpServerRequest => {      
       req.response.end(Json.obj("ver" -> ver).encode())
+    }})
+
+    routeMatcher.get("/sockdemo", {req: HttpServerRequest => {
+      req.response.sendFile("sockdemo/sockdemo.html")
+//      req.response.end("SockJS Demo")
     }})
 
     routeMatcher.get("/auth/" + authSecret + "/iv/list", requireHTTPS(requireHTTPSRedirect, {req: HttpServerRequest => 
@@ -115,13 +123,29 @@ class Server extends Futicle {
         .setKeyStorePassword(p)      
     })
     
-    server.requestHandler(routeMatcher).listen(port, host)
+    server.requestHandler(routeMatcher)
+    
+//    val wsHandler: (ServerWebSocket => Unit) = (ws: ServerWebSocket) => { 
+//      Pump.createPump(ws, ws).start()
+//    }
+//    Chain .websocketHandler(wsHandler) after requestHandler in server...listen() below
+    
+    val sockServer = vertx.createSockJSServer(server)
+    
+    val config = Json.obj("prefix" -> "/sock")
+
+    sockServer.installApp(config, { sock: SockJSSocket =>
+      Pump.createPump(sock, sock).start()
+    })
+    
+    server.listen(port, host)
   }
   
   override def start() {
 
     println("Server on " + host + ":" + port + ", postgres on " + postgresAddress)
     
+    //FIXME use a transaction to ensure that index is created.
     //Initialise database if not there already
     val makeIV = postgres.withTable("iv").fallbackTo(
       postgres.rawOK("""
