@@ -33,8 +33,10 @@ object Utils {
   def envInt(s: String) = envString(s).flatMap(i => Try(i.toInt).toOption)
   def envString(s: String) = sys.env.get(s)
   
-  def envIntWithFallback(s: String, cfg: JsonObject, default: Int) = Option(cfg.getString(s + "Env")).flatMap(envInt(_)).orElse(Option(cfg.getInteger(s).toInt)).getOrElse(default)
+  def envIntWithFallback(s: String, cfg: JsonObject, default: Int) = Option(cfg.getString(s + "Env")).flatMap(envInt(_)).orElse(Option(cfg.getInteger(s)).map(_.toInt)).getOrElse(default)
   def envStringWithFallback(s: String, cfg: JsonObject, default: String) = Option(cfg.getString(s + "Env")).flatMap(envString(_)).orElse(Option(cfg.getString(s))).getOrElse(default)
+
+  def envStringWithFallbackOption(s: String, cfg: JsonObject, default: Option[String]) = Option(cfg.getString(s + "Env")).flatMap(envString(_)).orElse(Option(cfg.getString(s))).orElse(default)
 
   def cfgBooleanWithFallback(s: String, cfg: JsonObject, default: Boolean) = Option(cfg.getBoolean(s).asInstanceOf[scala.Boolean]).getOrElse(default)
   

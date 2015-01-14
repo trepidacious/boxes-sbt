@@ -1,4 +1,8 @@
 {
+  "mongodbConfig": {
+    "address"     : "org.rebeam.mongodb",
+    "db_name"     : "jbossvertx"
+  },
   "postgresConfig": {
     "address"     : "org.rebeam.psql",
     "connection"  : "PostgreSQL",
