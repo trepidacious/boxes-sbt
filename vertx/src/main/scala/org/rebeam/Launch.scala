@@ -50,14 +50,14 @@ class Launch extends Futicle {
     val host = envStringWithFallback("host", config, "localhost")
     val port = envIntWithFallback("port", config, 27017)
     val username = envStringWithFallbackOption("username", config, None)
-    val password = envStringWithFallbackOption("password", config, None)
-    val database = envStringWithFallback("db_name", config, "vertx")
+    val password = envStringWithFallbackOption("password", config, None)    
+    val dbName = envStringWithFallback("db_name", config, "vertx")
 
     config.putString("host", host)
     config.putNumber("port", port)
     username.foreach(config.putString("username", _))
     password.foreach(config.putString("password", _))
-    config.putString("db_name", database)
+    config.putString("db_name", dbName)
     config.putBoolean("use_objectids", true)
     config.putBoolean("use_mongo_types", true)
   }
