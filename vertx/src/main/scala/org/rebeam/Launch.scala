@@ -30,38 +30,40 @@ import org.vertx.scala.core.json.JsonObject
 class Launch extends Futicle {
 
   def processPostgresConfig(config: JsonObject) {
-    
+
     //TODO refactor, e.g. implicit RichJsonObject with methods like envFallback("host", "localhost").
     val host = envStringWithFallback("host", config, "localhost")
     val port = envIntWithFallback("port", config, 5432)
     val username = envStringWithFallback("username", config, System.getProperty("user.name"))
     val password = envStringWithFallback("password", config, "")
     val database = envStringWithFallback("database", config, System.getProperty("user.name"))
-    
+
     config.putString("host", host)
     config.putNumber("port", port)
     config.putString("username", username)
     config.putString("password", password)
-    config.putString("database", database)    
+    config.putString("database", database)
   }
-  
+
   def processMongodbConfig(config: JsonObject) {
-    
+
     val host = envStringWithFallback("host", config, "localhost")
     val port = envIntWithFallback("port", config, 27017)
     val username = envStringWithFallbackOption("username", config, None)
     val password = envStringWithFallbackOption("password", config, None)
     val database = envStringWithFallback("db_name", config, "vertx")
-    
+
     config.putString("host", host)
     config.putNumber("port", port)
     username.foreach(config.putString("username", _))
     password.foreach(config.putString("password", _))
     config.putString("db_name", database)
+    config.putBoolean("use_objectids", true)
+    config.putBoolean("use_mongo_types", true)
   }
-  
+
   override def start() {
-    
+
     val appConfig: JsonObject = container.config()
 
     val postgresConfig = appConfig.getObject("postgresConfig")
@@ -73,7 +75,7 @@ class Launch extends Futicle {
 
     processMongodbConfig(mongodbConfig)
     println("Mongodb config:\n" + mongodbConfig.encodePrettily())
-    
+
     serverConfig.putString("postgresAddress", postgresConfig.getString("address"))
     serverConfig.putString("mongodbAddress", mongodbConfig.getString("address"))
     println("Server config:\n" + serverConfig.encodePrettily())
@@ -84,7 +86,7 @@ class Launch extends Futicle {
       serverDeployId <- futureContainer.deployVerticle("scala:org.rebeam.Server", serverConfig)
     } {
       println("Deployed postgres as " + postgresDeployId + ", mongodb as " + mongodbDeployId + " and server as " + serverDeployId)
-    }    
+    }
 
   }
 

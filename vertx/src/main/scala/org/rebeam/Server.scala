@@ -43,8 +43,11 @@ class Server extends Futicle {
   lazy val keyStorePassword     = Option(cfg.getString("keyStorePassword"))
   lazy val postgresAddress      = cfg.getString("postgresAddress")
   lazy val requireHTTPSRedirect = cfgBooleanWithFallback("requireHTTPSRedirect", cfg, false)
+  lazy val mongodbAddress      = cfg.getString("mongodbAddress")
   
   lazy val postgres = new Postgres(postgresAddress, this)
+  
+  lazy val mongodb = new Mongodb(mongodbAddress, this)
 
   def ivHexExists(ivHex: String) = postgres.prepared("SELECT * FROM iv WHERE iv=?", ivHex).map(_.body.getInteger("rows") > 0)
 
@@ -108,6 +111,29 @@ class Server extends Futicle {
         }
       }
     }))
+    
+    routeMatcher.get("/names", {req: HttpServerRequest => {
+      mongodb.find("names").onComplete{
+        case Success(list) => req.response.end(list.encode())
+        case Failure(e) => {
+          e.printStackTrace()
+          req.response.end
+        }
+      }
+    }})
+
+    routeMatcher.post("/name/:name", {req: HttpServerRequest => {
+      req.params.get("name") match {
+        case Some(name) if name.size == 1 => mongodb.save("names", Json.obj("name" -> name.head)).onComplete{
+          case Success(id) => req.response.end(id.map(_.encode()).getOrElse(""))
+          case Failure(e) => {
+            e.printStackTrace()
+            req.response.end()
+          }
+        }
+        case None => req.response.end()
+      }
+    }})
 
     val server = vertx.createHttpServer
     
