@@ -119,10 +119,6 @@ object Build extends Build {
     .settings(libraryDependencies ++= allLift) //++ Seq(WebPlugin.webSettings :_*)
     .dependsOn(core, transact, graph, transactgraph, transactpersistence, persistence)
 
-  //def vertxZipMod() {
-  //  IO.
-  //}
-
   def replaceExtension(s: String, newExtension: String) =
     (if (s.contains('.')) s.take(s.lastIndexOf(".")) else s) + newExtension
 
@@ -164,7 +160,6 @@ object Build extends Build {
       }
     )
     .dependsOn(core, transact, graph, transactgraph, transactpersistence, persistence)
-
 
   lazy val root = Project (
     "root",
