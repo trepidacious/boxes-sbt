@@ -161,7 +161,10 @@ class Server extends Futicle {
     val config = Json.obj("prefix" -> "/sock")
 
     sockServer.installApp(config, { sock: SockJSSocket =>
+      val uuid = java.util.UUID.randomUUID()
+      println("Creating sock with UUID " + uuid)
       Pump.createPump(sock, sock).start()
+      sock.endHandler(println("sock disconnected with UUID " + uuid))
     })
     
     server.listen(port, host)
