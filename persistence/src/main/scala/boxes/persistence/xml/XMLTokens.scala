@@ -14,6 +14,7 @@ import scala.xml.pull._
 import scala.io.Source
 import collection._
 import scala.xml.Node
+import boxes.persistence.json.JSONTokenWriter
 
 object XMLTokenWriter {
   class Person extends boxes.Node {
@@ -61,6 +62,18 @@ object XMLTokenWriter {
     val rp = codec.read(reader).asInstanceOf[Person]
     println(p)
     println(rp)
+    
+    val jsonWriter = new StringWriter()
+    val jsonTarget = new JSONTokenWriter(jsonWriter, aliases)
+
+    codec.write(p, jsonTarget)
+
+    val json = jsonWriter.toString
+    println(json)
+
+    val stringTokenWriter = new StringTokenWriter()
+    codec.write(p, stringTokenWriter)
+    println(stringTokenWriter.toString)
     
 //    val reader = new XMLTokenReader(Source.fromString(xml), aliases)
 //    
