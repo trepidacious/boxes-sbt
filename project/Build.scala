@@ -5,11 +5,11 @@ import sbt._
 import Keys._
 
 object Libs {
-  val scalatest     = "org.scalatest" %% "scalatest" % "1.9.2" % "test"
+  val scalatest     = "org.scalatest" %% "scalatest" % "2.2.4" % "test"
   val shapeless     = "com.chuusai" % "shapeless_2.10.4" % "2.0.0"
   val grizzled      = "org.clapper" %% "grizzled-slf4j" % "1.0.2"
 
-  val salat         = "com.novus" %% "salat" % "1.9.3"
+  val salat         = "com.novus" %% "salat" % "1.9.9"
   val protobuf      = "com.google.protobuf" % "protobuf-java" % "2.5.0"
 
   val scalafx       = "org.scalafx" %% "scalafx" % "8.0.0-R4"
@@ -17,15 +17,20 @@ object Libs {
   val vertxScala    = "io.vertx" % "lang-scala" % "1.0.0"
   val vertxPlatform = "io.vertx" % "vertx-platform" % "2.1.5"
 
-  val liftVersion = "2.5.1"
+  val liftVersion = "2.6"
   val allLift = Seq(
-    "net.liftweb" %% "lift-webkit" % liftVersion % "compile",
-    "net.liftweb" %% "lift-mapper" % liftVersion % "compile",
-    "org.eclipse.jetty" % "jetty-webapp" % "8.1.7.v20120910" % "container,test",
-    "org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "container,compile" artifacts Artifact("javax.servlet", "jar", "jar"),
-    "org.slf4j" % "slf4j-log4j12" % "1.6.1",
-    "org.scalaz" %% "scalaz-core" % "7.0.5"
+    "net.liftweb"       %% "lift-webkit"        % liftVersion        % "compile",
+    "net.liftweb"       %% "lift-mapper"        % liftVersion        % "compile",
+    "net.liftmodules"   %% "lift-jquery-module_2.6" % "2.8",
+    "org.eclipse.jetty" % "jetty-webapp"        % "8.1.7.v20120910"  % "container,test",
+    "org.eclipse.jetty" % "jetty-plus"          % "8.1.7.v20120910"  % "container,test", // For Jetty Config
+    "org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "container,test" artifacts Artifact("javax.servlet", "jar", "jar"),
+    "ch.qos.logback"    % "logback-classic"     % "1.0.6",
+    "org.specs2"        %% "specs2"             % "2.3.12"           % "test",
+    "com.h2database"    % "h2"                  % "1.3.167",
+    "org.scalaz" %% "scalaz-core" % "7.1.1"
   )
+
 }
 
 object Build extends Build {
@@ -37,8 +42,9 @@ object Build extends Build {
     scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
     version := "0.1",
     organization := "org.rebeam",
-    scalaVersion := "2.10.4",
-    libraryDependencies += scalatest
+    scalaVersion := "2.11.5",
+    libraryDependencies += scalatest,
+    publishTo := Some(Resolver.file("file",  new File(Path.userHome.absolutePath+"/.m2/repository")))
   )
 
   def subProject(name: String) = Project(name, file(name), settings = buildSettings)

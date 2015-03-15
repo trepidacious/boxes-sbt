@@ -7,7 +7,6 @@ import java.lang.ref.ReferenceQueue
 import java.lang.ref.Reference
 import scala.collection.mutable.ListBuffer
 import scala.Option.option2Iterable
-import scala.collection.mutable.ConcurrentMap
 import java.util.concurrent.ExecutorService
 import boxes.util.WeakHashSet
 import java.util.concurrent.Executors
