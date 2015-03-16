@@ -40,7 +40,7 @@ object Build extends Build {
   // Default settings for all sub projects
   val buildSettings = Seq (
     scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
-    version := "0.1",
+    version := "0.1-SNAPSHOT",
     organization := "org.rebeam",
     scalaVersion := "2.11.5",
     libraryDependencies += scalatest,
