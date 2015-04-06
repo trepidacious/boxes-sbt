@@ -86,17 +86,17 @@ class CodecByClass extends Codec[Any] {
     val t = reader.peek
     val c = t match {
       case OpenObj(clazz, _)           => clazz
-      case BooleanToken(p: Boolean)    => ValCodecs.BooleanCodec.clazz 
-      case IntToken(p: Int)            => ValCodecs.IntCodec.clazz 
-      case LongToken(p: Long)          => ValCodecs.LongCodec.clazz 
-      case FloatToken(p: Float)        => ValCodecs.FloatCodec.clazz 
-      case DoubleToken(p: Double)      => ValCodecs.DoubleCodec.clazz 
-      case StringToken(p: String)      => ValCodecs.StringCodec.clazz 
-      case OpenArr                      => ListCodec.clazz 
+      case BooleanToken(p: Boolean)    => ValCodecs.BooleanCodec.clazz
+      case IntToken(p: Int)            => ValCodecs.IntCodec.clazz
+      case LongToken(p: Long)          => ValCodecs.LongCodec.clazz
+      case FloatToken(p: Float)        => ValCodecs.FloatCodec.clazz
+      case DoubleToken(p: Double)      => ValCodecs.DoubleCodec.clazz
+      case StringToken(p: String)      => ValCodecs.StringCodec.clazz
+      case OpenArr                      => ListCodec.clazz
 
       case _ => throw new RuntimeException("Expected OpenObj, OpenArr, or value Token got " + t)
     }
-    
+
     val codec = get(c)
     codec.read(reader)
   }
@@ -128,7 +128,7 @@ object AnyCodec extends Codec[Any] {
 class OptionCodec(delegate:Codec[Any]) extends Codec[Option[_]] {
   override def read(reader: TokenReader)(implicit txn: Txn) = {
     reader.pullAndAssert(OpenObj(classOf[Option[_]]))
-    
+
     val t = reader.pull
     t match {
       case CloseObj => None            //None is just an empty Option obj
@@ -165,7 +165,7 @@ class DateTimeCodec(delegate:Codec[Any]) extends Codec[DateTime] {
     reader.pull match {
       case StringToken(iso) => {
         reader.pullAndAssert(CloseObj)
-        new DateTime(iso)    
+        new DateTime(iso)
       }
       case _ => throw new RuntimeException("Expected String token")
     }
@@ -260,7 +260,7 @@ class MapCodec(delegate:Codec[Any]) extends CodecWithClass[Map[_,_]] {
 
 
 class NodeCodec(delegate:Codec[Any]) extends Codec[Node] {
-  
+
   override def read(reader: TokenReader)(implicit txn: Txn) = {
     val t = reader.pull
     val tag = t match {
@@ -282,11 +282,11 @@ class NodeCodec(delegate:Codec[Any]) extends Codec[Node] {
         val builder = builderClass.getConstructor(classOf[Txn]).newInstance(txn)
         val builderApply = builderClass.getDeclaredMethod("default")
         val n = builderApply.invoke(builder)
-        
+
         //val n = c.getConstructor(classOf[Txn]).newInstance(txn)
-        
+
         reader.cache(id, n)
-        
+
         //Fill out the node's Vars
         val accMap = Node.accessorsOfClass(c)
         while (reader.peek != CloseObj) {
@@ -323,7 +323,7 @@ class NodeCodec(delegate:Codec[Any]) extends Codec[Node] {
       //We are new, write out as normal, and include the id
       case New(id) => {
         writer.write(OpenObj(n.getClass, LinkId(id)))
-        Node.accessors(n).foreach(entry => {          
+        Node.accessors(n).foreach(entry => {
           writer.write(OpenField(entry._1))
           delegate.write(entry._2.invoke(n).asInstanceOf[Box[_]].apply, writer)
         })
@@ -341,7 +341,7 @@ object CaseClassCodec {
 }
 
 class CaseClassCodec(delegate:Codec[Any]) extends Codec[Product] {
-  
+
   def genericGrater(c: Class[_]) = grater[AnyRef](CaseClassCodec.ctx, Manifest.classType(c))
 
   override def read(reader: TokenReader)(implicit txn: Txn) = {
@@ -368,7 +368,14 @@ class CaseClassCodec(delegate:Codec[Any]) extends Codec[Product] {
         }
         reader.pullAndAssert(CloseObj)
 
-        genericGrater(c).fromMap(builder.result().toMap).asInstanceOf[Product]
+        //See if we have a case object
+        val ca = ClassAnalyzer(c)
+        if (ca.sym.isModule) {
+          ca.companionObject.asInstanceOf[Product]
+        //Otherwise this must be a case class
+        } else {
+          genericGrater(c).fromMap(builder.result().toMap).asInstanceOf[Product]
+        }
       }
       case _ => throw new RuntimeException("A case class has a non-empty link, which should not happen.")
     }
@@ -381,7 +388,7 @@ class CaseClassCodec(delegate:Codec[Any]) extends Codec[Product] {
     n match {
       case nar: AnyRef => {
         val map = genericGrater(n.getClass()).toMap(n.asInstanceOf[AnyRef])
-        
+
         map.foreach(entry => {
           writer.write(OpenField(entry._1))
           delegate.write(entry._2, writer)
@@ -519,23 +526,23 @@ object ValCodecs {
 //    //and are a subclass of the current pair.
 //    codecs.foldLeft[(Class[_], Codec[_])]((classOf[Any], AnyCodec))((acc, kv) => if (kv._1.isAssignableFrom(clazz) && acc._1.isAssignableFrom(kv._1)) kv else acc)._2
 //  }
-//  
+//
 //  //Need to look up class from tag, then use appropriate codec
 //  override def read(reader : TokenReader)(implicit txn: Txn) = {
 //    val t = reader.peek
 //    val c = t match {
 //      case OpenObj(clazz, _)           => clazz
-//      case BooleanToken(p: Boolean)    => ValCodecs.BooleanCodec.clazz 
-//      case IntToken(p: Int)            => ValCodecs.IntCodec.clazz 
-//      case LongToken(p: Long)          => ValCodecs.LongCodec.clazz 
-//      case FloatToken(p: Float)        => ValCodecs.FloatCodec.clazz 
-//      case DoubleToken(p: Double)      => ValCodecs.DoubleCodec.clazz 
-//      case StringToken(p: String)      => ValCodecs.StringCodec.clazz 
-//      case OpenArr                      => ListCodec.clazz 
+//      case BooleanToken(p: Boolean)    => ValCodecs.BooleanCodec.clazz
+//      case IntToken(p: Int)            => ValCodecs.IntCodec.clazz
+//      case LongToken(p: Long)          => ValCodecs.LongCodec.clazz
+//      case FloatToken(p: Float)        => ValCodecs.FloatCodec.clazz
+//      case DoubleToken(p: Double)      => ValCodecs.DoubleCodec.clazz
+//      case StringToken(p: String)      => ValCodecs.StringCodec.clazz
+//      case OpenArr                      => ListCodec.clazz
 //
 //      case _ => throw new RuntimeException("Expected OpenObj, OpenArr, or value Token got " + t)
 //    }
-//    
+//
 //    val codec = get(c)
 //    codec.read(reader)
 //  }
@@ -546,6 +553,3 @@ object ValCodecs {
 //  }
 //
 //}
-
-
-
