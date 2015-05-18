@@ -6,7 +6,6 @@ import Keys._
 
 object Libs {
   val scalatest     = "org.scalatest" %% "scalatest" % "2.2.4" % "test"
-  val shapeless     = "com.chuusai" % "shapeless_2.10.4" % "2.0.0"
   val grizzled      = "org.clapper" %% "grizzled-slf4j" % "1.0.2"
 
   val salat         = "com.novus" %% "salat" % "1.9.9"
@@ -42,7 +41,7 @@ object Build extends Build {
     scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
     version := "0.1-SNAPSHOT",
     organization := "org.rebeam",
-    scalaVersion := "2.11.5",
+    scalaVersion := "2.11.6",
     libraryDependencies += scalatest,
     publishTo := Some(Resolver.file("file",  new File(Path.userHome.absolutePath+"/.m2/repository")))
   )
@@ -53,7 +52,7 @@ object Build extends Build {
   lazy val core = subProject ("core")
 
   //New prototype stuff for providing concurrent transactions
-  val transactLibs = Seq(shapeless, grizzled)
+  val transactLibs = Seq(grizzled)
   lazy val transact = subProject("transact")
     .settings(libraryDependencies ++= transactLibs)
     .dependsOn(core)
