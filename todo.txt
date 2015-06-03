@@ -1,0 +1,9 @@
+Boxes:
+
+Make (Txn) => Result stuff actually (Revision) => (Result, Delta) where delta is a list of desired changes to the revision. Then provide a method (Revision, (Revision) => (Result, Delta)): Option[Revision] that tries to apply the delta on top of the new revision, returns Some(newRevision) if it succeeds, None otherwise. Then a "mutable" shelf can just use these to run as at present. Delta should contain all current deltas - box reads and writes, reaction additions etc. This gives us a core system that is completely functional (apart from shenanigans with GC in boxes). We just add the mutable stuff at the end.
+
+Note that we can provide a Txn that can accept a Revision, then build a (Result, Data) from it to allow for transactions to be written in the old mutable style. In a similar way, this is just a mutable way of getting to the underlying immutable data, and can be used internally by "transaction" code if wanted. Another approach would allow for building your (Revision) => (Result, Data) in some immutable way, perhaps something like State monad?
+
+Note that we need to remove link from Box to Txn - Boxes should be readable given a Revision, and Txn will then implement Revision but also build deltas while running. This might be implemented via an implicit wrapper of Box. Boxes will only be writable in a Txn as a result of an implicit wrapper, which will provide Box with a set method that just records the write in a Txn as at present. Hence Txn's will be completely optional - you may instead just directly produce a Delta.
+
+Can in future also use same mechanisms of revision updating.
